@@ -222,8 +222,8 @@ Rules learned in this session. Include them in every dispatch prompt:
 
 Open user decisions:
 - **Before M5 (T-019):** JUCE licence tier (Starter or AGPLv3), code-signing method, final company name and plugin codes, installer license text, and the first version number.
-- **Before T-018:** create a GitHub repository.
-- **Recommended now:** make a first git commit as a checkpoint. The repository exists (T-003), but nothing has been committed.
+- None for T-018: the repository exists (T-027) at https://github.com/Keray535/Investigate. It is private, and the default branch is `main`. `CLAUDE.md` and `.claude/` are gitignored and never committed.
+- Commit hygiene: every task that changes files should end with a commit and push by build-engineer, or by the user, so the remote stays current.
 
 ## Risks
 
@@ -298,6 +298,8 @@ Open user decisions:
 | 2026-09-29 | M2 closed. T-008, T-025, T-026 and T-009 are DONE with passing QA reports. Evidence: bit-exact null test in every layout with analysis active and inactive; state round trip and corrupt-data safety; 0 allocations in `processBlock` over 10 s with parameter changes; analysis thread stops within 50 ms over 100 open/close cycles; clean sample-rate changes; the Standalone links, launches and starts with input unmuted; pluginval strictness 10; `ctest` 167/167 run (5 documented skips). `processBlock` timing, isolated, at 48 kHz, 128 samples, stereo plus sidechain: mean 5.4–8.3 µs, p99 31–47 µs against the 20/50 µs budget. The p99 spread between the two testers' machines is noted for T-016. | Gate criteria met. |
 | 2026-09-29 | Items carried to later milestones: (1) a manual check that the Standalone's "Mute audio input" toggle shows unchecked, during the user's M3 review and in T-015; (2) the Steinberg VST3 validator is still to be added (T-014); (3) re-measure the `processBlock` p99 under realistic load (T-016). | Found at the M2 gate; none blocks M3. |
 | 2026-09-29 | The user asked for a GitHub repository and a commit of all produced files except the Claude files (T-027). Architect defaults: the repository is private and named `Investigate`, the branch is `main`, and `CLAUDE.md` and `.claude/` are added to `.gitignore` so they are never committed. | Private is reversible; publishing is not, and the licence decision (Starter or AGPLv3) is still open. Ignoring the Claude files keeps them out of every future commit too. |
+| 2026-09-29 | T-027 done. The private repository https://github.com/Keray535/Investigate was created. The root commit is `71d0313` (155 files); two documentation follow-ups were pushed after it. The secret scan was clean; the largest file is 90 KB. Commits use the user's existing global git identity, which was left unchanged. | Checkpoint of M0–M2, and the T-018 precondition is met. |
+| 2026-09-29 | The root `README.md` is owned by build-engineer (T-028). It must not name SPAN or Voxengo, and it gives the licence as "all rights reserved; public licence to be decided". | The file is not in the CLAUDE.md layout. Build-engineer already owns the build instructions. IP boundaries from T-001 section 8. |
 | 2026-09-28 | The user approved the T-010 mockup (`docs/design/mockup.html`) without changes. The visual direction and layout are frozen for T-011 to T-013. | User decision. |
 | 2026-09-28 | Editor sizes: default 1200×700, minimum 920×540, maximum 2560×1600, free aspect ratio (T-010 spec). | Taken from the design spec. |
 | 2026-09-28 | Fonts approved: Inter v4.1 (Medium, SemiBold) and JetBrains Mono v2.304 (Regular, Medium), both SIL OFL 1.1 with no Reserved Font Name. Embedding and subsetting are allowed. Obligations: ship the OFL text and copyright notices with the installer (T-019) and in the editor's About or credits (T-011), and never sell the font files on their own. The ui-ux-designer adds the TTFs to `assets/ui/` in the mockup revision pass, not while a C++ build task is running. | T-022. |
@@ -319,7 +321,8 @@ Open user decisions:
 | T-008 | Parameters, buses and state | plugin-engineer | M2 | T-001, T-003 | DONE (both QA reports PASS in round 2; testers re-confirm during T-009) |
 | T-025 | Compile definitions: custom Standalone app, unused codecs off | build-engineer | M2 | T-008, T-023 | DONE (codecs off, VST3 −14 %; Standalone link fixed and verified in T-009) |
 | T-026 | Hide timing tests from the default test run (`[.perf]`) | unit-tester | M2 | T-024 | DONE (`docs/qa/T-026-unit.md` PASS) |
-| T-027 | GitHub repository and initial commit | build-engineer | M2 | T-009 | IN_PROGRESS |
+| T-027 | GitHub repository and initial commit | build-engineer | M2 | T-009 | DONE (https://github.com/Keray535/Investigate, private, `main`) |
+| T-028 | Project README | build-engineer | M2 | T-027 | IN_PROGRESS |
 | T-009 | Processor wiring, analysis thread and editor API | plugin-engineer | M2 | T-005, T-007, T-008 | DONE (`docs/qa/T-009-unit.md` and `docs/qa/T-009-validation.md` PASS) |
 | T-010 | UI spec, design tokens, SVG assets and HTML mockup | ui-ux-designer | M3 | T-001, T-020 | DONE (mockup approved by the user; font files moved to T-021) |
 | T-011 | Editor shell, LookAndFeel, settings controls and resizing | gui-engineer | M3 | T-008, T-010 | TODO |

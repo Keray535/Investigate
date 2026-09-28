@@ -15,7 +15,7 @@ This makes regressions visible once the user publishes the repository.
 ## Inputs
 - `CMakeLists.txt`, `CMakePresets.json` and `docs/dependencies.md` from T-003 and T-014.
 - `docs/roadmap.md`: Scope (Windows only) and Decisions.
-- Precondition: the user must create a GitHub repository and push the project. The architect asks the user before dispatching this task. If no remote exists, validate the workflow statically.
+- Remote: https://github.com/Keray535/Investigate (private, default branch `main`), created in T-027. GitHub Actions minutes for private repositories are limited by the account plan; keep jobs lean and cache aggressively.
 
 ## Scope
 - `.github/workflows/ci.yml` using a Windows runner with Visual Studio 2022, running configure, build (Release and Debug), `ctest` with the unit label, and `ctest -L validation`.
