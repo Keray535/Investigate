@@ -149,6 +149,18 @@ In addition to the ones listed for JUCE's target defaults in `CLAUDE.md`
   the table row above. See the T-025 task log for the exact linker errors and
   the open question raised to plugin-engineer/the architect.
 
+## Repository
+
+| | |
+|---|---|
+| Remote URL | https://github.com/Keray535/Investigate |
+| Default branch | `main` |
+| Visibility | Private |
+
+Created and pushed by T-027 (2026-09-28), covering the initial commit for
+milestones M0-M2. `CLAUDE.md` and `.claude/` are gitignored and were never
+staged or pushed; the repository contains only project files.
+
 ## Build, test and validate
 
 ```
