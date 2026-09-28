@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 0 152 34" width="152" height="34">
+  <title>Investigate</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 10V24"/>
+    <path d="M7 24V10M7 15A5 5 0 0 1 17 15V24"/>
+    <path d="M21.5 10L27 24L32.5 10"/>
+    <path d="M37 17H51A7 7 0 1 0 48.95 21.95"/>
+    <path d="M63.7 12.2C62.7 10.6 61.1 10 59.7 10C57.5 10 55.9 11.3 55.9 13.3C55.9 18 64.1 15.8 64.1 20.6C64.1 22.7 62.3 24 59.9 24C58 24 56.3 23.3 55.5 21.8"/>
+    <path d="M71.6 5V20.5C71.6 22.8 72.8 24 75.1 24H76.1M68.6 10H76.1"/>
+    <path d="M80.6 10V24"/>
+    <circle cx="92.1" cy="17" r="7"/>
+    <path d="M99.1 10V27C99.1 30.3 96.9 32 93.6 32H89.5"/>
+    <circle cx="110.6" cy="17" r="7"/>
+    <path d="M117.6 10V24"/>
+    <path d="M125.1 5V20.5C125.1 22.8 126.3 24 128.6 24H129.6M122.1 10H129.6"/>
+    <path d="M134.1 17H148.1A7 7 0 1 0 146.05 21.95"/>
+  </g>
+  <circle cx="2.5" cy="4.6" r="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <circle cx="80.6" cy="4.6" r="1.6" fill="currentColor"/>
+</svg>

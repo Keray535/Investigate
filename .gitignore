@@ -1,0 +1,38 @@
+# Build output
+build/
+out/
+bin/
+cmake-build-*/
+
+# Downloaded / fetched dependencies (JUCE, Catch2, pluginval) - never vendored, see docs/dependencies.md
+third_party/
+
+# Research shallow clones
+research/_cache/
+
+# CMake user-local presets and caches
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+
+# Visual Studio / MSVC
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.suo
+*.user
+
+# Other common IDE files
+.vscode/
+.idea/
+*.swp
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Claude Code agent configuration (local only)
+CLAUDE.md
+.claude/

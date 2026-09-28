@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+  <title>Freeze</title>
+  <path d="M7.5 1V14M1.87 4.25L13.13 10.75M1.87 10.75L13.13 4.25"/>
+  <path d="M5.75 1.75L7.5 3.5L9.25 1.75M5.75 13.25L7.5 11.5L9.25 13.25"/>
+  <path d="M13.36 6.14L10.96 5.5L11.61 3.11M11.61 11.89L10.96 9.5L13.36 8.86"/>
+  <path d="M1.64 8.86L4.04 9.5L3.39 11.89M3.39 3.11L4.04 5.5L1.64 6.14"/>
+</svg>
