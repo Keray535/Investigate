@@ -1,7 +1,7 @@
 # T-027: GitHub repository and initial commit
 - Owner: build-engineer
 - Milestone: M2 (checkpoint)
-- Status: IN_PROGRESS
+- Status: DONE
 - Depends on: T-009
 
 ## Goal
@@ -39,3 +39,12 @@ Checkpoint the work of M0 to M2. Create a private GitHub repository for Investig
 - [ ] No global git configuration was changed.
 
 ## Log
+- 2026-09-29 build-engineer: Read CLAUDE.md, this task file, `.gitignore` and `docs/dependencies.md`; set status to IN_PROGRESS.
+- 2026-09-29 build-engineer: Added `CLAUDE.md` and `.claude/` to `.gitignore` under "Claude Code agent configuration (local only)". Confirmed with `git check-ignore -v CLAUDE.md .claude/settings.json`: both ignored (`.gitignore:37:CLAUDE.md` and `.gitignore:38:.claude/`).
+- 2026-09-29 build-engineer: Pre-commit checks. `git status --porcelain` before staging showed only `.gitignore`, `CMakeLists.txt`, `CMakePresets.json`, `assets/`, `cmake/`, `docs/`, `source/`, `tests/`, `tools/` — no unexpected paths, and `research/_cache/` (gitignored from T-003) did not appear. After `git add -A`, `git status --porcelain` listed 155 staged files, all under the expected project directories; none from `build/`, `third_party/` or `research/_cache/`. Secret scan: `git diff --cached` file contents searched for private-key headers, API/secret key patterns, bearer tokens, `ghp_`/`gho_` tokens and AWS access-key IDs — no matches (the `gho_...` masked token that appears in `gh auth status` terminal output was never written to a repo file, so this is unrelated to the scan). Size check: largest staged file is `docs/design/mockup.html` at 90,101 bytes; nothing exceeds 1 MB, so nothing exceeds the 5 MB limit either.
+- 2026-09-29 build-engineer: Author identity. `git config user.name` / `user.email` were already set globally (`cloder535` / `kerayguven.23.02@gmail.com`); no repo-local override was made and no global config was changed.
+- 2026-09-29 build-engineer: Checked `gh auth status`: authenticated as `Keray535` on github.com (token scopes `gist`, `read:org`, `repo`, `workflow`), so no BLOCKED needed. Confirmed `Investigate` did not already exist on the account (`gh repo view Keray535/Investigate` → "Could not resolve to a Repository") before creating it.
+- 2026-09-29 build-engineer: Committed on branch `main` (renamed from the default `master` with `git branch -M main` before pushing) with the exact message specified in the task, commit `71d0313d0f8e8d0e8d9089023460d5f663739ed2` — 155 files, 21,822 insertions, root commit.
+- 2026-09-29 build-engineer: `gh repo create Investigate --private --source . --remote origin --push` failed once with a transient GitHub GraphQL server error (`E848:124BA1:A30E7D:A36717:6ABAF552`); verified nothing was created (`git remote -v` empty, `gh repo view` 404) and retried once, which succeeded: repository created at https://github.com/Keray535/Investigate and pushed.
+- 2026-09-29 build-engineer: Verification — `git ls-remote origin main` → `71d0313d0f8e8d0e8d9089023460d5f663739ed2 refs/heads/main`, matching local HEAD exactly. `gh repo view --json name,visibility,url` → `{"name":"Investigate","url":"https://github.com/Keray535/Investigate","visibility":"PRIVATE"}`. `git ls-files | grep -iE '^(CLAUDE\.md|\.claude/)'` returned nothing (exit code 1).
+- 2026-09-29 build-engineer: Added a "Repository" section to `docs/dependencies.md` (remote URL, default branch `main`, visibility Private) and pushed it as a second commit, `2a9bb43`, since the URL did not exist until after the first push. All acceptance criteria for the initial-commit scope (items 1-6) are satisfied by commit `71d0313`; item 7's documentation follows in `2a9bb43`. Status set to DONE.
