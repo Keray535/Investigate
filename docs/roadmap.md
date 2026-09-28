@@ -322,7 +322,7 @@ Open user decisions:
 | T-025 | Compile definitions: custom Standalone app, unused codecs off | build-engineer | M2 | T-008, T-023 | DONE (codecs off, VST3 −14 %; Standalone link fixed and verified in T-009) |
 | T-026 | Hide timing tests from the default test run (`[.perf]`) | unit-tester | M2 | T-024 | DONE (`docs/qa/T-026-unit.md` PASS) |
 | T-027 | GitHub repository and initial commit | build-engineer | M2 | T-009 | DONE (https://github.com/Keray535/Investigate, private, `main`) |
-| T-028 | Project README | build-engineer | M2 | T-027 | IN_PROGRESS |
+| T-028 | Project README | build-engineer | M2 | T-027 | DONE (commit `4dd1453`) |
 | T-009 | Processor wiring, analysis thread and editor API | plugin-engineer | M2 | T-005, T-007, T-008 | DONE (`docs/qa/T-009-unit.md` and `docs/qa/T-009-validation.md` PASS) |
 | T-010 | UI spec, design tokens, SVG assets and HTML mockup | ui-ux-designer | M3 | T-001, T-020 | DONE (mockup approved by the user; font files moved to T-021) |
 | T-011 | Editor shell, LookAndFeel, settings controls and resizing | gui-engineer | M3 | T-008, T-010 | TODO |
