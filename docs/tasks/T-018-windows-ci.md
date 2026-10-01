@@ -24,6 +24,7 @@ This makes regressions visible once the user publishes the repository.
 - Timing tests are hidden with the `[.perf]` tag (T-026), so `ctest` does not run them. Add a non-gating step (`continue-on-error: true`) that runs `InvestigateUnitTests.exe "[perf]"` and uploads its output for reference.
 - Run the `asan` unit tests in a separate job. It may be allowed to fail only if T-017 documented known JUCE false positives.
 - No secrets in this task. Signing is T-019.
+- Build the render harness (`PLUGIN_BUILD_HARNESS=ON`, the preset from T-014) and run `ctest -L integration`. This includes `InvestigateEditorCheck`, which needs a desktop session; GitHub's Windows runners provide one. If a harness test proves flaky on the runner, mark only that step non-gating and log the reason.
 
 ## Acceptance criteria
 - [ ] `actionlint`, or an equivalent check, passes on the workflow.

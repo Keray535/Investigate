@@ -1,6 +1,6 @@
 # Investigate: Roadmap
 
-Last updated: 2026-09-28 by vst-architect.
+Last updated: 2026-10-01 by vst-architect.
 
 ## Vision
 
@@ -304,6 +304,10 @@ Open user decisions:
 | 2026-09-28 | Editor sizes: default 1200×700, minimum 920×540, maximum 2560×1600, free aspect ratio (T-010 spec). | Taken from the design spec. |
 | 2026-09-28 | Fonts approved: Inter v4.1 (Medium, SemiBold) and JetBrains Mono v2.304 (Regular, Medium), both SIL OFL 1.1 with no Reserved Font Name. Embedding and subsetting are allowed. Obligations: ship the OFL text and copyright notices with the installer (T-019) and in the editor's About or credits (T-011), and never sell the font files on their own. The ui-ux-designer adds the TTFs to `assets/ui/` in the mockup revision pass, not while a C++ build task is running. | T-022. |
 | 2026-09-28 | Added the interactions listed in Scope: auto-unfreeze on mode change, click to reset curves, right-click to copy frequency, and a meter-collapse toggle. The rich hover readout (frequency, note with cents, level) is an Investigate improvement; SPAN has no such readout. | SPAN User Guide p. 4 and Primary User Guide p. 13 and 18. All are low cost. |
+| 2026-10-01 | M3 started with T-011. Its task file now overrides two stale points in `docs/design/ui-spec.md`: the fonts and license texts live in `third_party/fonts/` and `InvestigateAssets` (not `assets/ui/fonts/`), and spec §15 open questions 1 to 3 are closed. The spec itself is not edited mid-milestone; ui-ux-designer may fold the corrections in at the M3 gate. T-014 stays sequential after M3, because it edits CMake and builds C++. | Keeps the gui-engineer from chasing missing files, and keeps the one-C++-task rule. |
+| 2026-10-02 | T-011 accepted. Unit QA failed in round 1 on one defect (`ViewState` size and collapse state were lost through the host's XML state round trip, because XML turns properties into strings), which was fixed in round 2; 236/236 tests pass in Debug and Release. Validation passed: 0 px region-edge deviation, 50 open and close cycles with no leak, pluginval strictness 10. The documented spec deviations (focus ring drawn inside the bounds, a custom corner grip, tooltips clipped to the editor, and minor About-view text spacing) are accepted. | Gate evidence in `docs/qa/T-011-*.md`. Each deviation is either a JUCE constraint or cosmetic. |
+| 2026-10-02 | Accepted v1 limitation: the editor reads `ViewState` only in its constructor, so a state load while the editor is open does not resize it until it is reopened. | Most hosts recreate the editor on project load. Listening for live changes risks editor resizes from a non-message thread in `setStateInformation`. |
+| 2026-10-02 | The render harness (`tools/render-harness/`, with `InvestigateEditorCheck` from T-011) is built by a validation preset in T-014 and run in CI by T-018. The typographic minus (U+2212) issue on the Level chip goes to T-012. | Routes T-011's open questions to their owners. |
 
 ## Status
 
@@ -325,8 +329,8 @@ Open user decisions:
 | T-028 | Project README | build-engineer | M2 | T-027 | DONE (commit `4dd1453`) |
 | T-009 | Processor wiring, analysis thread and editor API | plugin-engineer | M2 | T-005, T-007, T-008 | DONE (`docs/qa/T-009-unit.md` and `docs/qa/T-009-validation.md` PASS) |
 | T-010 | UI spec, design tokens, SVG assets and HTML mockup | ui-ux-designer | M3 | T-001, T-020 | DONE (mockup approved by the user; font files moved to T-021) |
-| T-011 | Editor shell, LookAndFeel, settings controls and resizing | gui-engineer | M3 | T-008, T-010 | TODO |
-| T-012 | SpectrumView component | gui-engineer | M3 | T-009, T-011 | TODO |
+| T-011 | Editor shell, LookAndFeel, settings controls and resizing | gui-engineer | M3 | T-008, T-010 | DONE (`docs/qa/T-011-unit.md` PASS in round 2, `docs/qa/T-011-validation.md` PASS) |
+| T-012 | SpectrumView component | gui-engineer | M3 | T-009, T-011 | IN_PROGRESS (dispatched 2026-10-02) |
 | T-013 | Meter panel | gui-engineer | M3 | T-009, T-011 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |
 | T-015 | Black-box validation suite | plugin-validator | M4 | T-009, T-013, T-014 | TODO |

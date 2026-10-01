@@ -29,3 +29,24 @@ target_link_libraries(InvestigateRenderHarness
 target_compile_options(InvestigateRenderHarness PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
 )
+
+# T-011 editor black-box check (plugin-validator): offscreen screenshots,
+# region-edge measurements, open/close cycles, size persistence, automation
+# to control, Freeze auto-unfreeze. Drives the public editor and processor
+# surface (createEditor, createComponentSnapshot, the APVTS).
+add_executable(InvestigateEditorCheck
+    editor_check.cpp
+)
+
+target_include_directories(InvestigateEditorCheck PRIVATE "${CMAKE_SOURCE_DIR}/source")
+
+target_link_libraries(InvestigateEditorCheck
+    PRIVATE
+        Investigate
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags
+)
+
+target_compile_options(InvestigateEditorCheck PRIVATE
+    $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
+)
