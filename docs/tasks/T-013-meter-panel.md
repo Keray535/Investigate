@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3
 - Status: TODO
-- Depends on: T-009, T-011
+- Depends on: T-009, T-011, T-029
 
 ## Goal
 Implement `MeterPanel`, which shows:
@@ -17,7 +17,9 @@ The panel applies the `meterScale` display offsets and wires up the statistics r
 - `docs/design/ui-spec.md` (the meter strip, number formats and ballistics) and `docs/design/tokens.json`.
 - `docs/roadmap.md`: Architecture (MeterSnapshot contents, the parameters `meterScale` and `rmsWindow`, processor API).
 - `docs/research/T-002-dsp-references.md`: section 6 (K-system scales and the AES17 offset).
-- `source/dsp/MeterSnapshot.h`, the processor API from T-009, and the `MeterPanel` placeholder from T-011.
+- `source/dsp/MeterSnapshot.h`, the processor API from T-009, and the `MeterPanel` placeholder from T-011 (`MeterPanel (InvestigateProcessor&, DisplayContext&)`; `getLayout()` returns the strip-relative rects tested against spec §4.4; `onStatisticsReset` fires after `requestStatsReset()`).
+- `docs/tasks/T-029-editor-render-cpu.md`: its log ends with "rendering rules" for this panel. Follow them. Direct2D cost on the message thread depends on what is repainted, so repaint only the changed rectangles and never the whole editor per vblank.
+- `docs/qa/T-012-validation.md` and `docs/qa/T-029-validation.md`: the CPU measurement method (`spectrum_check` in `tools/render-harness/`, `d2d` mode).
 
 ## Design requirements
 - **Updates.** Poll `getMeterSnapshot()` from the same vblank or timer path as the rest of the editor, at 30 Hz or more.
@@ -45,7 +47,9 @@ The panel applies the `meterScale` display offsets and wires up the statistics r
 - [ ] Headroom shows 0 dBTP minus TP max, formatted per the spec. Balance shows −6.0 dB for L at −6 dBFS with R at −12 dBFS, after 3 s.
 - [ ] The correlation bar shows +1 for L = R, −1 for L = −R, and about 0 for independent noise, with the spec's smoothing. The mono layout renders as specified.
 - [ ] The rendering of each meter scale mode matches the spec. Screenshots are attached to `docs/qa/T-013-validation.md`.
-- [ ] No allocation in paint or in the update path after the first frame.
+- [ ] Allocation (roadmap Decisions 2026-10-03): 0 allocations by Investigate code after the first frame in the bar, correlation and ballistics paths, checked by an allocation-counting test. Text readouts rebuild their strings only when the displayed text can change (at most 10 Hz, spec §12), with ≤ 20 allocations per frame. Allocations inside JUCE's own text layout are excluded.
+- [ ] Paint cost (roadmap Decisions 2026-10-03): with the editor in a real on-screen Direct2D window and meters animating, `MeterPanel` paint adds ≤ 1 ms p95 at 1280×720 and 2560×1440.
+- [ ] Whole-editor message-thread CPU (spectrum and meters both animating, the T-029 case matrix, net, at least 12 s) is ≤ 25 % of one core at both 1280×720 and 2560×1440.
 - [ ] Warning-clean at `/W4`. `docs/qa/T-013-unit.md` and `docs/qa/T-013-validation.md` report PASS.
 
 ## Log

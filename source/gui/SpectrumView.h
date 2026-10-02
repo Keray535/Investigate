@@ -1,44 +1,219 @@
 #pragma once
 
+#include "DisplayContext.h"
 #include "LayoutMath.h"
+#include "SpectrumMath.h"
+
+#include "../dsp/SpectrumFrame.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+
+#include <array>
+#include <atomic>
+#include <memory>
+#include <vector>
 
 namespace investigate
 {
 
 class InvestigateProcessor;
+class InvestigateLookAndFeel;
 
 /**
-    The spectrum plot region (ui-spec 4.1, 5). T-011 provides the final class
-    name, the region bounds, the `bg-plot` fill, the data-rect frame and the
-    Freeze view flag; T-012 fills in the grid, curves, legend, hover readout,
-    toasts and interactions without changing the layout the editor gives it.
+    The spectrum plot (T-011 region and frame, T-012 content; ui-spec 4.1, 5).
+    It draws the cached grid, every curve of the newest `SpectrumFrame`, the
+    legend, the hover readout, the FROZEN badge and the toasts, and handles
+    click (reset) and right-click (copy frequency).
 
-    The component covers exactly the plot region (below the header, above the
-    control bar). `getDataRect()` is the plotted area in this component's own
-    coordinates.
+    Frames are pulled from `pollFrame()`, which the editor calls from its one
+    `VBlankAttachment` (the same callback that refreshes `DisplayContext`, so
+    the range and the sample rate are always current when a frame is drawn).
+    The component covers exactly the plot region; `getDataRect()` is the
+    plotted area in its own coordinates.
+
+    Message-thread only. No allocation in `paint()` or `pollFrame()` after the
+    first frame beyond what JUCE's own rasteriser and text layout do
+    internally: paths, column and point buffers are reused, and the hover
+    strings are rebuilt only when the pointer or a frame changes.
 */
 class SpectrumView final : public juce::Component
 {
 public:
-    explicit SpectrumView (InvestigateProcessor& processorToView);
+    SpectrumView (InvestigateProcessor& processorToView, DisplayContext& displayContextToUse);
     ~SpectrumView() override;
 
-    /** The Freeze view flag (ui-spec 5.7). It is not a parameter and is not
-        persisted. T-012 implements what frozen means for the frames; here it
-        only switches the frame colour. */
+    /** The Freeze view flag (ui-spec 5.7). While frozen no frames are pulled;
+        the last frame stays and the hover readout keeps working on it. */
     void setFrozen (bool shouldBeFrozen);
     bool isFrozen() const noexcept { return frozen; }
+
+    /** Called once per vblank by the editor, after `DisplayContext::refresh()`.
+        Pulls the newest frame (unless frozen), notices range and setting
+        changes, advances the toasts, and repaints only what changed. */
+    void pollFrame();
 
     /** The plotted area inside the gutters, in this component's coordinates. */
     juce::Rectangle<int> getDataRect() const noexcept;
 
+    // Test and tooling access.
+    bool hasFrame() const noexcept { return haveFrame; }
+    const SpectrumFrame& getFrame() const noexcept { return *frame; }
+    SpectrumMath::Mapping getMapping() const noexcept { return currentMapping(); }
+
+    /** Replaces the displayed frame (used by tools that drive the view with a
+        synthetic frame; the processor path never calls this). */
+    void setFrameForTesting (const SpectrumFrame& newFrame);
+
+    /** Places the hover pointer at a component-local position, as a mouse move
+        would. Tools and tests use it; the UI path uses the mouse callbacks. */
+    void setHoverForTesting (juce::Point<float> position) { setHoverFromPosition (position); }
+
+    /** The hover frequency's clipboard text for a component-local x, as
+        right-click would copy it. */
+    juce::String clipboardTextForX (float x) const;
+
     void paint (juce::Graphics&) override;
+    void resized() override;
+    void lookAndFeelChanged() override;
+    void mouseMove (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseEnter (const juce::MouseEvent&) override;
+    void mouseExit (const juce::MouseEvent&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    juce::MouseCursor getMouseCursor() override;
 
 private:
-    [[maybe_unused]] InvestigateProcessor& processor;
+    enum class Swatch { primaryA, primaryB, secondaryA, secondaryAB, sidechain };
+
+    struct LegendEntry
+    {
+        Swatch swatch = Swatch::primaryA;
+        juce::String name;
+        int x = 0;          // swatch x inside the legend box
+        int textX = 0;
+        int textW = 0;
+    };
+
+    struct HoverRow
+    {
+        Swatch swatch = Swatch::primaryA;
+        juce::String name, value;
+        double db = 0.0;
+        juce::Colour marker;
+        float nameW = 0.0f, valueW = 0.0f;
+    };
+
+    struct Toast
+    {
+        juce::String text;
+        juce::Rectangle<int> bounds;
+        juce::uint32 startMs = 0;
+        int durationMs = 0;
+        bool active = false;
+    };
+
+    // Settings captured with the frame the legend and card describe.
+    struct FrameSettings
+    {
+        int channelMode = 0;
+        int secondary = 0;
+    };
+
+    InvestigateLookAndFeel& getLaf();
+    SpectrumMath::Mapping currentMapping() const noexcept;
+
+    void rebuildCacheIfNeeded (float scale);
+    void renderCache (float scale, const SpectrumMath::Mapping& mapping);
+    void rebuildGradient();
+
+    bool showSidechainNow() const noexcept;
+    void updateLegend();
+    void paintCurves (juce::Graphics&, float pixelScale);
+    void paintLegend (juce::Graphics&);
+    void paintHover (juce::Graphics&);
+    void paintBadge (juce::Graphics&);
+    void paintToasts (juce::Graphics&);
+    void drawSwatch (juce::Graphics&, Swatch, int x, int y, float alpha) const;
+    void tracePolyline (juce::Path& line, juce::Path* fill, float bottomY, int numCols) const;
+
+    void updateHover();
+    void setHoverFromPosition (juce::Point<float> position);
+    void clearHover();
+    juce::Rectangle<int> hoverOverlayBounds() const;
+    juce::Rectangle<int> legendBounds() const;
+    juce::Rectangle<int> hintBounds() const;
+    bool pointerNearLegend() const;
+
+    void showToast (Toast& toast, const juce::String& text, juce::Point<int> anchor, bool centredOnX);
+
+    static juce::String curveName (int channelMode, bool dual, bool second);
+
+    InvestigateProcessor& processor;
+    DisplayContext& displayContext;
+    InvestigateLookAndFeel* laf = nullptr;
+
+    std::atomic<float>* channelModeValue = nullptr;
+    std::atomic<float>* secondaryValue = nullptr;
+    std::atomic<float>* showSidechainValue = nullptr;
+
     bool frozen = false;
+
+    // The frame being shown (about 49 KB, so on the heap).
+    std::unique_ptr<SpectrumFrame> frame;
+    bool haveFrame = false;
+    FrameSettings frameSettings;
+    bool sidechainActive = false;
+    bool showSidechainLast = true;
+
+    // Reused buffers (sized once).
+    std::vector<float> pointX;
+    std::vector<SpectrumMath::Column> columns;
+    juce::Path pathA, pathScratch, fillPath, scSwatchPath, scSwatchFill;
+    juce::FillType primaryFill;
+    bool gradientValid = false;
+
+    // Static layer: background, grid and labels.
+    struct CacheKey
+    {
+        int w = 0, h = 0;
+        float scale = 0.0f;
+        double fLo = 0.0, fHi = 0.0, dbLo = 0.0, dbHi = 0.0;
+
+        bool operator== (const CacheKey&) const = default;
+    };
+
+    juce::Image cache;
+    CacheKey cacheKey;
+    ValueFormat::EffectiveRange lastRange;
+
+    // Legend
+    std::array<LegendEntry, 4> legend;
+    int legendCount = 0;
+    int legendW = 0;
+    int legendKeyCode = -1;
+    std::array<float, 5> nameWidths {};   // legend name widths by Swatch, reused by the hover card
+    float monoAdvanceReadout = 0.0f, monoAdvanceHover = 0.0f, badgeTextW = 0.0f;
+    juce::String frozenText;
+
+    // Hover
+    bool hovering = false;
+    juce::Point<float> hoverPos;
+    double hoverFreq = 0.0;
+    juce::String hoverFreqText, hoverNoteText;
+    std::array<HoverRow, 3> hoverRows;
+    int hoverRowCount = 0;
+    juce::Rectangle<int> cardBounds;
+    juce::Rectangle<int> lastOverlay;
+    bool legendDimmed = false;
+    juce::String hintText;
+    float hintTextW = 0.0f;
+
+    // Interaction
+    bool leftDown = false;
+    juce::Point<float> leftDownPos;
+
+    Toast resetToast, copyToast;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SpectrumView)
 };

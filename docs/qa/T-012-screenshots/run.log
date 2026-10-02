@@ -1,0 +1,164 @@
+== 1 kHz / -6 dBFS sine placement ==
+[PASS] SpectrumView found and has pulled a frame from the processor
+   frame: numPoints 2048, peak 995.74 Hz, -6.77 dB
+   mapping: x0 48 w 840 | peak x 523.19, 1 kHz x 523.71 | peak y 87.01, -6 dB y 82.62
+[PASS] peak vertex column within +-1 px of the 1 kHz column (delta -0.52 px)
+[PASS] peak level in [-7.5, -6.0] dB (Hann scalloping bound, T-005): -6.77 dB
+   peak level error vs -6.02 dBFS: -0.75 dB = 4.40 px
+   rendered primary stroke topmost pixel: x 523, y 131 (ref x 523.71)
+[PASS] rendered peak column within +-1 px (+0.5 px tolerance for the column centre) of 1 kHz: delta -0.71 px
+[PASS] rendered peak row within 2 px of the frame peak y (stroke half-width): delta -0.01 px
+
+== Screenshots, flag combinations and curve colours ==
+   01-single-off: pixels A 1512, B 0, secA 0, secB 0, SC 0 | frame isDual 0 hasSec 0 hasSC 0
+[PASS] 01-single-off: primary A drawn
+[PASS] 01-single-off: primary B absent
+[PASS] 01-single-off: sidechain silhouette absent
+   02-single-rtmax: pixels A 1566, B 0, secA 0, secB 0, SC 0 | frame isDual 0 hasSec 1 hasSC 0
+[PASS] 02-single-rtmax: primary A drawn
+[PASS] 02-single-rtmax: primary B absent
+[PASS] 02-single-rtmax: sidechain silhouette absent
+   03-single-alltimemax: pixels A 1584, B 0, secA 8, secB 0, SC 0 | frame isDual 0 hasSec 1 hasSC 0
+[PASS] 03-single-alltimemax: primary A drawn
+[PASS] 03-single-alltimemax: primary B absent
+[PASS] 03-single-alltimemax: sidechain silhouette absent
+   04-single-alltimeavg: pixels A 1575, B 0, secA 7, secB 0, SC 0 | frame isDual 0 hasSec 1 hasSC 0
+[PASS] 04-single-alltimeavg: primary A drawn
+[PASS] 04-single-alltimeavg: primary B absent
+[PASS] 04-single-alltimeavg: sidechain silhouette absent
+   05-dual-lr-off: pixels A 1528, B 402, secA 0, secB 45, SC 0 | frame isDual 1 hasSec 0 hasSC 0
+[PASS] 05-dual-lr-off: primary A drawn
+[PASS] 05-dual-lr-off: primary B drawn
+[PASS] 05-dual-lr-off: sidechain silhouette absent
+   06-dual-lr-rtmax: pixels A 1550, B 427, secA 16, secB 53, SC 0 | frame isDual 1 hasSec 1 hasSC 0
+[PASS] 06-dual-lr-rtmax: primary A drawn
+[PASS] 06-dual-lr-rtmax: primary B drawn
+[PASS] 06-dual-lr-rtmax: sidechain silhouette absent
+   07-dual-ms-alltimemax: pixels A 1457, B 448, secA 34, secB 38, SC 0 | frame isDual 1 hasSec 1 hasSC 0
+[PASS] 07-dual-ms-alltimemax: primary A drawn
+[PASS] 07-dual-ms-alltimemax: primary B drawn
+[PASS] 07-dual-ms-alltimemax: sidechain silhouette absent
+   08-single-sidechain: pixels A 1517, B 0, secA 0, secB 0, SC 4551 | frame isDual 0 hasSec 0 hasSC 1
+[PASS] 08-single-sidechain: primary A drawn
+[PASS] 08-single-sidechain: primary B absent
+[PASS] 08-single-sidechain: sidechain silhouette drawn
+   09-single-sidechain-hidden: pixels A 1498, B 0, secA 0, secB 0, SC 0 | frame isDual 0 hasSec 0 hasSC 1
+[PASS] 09-single-sidechain-hidden: primary A drawn
+[PASS] 09-single-sidechain-hidden: primary B absent
+[PASS] 09-single-sidechain-hidden: sidechain silhouette absent
+   10-dual-sc-rtmax: pixels A 1562, B 427, secA 16, secB 53, SC 4529 | frame isDual 1 hasSec 1 hasSC 1
+[PASS] 10-dual-sc-rtmax: primary A drawn
+[PASS] 10-dual-sc-rtmax: primary B drawn
+[PASS] 10-dual-sc-rtmax: sidechain silhouette drawn
+   11-single-rtmax-sidechain: pixels A 1593, B 0, secA 0, secB 0, SC 4537 | frame isDual 0 hasSec 1 hasSC 1
+[PASS] 11-single-rtmax-sidechain: primary A drawn
+[PASS] 11-single-rtmax-sidechain: primary B absent
+[PASS] 11-single-rtmax-sidechain: sidechain silhouette drawn
+-- synthetic flat-curve flag matrix (exact colours at fixed rows)
+   single, no secondary, no sidechain: A 1, B 0, secA 0, secB 0, SC colour delta 0
+[PASS] synthetic [single, no secondary, no sidechain]: primary A line present (#62D6F0)
+[PASS] synthetic [single, no secondary, no sidechain]: primary B line absent
+[PASS] synthetic [single, no secondary, no sidechain]: secondary A line absent
+[PASS] synthetic [single, no secondary, no sidechain]: secondary B line absent
+[PASS] synthetic [single, no secondary, no sidechain]: sidechain silhouette absent
+   single + secondary: A 1, B 0, secA 1, secB 0, SC colour delta 0
+[PASS] synthetic [single + secondary]: primary A line present (#62D6F0)
+[PASS] synthetic [single + secondary]: primary B line absent
+[PASS] synthetic [single + secondary]: secondary A line present (#3E8FA3)
+[PASS] synthetic [single + secondary]: secondary B line absent
+[PASS] synthetic [single + secondary]: sidechain silhouette absent
+   dual, no secondary: A 1, B 1, secA 0, secB 0, SC colour delta 0
+[PASS] synthetic [dual, no secondary]: primary A line present (#62D6F0)
+[PASS] synthetic [dual, no secondary]: primary B line present (#FFB454)
+[PASS] synthetic [dual, no secondary]: secondary A line absent
+[PASS] synthetic [dual, no secondary]: secondary B line absent
+[PASS] synthetic [dual, no secondary]: sidechain silhouette absent
+   dual + 2 secondaries: A 1, B 1, secA 1, secB 1, SC colour delta 0
+[PASS] synthetic [dual + 2 secondaries]: primary A line present (#62D6F0)
+[PASS] synthetic [dual + 2 secondaries]: primary B line present (#FFB454)
+[PASS] synthetic [dual + 2 secondaries]: secondary A line present (#3E8FA3)
+[PASS] synthetic [dual + 2 secondaries]: secondary B line present (#A87A3C)
+[PASS] synthetic [dual + 2 secondaries]: sidechain silhouette absent
+   single + secondary + sidechain shown: A 1, B 0, secA 1, secB 0, SC colour delta 87
+[PASS] synthetic [single + secondary + sidechain shown]: primary A line present (#62D6F0)
+[PASS] synthetic [single + secondary + sidechain shown]: primary B line absent
+[PASS] synthetic [single + secondary + sidechain shown]: secondary A line present (#3E8FA3)
+[PASS] synthetic [single + secondary + sidechain shown]: secondary B line absent
+[PASS] synthetic [single + secondary + sidechain shown]: sidechain silhouette present
+   dual + 2 secondaries + sidechain shown: A 1, B 1, secA 1, secB 1, SC colour delta 87
+[PASS] synthetic [dual + 2 secondaries + sidechain shown]: primary A line present (#62D6F0)
+[PASS] synthetic [dual + 2 secondaries + sidechain shown]: primary B line present (#FFB454)
+[PASS] synthetic [dual + 2 secondaries + sidechain shown]: secondary A line present (#3E8FA3)
+[PASS] synthetic [dual + 2 secondaries + sidechain shown]: secondary B line present (#A87A3C)
+[PASS] synthetic [dual + 2 secondaries + sidechain shown]: sidechain silhouette present
+   dual + 2 secondaries + sidechain hidden (showSidechain off): A 1, B 1, secA 1, secB 1, SC colour delta 0
+[PASS] synthetic [dual + 2 secondaries + sidechain hidden (showSidechain off)]: primary A line present (#62D6F0)
+[PASS] synthetic [dual + 2 secondaries + sidechain hidden (showSidechain off)]: primary B line present (#FFB454)
+[PASS] synthetic [dual + 2 secondaries + sidechain hidden (showSidechain off)]: secondary A line present (#3E8FA3)
+[PASS] synthetic [dual + 2 secondaries + sidechain hidden (showSidechain off)]: secondary B line present (#A87A3C)
+[PASS] synthetic [dual + 2 secondaries + sidechain hidden (showSidechain off)]: sidechain silhouette absent
+
+== Hover, freeze, click, right-click ==
+[PASS] right-click at 0.0000 of width: f 20.000 Hz -> clipboard "20.0", spec "20.0"
+[PASS] right-click at 0.0001 of width: f 20.014 Hz -> clipboard "20.0", spec "20.0"
+[PASS] right-click at 0.1000 of width: f 39.905 Hz -> clipboard "39.9", spec "39.9"
+[PASS] right-click at 0.2500 of width: f 112.468 Hz -> clipboard "112", spec "112"
+[PASS] right-click at 0.3333 of width: f 199.954 Hz -> clipboard "200", spec "200"
+[PASS] right-click at 0.5000 of width: f 632.456 Hz -> clipboard "632", spec "632"
+[PASS] right-click at 0.6667 of width: f 2000.461 Hz -> clipboard "2000", spec "2000"
+[PASS] right-click at 0.9000 of width: f 10023.745 Hz -> clipboard "10000", spec "10000"
+[PASS] right-click at 0.9990 of width: f 19862.317 Hz -> clipboard "19900", spec "19900"
+   clipboard at the 1 kHz column: "1000"
+[PASS] right-click outside the data rect leaves the clipboard untouched
+[PASS] all-time max keeps the old peak after the signal stops (secondary -6.7 dB, primary -200.0 dB; peak before -6.8)
+[PASS] left-click clears the all-time max curve (peak -6.7 -> -200.0 dB after 11.1654 ms)
+[PASS] left drag (30 px) does not reset the all-time curve (secondary peak -6.8 dB before, -6.8 after)
+[PASS] Freeze button found
+[PASS] freeze stops curve updates immediately: sequence 375 at press, 375 after click, 375 after 400 ms of audio
+[PASS] hover and right-click copy work while frozen (clipboard "2000")
+[PASS] unfreeze resumes curve updates (first new frame after 9.4465 ms)
+[PASS] re-freeze
+[PASS] changing channelMode while frozen unfreezes
+EcoQoS throttling disabled (process 1, thread 1), process priority high
+
+== Paint benchmark (300 frames per case, 2048-point animated frame) ==
+SOFTWARE = juce::SoftwareImageType image the size of the editor, clip = data rect, ed->paintEntireComponent.
+DIRECT2D = editor on the desktop; message-thread CPU time per frame (GetThreadTimes over the whole loop) minus an idle baseline.
+SOFTWARE 1280x720 | single, secondary off, no SC | median 3.62 ms, mean 3.63 ms, p95 3.87 ms, worst 4.03 ms
+SOFTWARE 1280x720 | single + RT max (factory default view) | median 4.56 ms, mean 4.57 ms, p95 4.68 ms, worst 4.91 ms
+SOFTWARE 1280x720 | dual + 2 secondaries | median 7.82 ms, mean 7.84 ms, p95 8.02 ms, worst 9.14 ms
+SOFTWARE 1280x720 | single + RT max + SC | median 6.55 ms, mean 6.57 ms, p95 6.72 ms, worst 7.05 ms
+SOFTWARE 1280x720 | dual + 2 secondaries + SC | median 9.81 ms, mean 9.83 ms, p95 10.01 ms, worst 10.45 ms
+SOFTWARE 1280x720 | single + RT max + hover card | median 4.93 ms, mean 4.94 ms, p95 5.08 ms, worst 5.65 ms
+SOFTWARE 1280x720 | dual + 2 secondaries + SC + hover (worst case) | median 10.23 ms, mean 10.27 ms, p95 10.54 ms, worst 11.68 ms
+SOFTWARE 2560x1440 | single, secondary off, no SC | median 9.85 ms, mean 9.98 ms, p95 10.77 ms, worst 13.05 ms
+SOFTWARE 2560x1440 | single + RT max (factory default view) | median 11.83 ms, mean 11.95 ms, p95 12.67 ms, worst 15.02 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries | median 18.94 ms, mean 19.08 ms, p95 20.57 ms, worst 23.00 ms
+SOFTWARE 2560x1440 | single + RT max + SC | median 16.41 ms, mean 16.52 ms, p95 17.26 ms, worst 19.49 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries + SC | median 23.21 ms, mean 23.39 ms, p95 24.93 ms, worst 27.30 ms
+SOFTWARE 2560x1440 | single + RT max + hover card | median 12.30 ms, mean 12.43 ms, p95 13.05 ms, worst 15.51 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries + SC + hover (worst case) | median 24.10 ms, mean 24.28 ms, p95 25.77 ms, worst 28.08 ms
+EcoQoS throttling disabled (process 1, thread 1), process priority high
+
+== Paint benchmark (300 frames per case, 2048-point animated frame) ==
+SOFTWARE = juce::SoftwareImageType image the size of the editor, clip = data rect, ed->paintEntireComponent.
+DIRECT2D = editor on the desktop; message-thread CPU time per frame (GetThreadTimes over the whole loop) minus an idle baseline.
+DIRECT2D: editor on the desktop (default JUCE renderer), frames paced at 60 Hz, synthetic 2048-point animated frame.
+paint ms = wall time between two probe siblings around SpectrumView (z-order), per painted frame.
+CPU % = message-thread cycle time over the paced loop (gross), minus the same loop without handing frames to the view (net), over >= 12 s.
+probe counts start 360 end 360, view 0,44 984x620
+calibrated 2676619 cycles per ms (2.68 GHz)
+DIRECT2D 1280x720 | single + RT max (factory default view) | paints 300 | paint median 0.26 ms, mean 0.26 ms, p95 0.28 ms, worst 0.38 ms | CPU gross 20.4 %, net 19.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %)
+probe counts start 360 end 360, view 0,44 984x620
+DIRECT2D 1280x720 | dual + 2 secondaries | paints 300 | paint median 0.41 ms, mean 0.42 ms, p95 0.44 ms, worst 0.48 ms | CPU gross 25.3 %, net 24.3 % (12.0 s, 60.0 paints/s, baseline 1.0 %)
+probe counts start 360 end 360, view 0,44 984x620
+DIRECT2D 1280x720 | dual + 2 secondaries + SC + hover (worst case) | paints 300 | paint median 0.81 ms, mean 0.82 ms, p95 0.89 ms, worst 0.92 ms | CPU gross 20.2 %, net 19.2 % (12.0 s, 60.0 paints/s, baseline 1.0 %)
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | single + RT max (factory default view) | paints 300 | paint median 0.28 ms, mean 0.31 ms, p95 0.42 ms, worst 0.99 ms | CPU gross 36.3 %, net 35.3 % (12.0 s, 60.0 paints/s, baseline 1.0 %)
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | dual + 2 secondaries | paints 300 | paint median 0.43 ms, mean 0.46 ms, p95 0.58 ms, worst 0.86 ms | CPU gross 41.9 %, net 40.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %)
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | dual + 2 secondaries + SC + hover (worst case) | paints 300 | paint median 0.85 ms, mean 0.90 ms, p95 1.12 ms, worst 1.74 ms | CPU gross 28.0 %, net 26.9 % (12.0 s, 60.0 paints/s, baseline 1.1 %)
+
+92 checks, 0 failed
+exit 0

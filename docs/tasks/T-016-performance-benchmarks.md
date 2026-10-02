@@ -16,8 +16,8 @@ Measure Investigate against every budget in the roadmap. The measurements cover 
 - Build the benchmarks in `tools/render-harness/` or `tests/integration/` using the Release build. Label the CTest entries `benchmark`, so they are excluded from normal test runs.
 - **Audio thread.** Time `processBlock` per block (mean, p99 and max) over at least 60 s of audio. Use stereo main plus stereo sidechain, with analysis active and inactive, at 44.1, 48, 96 and 192 kHz, with block sizes 32, 128 and 512.
 - **Analysis thread.** Measure CPU time per second of audio at the default settings and at the worst case: fftSize 65536, 8x overlap, a dual mode, sidechain on, 192 kHz.
-- **Editor paint.** Render the full editor into a `juce::Image` with animated synthetic frames and meter data for 300 frames, at 1280×720 and 2560×1440, and report p50 and p95. State clearly that this measures the software renderer, as an upper-bound proxy for Direct2D.
-- **Message thread.** Estimate the load at 60 fps from the paint time plus the update path time.
+- **Editor paint** (method amended 2026-10-03, roadmap Decisions). Show the full editor in a real on-screen window with JUCE's default Direct2D renderer. Feed animated synthetic frames and meter data for at least 300 frames, at 1280×720 and 2560×1440, in the worst displayed case (dual mode, secondary curves, sidechain, hover readout, meters moving). Report the p50 and p95 `paint()` wall time. Offscreen `juce::Image` timings (software renderer) may be added for information only; they do not gate.
+- **Message thread.** Measure the message-thread CPU over at least 10 s at 60 fps in the same window and case, for example from the thread's CPU time. Do not estimate it from the paint time, because Direct2D defers part of the work out of `paint()`.
 - **Memory.** Measure the resident memory increase per instance at the default and maximum settings, with the editor open.
 - Record the machine's CPU, clock, RAM, OS build and power plan in the report.
 

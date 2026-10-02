@@ -253,6 +253,7 @@ namespace layout
     constexpr float choicePixelsPerStepFine = 60.0f;
     constexpr int   clickSlopPx = 4;
     constexpr float wheelNormalised = 0.02f, wheelNormalisedFine = 0.004f;
+    // (spectrum view dimensions are in the `spectrum` namespace below)
     constexpr float dbDragUnitsPerPx = 0.5f, dbDragUnitsPerPxFine = 0.1f;
     constexpr float slopeDragUnitsPerPx = 0.1f, slopeDragUnitsPerPxFine = 0.01f;
     constexpr int   pageSteps = 5;
@@ -262,6 +263,54 @@ namespace layout
     constexpr int fieldPadX = 8;
     constexpr int halfHighlightPadY = 3;
     constexpr int sepFontPad = 0;
+}
+
+//==============================================================================
+/** Spectrum view dimensions (ui-spec 5.1 to 5.7). */
+namespace spectrum
+{
+    // Axes and grid (5.3)
+    constexpr double freqLabelMinGap = 36.0;   // px between adjacent label centres
+    constexpr double minorLineMinGap = 4.0;    // px between the 9 and 10 lines
+    constexpr double dbStepMinPx     = 20.0;   // px per dB grid step
+    constexpr int    freqLabelTop    = 6;      // below data.bottom
+    constexpr int    dbLabelGap      = 8;      // left of data.x
+    constexpr int    labelEdgeMargin = 2;      // labels never pass this from the plot edge
+    constexpr int    axisLabelH      = 14;
+    constexpr int    axisLabelPadW   = 4;      // slack added to a measured label width
+
+    // Levels (5.5)
+    constexpr double floorDb = -200.0;         // the analyser's "-inf" floor
+
+    // Curves (5.1)
+    constexpr float thinStroke   = 1.0f;
+    constexpr float markerRadius = 3.5f;
+    constexpr float primarySwatchFill = 0.22f; // 5.1 legend swatch fill alpha
+    constexpr float primaryFillFlat = 0.14f;   // 12 fallback: flat fill alpha
+
+    // Legend (5.2)
+    constexpr int   legendInset = 8, legendH = 20, legendPadX = 8, legendGap = 10;
+    constexpr int   swatchW = 16, swatchH = 10, swatchTextGap = 5;
+    constexpr int   legendDimDistance = 16;
+    constexpr float legendDimAlpha = 0.25f;
+
+    // Hover card (5.5)
+    constexpr int cardOffset = 18, cardInset = 4, cardMinW = 132;
+    constexpr int cardPadX = 10, cardPadY = 8, cardBorder = 1;
+    constexpr int cardFreqLineH = 18, cardNoteLineH = 16, cardRowH = 16;
+    constexpr int cardSepMargin = 6, cardSwatchGap = 6, cardValueGap = 12;
+
+    // Hint line (5.5)
+    constexpr int hintPadX = 6, hintPadY = 2, hintRight = 8, hintBottom = 6, hintLineH = 14;
+    constexpr int crosshairSpan = 6;           // repaint slack around the crosshair
+
+    // FROZEN badge (5.7)
+    constexpr int badgeH = 20, badgePadX = 8, badgeY = 8;
+
+    // Toasts (5.6)
+    constexpr int toastPadX = 8, toastPadY = 4, toastLineH = 14;
+    constexpr int toastResetY = 8, toastResetYFrozen = 36;
+    constexpr int toastCopyDx = 12, toastCopyDy = 28, toastInset = 4;
 }
 
 } // namespace investigate::tokens

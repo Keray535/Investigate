@@ -1,6 +1,6 @@
 # Investigate: Roadmap
 
-Last updated: 2026-10-01 by vst-architect.
+Last updated: 2026-10-03 by vst-architect.
 
 ## Vision
 
@@ -192,7 +192,7 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | M0 Scaffold | Research, CMake project, pinned JUCE, Catch2 and pluginval, a placeholder pass-through plugin | T-001, T-002, T-003 | The placeholder VST3 builds, pluginval passes at strictness 10, CTest runs, and both research reports are delivered |
 | M1 DSP core | DSP dependencies, then the spectrum pipeline and meters in `source/dsp/` with unit tests | T-021, T-004, T-005, T-006, T-007, T-024 | Unit QA reports PASS, including the EBU conformance cases |
 | M2 Parameters and state | APVTS, buses, state, and DSP wiring with the analysis thread | T-008, T-025, T-026, T-009 | Unit and validation QA PASS: bit-exact null test, state round trip, and real-time safety |
-| M3 UI | Design spec, then the editor shell, SpectrumView and MeterPanel | T-010, T-011, T-012, T-013 | The spec is accepted; QA PASS on the editor; the paint budget is met |
+| M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met |
 | M4 Validation | Validation tooling, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-015, T-016, T-017 | All QA reports PASS and all budgets are met |
 | M5 Packaging | Windows CI, then a signed installer and release docs | T-018, T-019 | CI is green; a signed installer installs, uninstalls and passes pluginval on the installed binary |
 
@@ -229,7 +229,7 @@ Open user decisions:
 
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
-| 1 | Painting dense filled paths at 60 fps is too slow at high DPI | Laggy UI, high message-thread CPU | Reduce the curve to about one point per pixel column, cache the static grid as an image, use `VBlankAttachment`, and profile in T-012. Fall back to attaching an OpenGL context if the Direct2D budget is missed. |
+| 1 | Painting dense filled paths at 60 fps is too slow at high DPI | Laggy UI, high message-thread CPU | Reduce the curve to about one point per pixel column, cache the static grid as an image, use `VBlankAttachment`, and profile in T-012. **Materialised in T-012** (2026-10-03): paint is fast, but Direct2D work outside `paint()` costs up to 42 % of the message thread at 2560×1440. T-029 profiles and reduces it; frame pacing is the fallback, and OpenGL needs the architect's approval. |
 | 2 | `juce::dsp::FFT` without IPP is slow for 65536 points | Analysis CPU budget missed | Resolved by choice: pffft (BSD-like, SIMD) is the product FFT (T-021, T-004). T-004 benchmarks it against `juce::dsp::FFT` on the development machine. The FFT runs off the audio thread and sits behind an interface. |
 | 3 | Loudness or true peak deviates from EBU conformance | Wrong numbers; loss of credibility | Test against the EBU Tech 3341 and 3342 cases, synthesised or with the official files if their license allows. Optionally cross-check against libebur128 (MIT) as a test-only oracle after a license check. |
 | 4 | Clone concerns: trade dress or trademark | Legal or takedown risk | Own name and artwork only; no Voxengo text, assets or colour-scheme copies. T-001 lists what is off-limits. |
@@ -308,6 +308,10 @@ Open user decisions:
 | 2026-10-02 | T-011 accepted. Unit QA failed in round 1 on one defect (`ViewState` size and collapse state were lost through the host's XML state round trip, because XML turns properties into strings), which was fixed in round 2; 236/236 tests pass in Debug and Release. Validation passed: 0 px region-edge deviation, 50 open and close cycles with no leak, pluginval strictness 10. The documented spec deviations (focus ring drawn inside the bounds, a custom corner grip, tooltips clipped to the editor, and minor About-view text spacing) are accepted. | Gate evidence in `docs/qa/T-011-*.md`. Each deviation is either a JUCE constraint or cosmetic. |
 | 2026-10-02 | Accepted v1 limitation: the editor reads `ViewState` only in its constructor, so a state load while the editor is open does not resize it until it is reopened. | Most hosts recreate the editor on project load. Listening for live changes risks editor resizes from a non-message thread in `setStateInformation`. |
 | 2026-10-02 | The render harness (`tools/render-harness/`, with `InvestigateEditorCheck` from T-011) is built by a validation preset in T-014 and run in CI by T-018. The typographic minus (U+2212) issue on the Level chip goes to T-012. | Routes T-011's open questions to their owners. |
+| 2026-10-03 | Editor paint budget method: p95 is measured as `paint()` wall time in a real on-screen window with JUCE's default Direct2D renderer, in the worst displayed case. Message-thread CPU at 60 fps ≤ 25 % is gated alongside it. Offscreen `juce::Image` timings are for information only. This applies to T-012, T-013 and T-016. | In JUCE 8 on Windows an offscreen `juce::Image` is Direct2D-backed, and its readback (5 to 17 ms) swamps the paint cost. The software image is not the production renderer. |
+| 2026-10-03 | Editor allocation rule: Investigate's own code allocates nothing per frame in curve, meter and idle paths. Text readouts may rebuild strings only when their content can change, with a bound of ≤ 20 allocations per frame. Allocations inside JUCE's text layout are excluded. This applies to T-012 and T-013. | JUCE's `drawText` allocates internally, so "zero allocation" cannot be met with text. Message-thread allocations affect smoothness, not real-time safety. |
+| 2026-10-03 | The T-012 coder session stopped at the usage limit after its round 1 fix. The architect dispatches round 2 QA directly, unit-tester then plugin-validator, sequentially. | Avoids a cold coder session only to dispatch testers. One C++ build at a time. |
+| 2026-10-03 | T-012 accepted with the message-thread CPU criterion moved to the new T-029, which runs before T-013. Measured with the meter panel still a placeholder: `paint()` p95 is 0.9 to 1.2 ms, but message-thread CPU is up to 25.3 % at 1280×720 and up to 41.9 % at 2560×1440, against 25 %. The flat-fill fallback changed it by about 1 point. T-029 profiles first, then applies structural fixes, geometry reduction and dirty regions. Frame pacing (30 fps above a plot-area threshold) is the fallback. OpenGL stays an open question. T-029 gates the spectrum alone at ≤ 18 % (1280×720) and ≤ 20 % (2560×1440). T-013 gates the whole editor at ≤ 25 % at both sizes. | The message thread is shared with the host's UI, so 40 % at 1440p would make hosts sluggish. Gating the 1280×720 size alone was rejected, because it is borderline before the meters exist. Optimising before T-013 lets the meter panel follow the findings. |
 
 ## Status
 
@@ -330,8 +334,9 @@ Open user decisions:
 | T-009 | Processor wiring, analysis thread and editor API | plugin-engineer | M2 | T-005, T-007, T-008 | DONE (`docs/qa/T-009-unit.md` and `docs/qa/T-009-validation.md` PASS) |
 | T-010 | UI spec, design tokens, SVG assets and HTML mockup | ui-ux-designer | M3 | T-001, T-020 | DONE (mockup approved by the user; font files moved to T-021) |
 | T-011 | Editor shell, LookAndFeel, settings controls and resizing | gui-engineer | M3 | T-008, T-010 | DONE (`docs/qa/T-011-unit.md` PASS in round 2, `docs/qa/T-011-validation.md` PASS) |
-| T-012 | SpectrumView component | gui-engineer | M3 | T-009, T-011 | IN_PROGRESS (dispatched 2026-10-02) |
-| T-013 | Meter panel | gui-engineer | M3 | T-009, T-011 | TODO |
+| T-012 | SpectrumView component | gui-engineer | M3 | T-009, T-011 | DONE (`docs/qa/T-012-unit.md` PASS; `docs/qa/T-012-validation.md` passes all but the message-thread CPU criterion, which moved to T-029) |
+| T-029 | Editor rendering CPU: profile and reduce Direct2D message-thread load | gui-engineer | M3 | T-012 | TODO (next) |
+| T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |
 | T-015 | Black-box validation suite | plugin-validator | M4 | T-009, T-013, T-014 | TODO |
 | T-016 | Performance benchmarks | plugin-validator | M4 | T-012, T-013, T-014 | TODO |

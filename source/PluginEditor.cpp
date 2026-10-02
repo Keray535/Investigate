@@ -44,7 +44,7 @@ InvestigateEditor::InvestigateEditor (InvestigateProcessor& processorToEdit)
       resetCurvesButton (Icon::reset, "Reset curves", HeaderButton::Kind::action, "Reset spectrum curves"),
       metersButton (Icon::meters, {}, HeaderButton::Kind::toggle, "Show meters"),
       settingsButton (Icon::settings, {}, HeaderButton::Kind::action, "Settings"),
-      spectrumView (processorToEdit),
+      spectrumView (processorToEdit, displayContext),
       controlBar (processorToEdit.getApvts(), displayContext),
       meterPanel (processorToEdit, displayContext),
       settingsPopover (processorToEdit.getApvts(), displayContext, makeVersionLine (processorToEdit)),
@@ -178,7 +178,8 @@ void InvestigateEditor::closePopover()
 void InvestigateEditor::pollProcessor()
 {
     // The snapshot copy is lock-free; only its sample rate is needed here.
-    // T-012 and T-013 pull their own data on this same vblank cadence.
+    // The spectrum view (T-012) and, later, the meter panel (T-013) pull their
+    // own data from this same vblank callback.
     const auto sampleRate = processor.getMeterSnapshot().sampleRate;
 
     if (sampleRate > 0.0 && sampleRate != displayContext.getSampleRate())
@@ -201,6 +202,10 @@ void InvestigateEditor::pollProcessor()
     }
 
     scButton.setBusInactive (! processor.isSidechainActive());
+
+    // After the context refresh, so the view maps frames with the current
+    // range and sample rate. One vblank callback serves the whole editor.
+    spectrumView.pollFrame();
 }
 
 //==============================================================================

@@ -50,3 +50,22 @@ target_link_libraries(InvestigateEditorCheck
 target_compile_options(InvestigateEditorCheck PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
 )
+
+# T-012 spectrum view black-box check (plugin-validator): 1 kHz placement,
+# hover/freeze/click/right-click, curve and flag screenshots, paint benchmark.
+add_executable(InvestigateSpectrumCheck
+    spectrum_check.cpp
+)
+
+target_include_directories(InvestigateSpectrumCheck PRIVATE "${CMAKE_SOURCE_DIR}/source")
+
+target_link_libraries(InvestigateSpectrumCheck
+    PRIVATE
+        Investigate
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags
+)
+
+target_compile_options(InvestigateSpectrumCheck PRIVATE
+    $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
+)
