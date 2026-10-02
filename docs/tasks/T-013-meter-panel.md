@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3
 - Status: TODO
-- Depends on: T-009, T-011, T-029, T-030
+- Depends on: T-009, T-011, T-029, T-030, T-031
 
 ## Goal
 Implement `MeterPanel`, which shows:
@@ -41,6 +41,13 @@ The panel applies the `meterScale` display offsets and wires up the statistics r
 ## Carry-over from T-029 (same owner and files)
 1. **O-1, clip-edge seam.** In `SpectrumView`, `fillUnderCurve` computes `minTop` and `maxTop` over the clipped columns only, so a hover or toast repaint can leave a 1-level seam at the clip edge. Compute them over all columns (the tops array is already full width), so a clip-limited paint is bit-identical to the full paint. unit-tester then un-hides the `[strict]` test "SpectrumView: clip-limited paint is bit-identical to the full paint" and it must pass.
 2. **O-A/O-2, fractional display scaling.** At 1920×1080, CPU rises by 2 to 4.5 points at 110 % and 175 % Windows scaling, but not at 125 %, 150 % or 200 %; case (c) reached 17.9 % at 110 %. A suspected cause is sprite-batch rectangles whose transformed width falls just below 1.0 px, which makes JUCE fall back from the sprite path (`juce_DirectX_windows.cpp`, around line 541). Try the small width slack (about 0.002 px) suggested in `docs/qa/T-029-unit.md` O-2, and log the before and after numbers. Keep the change only if it lowers the elevated scales and leaves the rest unchanged.
+
+3. **Pacing test hook (from T-031, small).** Add a test-only accessor to `SpectrumView`, for example `bool isFrameRepaintPendingForTesting() const noexcept`, next to the existing test hooks. unit-tester can then check the pacing deferral without a desktop window. The window-based pacing test stays as it is.
+
+## Test environment notes (from T-031)
+- On-screen GUI tests use `tests/unit/GuiTestEnvironment.h` (`pump`, `pumpUntil` capped at 10 s, `VBlankCounter`, `Watchdog`). Any new window-based test must gate on the environment and SKIP with a reason when paints or vblanks do not arrive. It must never wait without a deadline.
+- Run `ctest` with `--timeout 300` until T-014 adds a default timeout to the presets.
+- Windows larger than the display (for example the 2560×1440 test window on the 1920×1080 development displays) can lose repaints of off-screen regions. Treat 2560×1440 results as provisional until confirmed on a native 1440p display.
 
 ## Acceptance criteria
 - [ ] Unit tests of `MeterMath`:
