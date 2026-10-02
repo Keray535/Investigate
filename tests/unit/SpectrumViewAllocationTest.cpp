@@ -96,3 +96,51 @@ TEST_CASE ("SpectrumView::pollFrame while hovering stays within 20 allocations p
     CHECK ((double) total / numPolls <= 20.0);
     CHECK (worst <= 20);
 }
+
+// T-029: with frame pacing active (data rect above 2.0 Mpx) a new frame defers
+// its repaint request; the poll that issues it must not allocate either.
+TEST_CASE ("SpectrumView::pollFrame with paced repaints allocates nothing", "[gui][alloc][spectrumview][pacing]")
+{
+    juce::ScopedJuceInitialiser_GUI gui;
+    InvestigateProcessor processor;
+    DisplayContext context (processor.getApvts());
+    InvestigateLookAndFeel lookAndFeel;
+    SpectrumView view (processor, context);
+    view.setLookAndFeel (&lookAndFeel);
+    view.setSize (2600, 1500);
+    view.setFrameForTesting (makeFrame());
+    view.pollFrame();
+
+    SECTION ("idle polls")
+    {
+        ScopedAllocGuard guard;
+
+        for (int i = 0; i < 300; ++i)
+            view.pollFrame();
+
+        CHECK (guard.count() == 0);
+    }
+
+    SECTION ("polls while a deferred repaint is pending, and the poll that issues it")
+    {
+        view.setFrameForTesting (makeFrame()); // inside 30 ms of the first: deferred
+
+        {
+            ScopedAllocGuard guard;
+
+            for (int i = 0; i < 3; ++i)
+                view.pollFrame();
+
+            CHECK (guard.count() == 0);
+        }
+
+        juce::Thread::sleep (40);
+
+        {
+            ScopedAllocGuard guard;
+            view.pollFrame(); // issues the pending repaint
+            view.pollFrame();
+            CHECK (guard.count() == 0);
+        }
+    }
+}

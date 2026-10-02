@@ -1,5 +1,5 @@
 // T-012 spectrum view black-box check (plugin-validator).
-// Usage: InvestigateSpectrumCheck <outDir> [benchFrames]
+// Usage: InvestigateSpectrumCheck <outDir> [benchFrames] [sw|d2d|lat [cpuSeconds [all|WxH@scale [caseMask]]]]
 // Drives only public surfaces: createEditor, the APVTS, the processor's
 // processBlock, and the SpectrumView test hooks named in the T-012 task log
 // (setFrameForTesting, setHoverForTesting, getMapping, clipboardTextForX).
@@ -8,11 +8,13 @@
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "gui/HeaderButton.h"
+#include "gui/SpectrumMath.h"
 #include "params/ParameterIDs.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 
 #define NOMINMAX
 #include <windows.h>
@@ -323,32 +325,51 @@ namespace
         juce::int64 stamp = 0; int count = 0;
     };
 
-    void benchD2d (int paintFrames, double cpuSeconds)
+    // Optional extras (T-029): sizesArg is "all" (1280x720 and 2560x1440 at scale 1)
+    // or "<physW>x<physH>@<scale>" (global scale factor; the editor is sized in
+    // logical units so that the physical size is physW x physH).
+    // caseMask selects cases by bit (a=1, b=2, c=4, d=8).
+    void benchD2d (int paintFrames, double cpuSeconds, const juce::String& sizesArg = "all", int caseMask = 15)
     {
         timeBeginPeriod (1);
         std::printf ("DIRECT2D: editor on the desktop (default JUCE renderer), frames paced at 60 Hz, synthetic 2048-point animated frame.\n");
         std::printf ("paint ms = wall time between two probe siblings around SpectrumView (z-order), per painted frame.\n");
         std::printf ("CPU %% = message-thread cycle time over the paced loop (gross), minus the same loop without handing frames to the view (net), over >= %.0f s.\n", cpuSeconds);
-        struct Sc { const char* name; bool dual, sec, sc, hover; };
+        struct Sc { const char* name; bool dual, sec, sc, hover; int secMode; int bit; };
         const Sc scs[] = {
-            { "single + RT max (factory default view)", false, true, false, false },
-            { "dual + 2 secondaries", true, true, false, false },
-            { "dual + 2 secondaries + SC + hover (worst case)", true, true, true, true },
+            { "(a) single + RT max (factory default view)", false, true, false, false, 1, 1 },
+            { "(b) dual + 2 secondaries", true, true, false, false, 1, 2 },
+            { "(c) dual + 2 secondaries + SC + hover (worst case)", true, true, true, true, 1, 4 },
+            { "(d) single + all-time average + SC", false, true, true, false, 3, 8 },
         };
-        const int sizes[][2] = { { 1280, 720 }, { 2560, 1440 } };
-        Rig rig (true);
-        for (auto& sz : sizes)
+        int sizes[2][2] = { { 1280, 720 }, { 2560, 1440 } };
+        int numSizes = 2;
+        double scale = 1.0;
+        if (sizesArg != "all")
         {
+            sizes[0][0] = sizesArg.upToFirstOccurrenceOf ("x", false, false).getIntValue();
+            sizes[0][1] = sizesArg.fromFirstOccurrenceOf ("x", false, false).upToFirstOccurrenceOf ("@", false, false).getIntValue();
+            scale = sizesArg.fromFirstOccurrenceOf ("@", false, false).getDoubleValue();
+            numSizes = 1;
+        }
+        juce::Desktop::getInstance().setGlobalScaleFactor ((float) scale);
+        std::printf ("global scale factor %.2f, physical window sizes requested: %d\n", scale, numSizes);
+        Rig rig (true);
+        for (int si = 0; si < numSizes; ++si)
+        {
+            const int* sz = sizes[si];
             for (auto& sc : scs)
             {
+                if ((caseMask & sc.bit) == 0) continue;
+                setChoice (rig.proc, P::secondary, sc.secMode);
                 auto ed = std::unique_ptr<InvestigateEditor> (dynamic_cast<InvestigateEditor*> (rig.proc.createEditor()));
-                ed->setSize (sz[0], sz[1]);
+                ed->setSize ((int) std::lround (sz[0] / scale), (int) std::lround (sz[1] / scale));
                 ed->addToDesktop (0);
                 ed->setVisible (true);
                 pump (400);
                 auto* view = findView (*ed);
                 auto* parent = view->getParentComponent();
-                Probe startP, endP;
+                Probe startP, endP, cornerP;   // cornerP: never repainted by the harness; counts the view's own data-rect paints
                 const auto c = view->getBounds().getTopLeft().translated (0, -1);
                 parent->addChildComponent (startP, parent->getIndexOfChildComponent (view));
                 parent->addChildComponent (endP, parent->getIndexOfChildComponent (view) + 1);
@@ -356,6 +377,12 @@ namespace
                 endP.setBounds (c.x, c.y, 1, 1);
                 startP.setVisible (true);
                 endP.setVisible (true);
+                {
+                    const auto dr = view->getDataRect() + view->getPosition();
+                    parent->addChildComponent (cornerP, parent->getIndexOfChildComponent (view) + 1);
+                    cornerP.setBounds (dr.getRight() - 1, dr.getBottom() - 1, 1, 1);
+                    cornerP.setVisible (true);
+                }
                 const auto m = view->getMapping();
                 juce::Random rnd (5);
                 auto frame = std::make_unique<SpectrumFrame>();
@@ -402,22 +429,161 @@ namespace
                 const auto bw = runLoop (cpuFrames, false, nullptr);
                 const double baseCpu = threadCpuMs() - b0;
                 const double l0 = threadCpuMs();
+                const int corner0 = cornerP.count;
                 const auto lw = runLoop (cpuFrames, true, nullptr);
                 const double loadCpu = threadCpuMs() - l0;
+                const double viewPaintsPerSec = 1000.0 * (cornerP.count - corner0) / lw.first;
                 const double grossPct = 100.0 * loadCpu / lw.first, netPct = 100.0 * (loadCpu - baseCpu) / lw.first;
-                std::printf ("DIRECT2D %dx%d | %s | paints %d | paint %s | CPU gross %.1f %%, net %.1f %% (%.1f s, %.1f paints/s, baseline %.1f %%)\n",
+                const auto drc = view->getDataRect();
+                const bool expectedPaced = investigate::SpectrumMath::pacing::isPaced ((double) drc.getWidth() * drc.getHeight() * scale * scale,
+                                                                                       investigate::SpectrumMath::pacing::countLayers (sc.dual, sc.sec, sc.sc));
+                std::printf ("DIRECT2D %dx%d | %s | paints %d | paint %s | CPU gross %.1f %%, net %.1f %% (%.1f s, %.1f paints/s, baseline %.1f %%) | view data-rect paints/s %.1f | expected paced %d\n",
                              sz[0], sz[1], sc.name, (int) times.size(), fmt (stats (times)).toRawUTF8(), grossPct, netPct, lw.first / 1000.0,
-                             1000.0 * lw.second / lw.first, 100.0 * baseCpu / bw.first);
+                             1000.0 * lw.second / lw.first, 100.0 * baseCpu / bw.first, viewPaintsPerSec, (int) expectedPaced);
                 std::fflush (stdout);
                 parent->removeChildComponent (&startP);
                 parent->removeChildComponent (&endP);
+                parent->removeChildComponent (&cornerP);
                 ed->removeFromDesktop();
             }
         }
         timeEndPeriod (1);
+        setChoice (rig.proc, P::secondary, 1);
     }
 
-    void benchmark (const juce::File& out, int frames, bool doSoftware, bool doD2d)
+    // Transparent probe laid over a region of the editor (above the view in z-order).
+    // Its paint() is called whenever a repaint clip touches the region; it records
+    // the tick, the clip (in the parent's coordinates) and a count.
+    struct Overlay : juce::Component
+    {
+        Overlay() { setInterceptsMouseClicks (false, false); }
+        void paint (juce::Graphics& g) override
+        {
+            stamp = juce::Time::getHighResolutionTicks();
+            clip = g.getClipBounds() + getPosition();
+            ++count;
+        }
+        juce::int64 stamp = 0; int count = 0; juce::Rectangle<int> clip;
+    };
+
+    // Latency from an input call to the first paint that covers the change (T-029, frame pacing).
+    // Frames are fed at 60 Hz (setFrameForTesting, no extra repaints) while the action is issued
+    // at a random phase right after a fed frame, i.e. when a paced repaint is most likely pending.
+    void benchLatency (int trials)
+    {
+        timeBeginPeriod (1);
+        std::printf ("LATENCY: ms from the call (hover / freeze / left click / right click) to the first paint of the view region covering the change; frames fed at 60 Hz.\n");
+        struct Cfg { int w, h; bool dual, sec, sc; int secMode; const char* name; };
+        const Cfg cfgs[] = {
+            { 1280, 720, false, true, false, 1, "1280x720 (a) single + RT max (unpaced reference)" },
+            { 1280, 720, true, true, true, 1, "1280x720 (c) dual + 2 sec + SC (paced by layers)" },
+            { 2560, 1440, false, true, false, 1, "2560x1440 (a) single + RT max (paced by area)" },
+            { 2560, 1440, true, true, true, 1, "2560x1440 (c) dual + 2 sec + SC (paced)" },
+        };
+        Rig rig (true);
+        juce::Random rnd (11);
+        for (auto& c : cfgs)
+        {
+            setChoice (rig.proc, P::secondary, c.secMode);
+            auto ed = std::unique_ptr<InvestigateEditor> (dynamic_cast<InvestigateEditor*> (rig.proc.createEditor()));
+            ed->setSize (c.w, c.h);
+            ed->addToDesktop (0);
+            ed->setVisible (true);
+            pump (400);
+            auto* view = findView (*ed);
+            auto* parent = view->getParentComponent();
+            Overlay over, btnOver;
+            parent->addChildComponent (over, parent->getIndexOfChildComponent (view) + 1);
+            over.setBounds (view->getBounds());
+            over.setVisible (true);
+            auto* fb = findHeaderButton (*ed, ed->getWidth() - 302, 8);
+            auto* btnParent = fb != nullptr ? fb->getParentComponent() : nullptr;
+            if (btnParent != nullptr)
+            {
+                btnParent->addChildComponent (btnOver, btnParent->getIndexOfChildComponent (fb) + 1);
+                btnOver.setBounds (fb->getBounds());
+                btnOver.setVisible (true);
+            }
+            const auto m = view->getMapping();
+            auto frame = std::make_unique<SpectrumFrame>();
+            int t = 0;
+            double nextFeed = juce::Time::getMillisecondCounterHiRes();
+            const auto feedUntil = [&] (double untilMs, const std::function<bool()>& stop)
+            {
+                while (juce::Time::getMillisecondCounterHiRes() < untilMs)
+                {
+                    const double now = juce::Time::getMillisecondCounterHiRes();
+                    if (now >= nextFeed)
+                    {
+                        makeFrame (*frame, m.fLo, m.fHi, t++, c.dual, c.sec, c.sc, rnd);
+                        view->setFrameForTesting (*frame);
+                        nextFeed += 1000.0 / 60.0;
+                        if (nextFeed < now) nextFeed = now + 1000.0 / 60.0;
+                    }
+                    pump (1);
+                    if (stop && stop()) break;
+                }
+            };
+            feedUntil (juce::Time::getMillisecondCounterHiRes() + 1000.0, {});
+
+            const auto resolveMs = [] (juce::int64 t0) { return juce::Time::highResolutionTicksToSeconds (juce::Time::getHighResolutionTicks() - t0) * 1000.0; };
+            std::printf ("%s (view %dx%d)\n", c.name, view->getWidth(), view->getHeight());
+            for (int kind = 0; kind < 4; ++kind)
+            {
+                const char* kindName[] = { "hover move", "freeze toggle", "left click (reset)", "right click (copy)" };
+                std::vector<double> viewMs, btnMs;
+                // The reset toast only exists with an all-time secondary curve (all-time max here).
+                if (kind == 2) { setChoice (rig.proc, P::secondary, 2); feedUntil (juce::Time::getMillisecondCounterHiRes() + 300.0, {}); }
+                int timeouts = 0;
+                for (int trial = 0; trial < trials; ++trial)
+                {
+                    // Align to just after a fed frame, then wait a random 0..16 ms phase.
+                    const double target = nextFeed;
+                    feedUntil (target + 1.0 + rnd.nextFloat() * 15.0, {});
+                    const int c0 = over.count, b0 = btnOver.count;
+                    juce::Point<float> p ((float) (m.x0 + m.w * (trial % 2 == 0 ? 0.35 : 0.62)), (float) (m.y0 + m.h * 0.4));
+                    const auto t0 = juce::Time::getHighResolutionTicks();
+                    if (kind == 0) view->setHoverForTesting (p);
+                    else if (kind == 1 && fb != nullptr) fb->onClick();
+                    else if (kind == 2) clickAt (*view, p, false);
+                    else clickAt (*view, p, true);
+                    double vMs = -1.0, bMs = -1.0;
+                    const double deadline = juce::Time::getMillisecondCounterHiRes() + 150.0;
+                    while (juce::Time::getMillisecondCounterHiRes() < deadline && (vMs < 0.0 || (kind == 1 && bMs < 0.0)))
+                    {
+                        pump (1);
+                        // For hover the paint must cover the new pointer position.
+                        if (vMs < 0.0 && over.count != c0 && (kind != 0 || over.clip.contains (p.toInt())))
+                            vMs = juce::Time::highResolutionTicksToSeconds (over.stamp - t0) * 1000.0;
+                        if (kind == 1 && bMs < 0.0 && btnOver.count != b0)
+                            bMs = juce::Time::highResolutionTicksToSeconds (btnOver.stamp - t0) * 1000.0;
+                    }
+                    (void) resolveMs;
+                    if (vMs < 0.0) ++timeouts; else viewMs.push_back (vMs);
+                    if (bMs >= 0.0) btnMs.push_back (bMs);
+                    if (kind == 1 && fb != nullptr)
+                    {
+                        feedUntil (juce::Time::getMillisecondCounterHiRes() + 120.0, {});
+                        fb->onClick();   // unfreeze
+                    }
+                    feedUntil (juce::Time::getMillisecondCounterHiRes() + 120.0, {});
+                }
+                if (kind == 2) setChoice (rig.proc, P::secondary, c.secMode);
+                const auto sv = stats (viewMs);
+                std::printf ("  %-20s view paint: n %d, median %.1f, p95 %.1f, max %.1f ms, timeouts %d", kindName[kind], (int) viewMs.size(), sv.median, sv.p95, sv.worst, timeouts);
+                if (kind == 1 && ! btnMs.empty()) { const auto sb = stats (btnMs); std::printf (" | button paint: median %.1f, p95 %.1f, max %.1f ms", sb.median, sb.p95, sb.worst); }
+                std::printf ("\n");
+                std::fflush (stdout);
+            }
+            parent->removeChildComponent (&over);
+            if (btnParent != nullptr) btnParent->removeChildComponent (&btnOver);
+            ed->removeFromDesktop();
+        }
+        setChoice (rig.proc, P::secondary, 1);
+        timeEndPeriod (1);
+    }
+
+    void benchmark (const juce::File& out, int frames, bool doSoftware, bool doD2d, double cpuSecondsArg = 12.0, const juce::String& sizesArg = "all", int caseMaskArg = 15)
     {
         // Windows 11 moves a long-running, unfocused console process onto
         // efficiency cores and lowers its clock (EcoQoS "execution speed
@@ -442,7 +608,7 @@ namespace
         std::printf ("DIRECT2D = editor on the desktop; message-thread CPU time per frame (GetThreadTimes over the whole loop) minus an idle baseline.\n");
         if (doD2d)
         {
-            benchD2d (frames, 12.0);
+            benchD2d (frames, cpuSecondsArg, sizesArg, caseMaskArg);
             return;
         }
         const Scenario scenarios[] = {
@@ -504,9 +670,18 @@ int main (int argc, char** argv)
     const int benchFrames = argc > 2 ? juce::String (argv[2]).getIntValue() : 300;
     const juce::String mode = argc > 3 ? juce::String (argv[3]) : juce::String();
 
+    if (mode == "lat")
+    {
+        benchLatency (benchFrames);
+        return 0;
+    }
+
     if (mode == "sw" || mode == "d2d")
     {
-        benchmark (out, benchFrames, mode == "sw", mode == "d2d");
+        benchmark (out, benchFrames, mode == "sw", mode == "d2d",
+                   argc > 4 ? juce::String (argv[4]).getDoubleValue() : 12.0,
+                   argc > 5 ? juce::String (argv[5]) : juce::String ("all"),
+                   argc > 6 ? juce::String (argv[6]).getIntValue() : 15);
         return 0;
     }
 

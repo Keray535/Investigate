@@ -1,0 +1,60 @@
+== pass 1 scale 1.0
+global scale factor 1.00, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 1624x980
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.67 ms, mean 0.90 ms, p95 1.61 ms, worst 2.08 ms | CPU gross 11.5 %, net 10.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 1624x980
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.36 ms, mean 1.21 ms, p95 1.62 ms, worst 1.72 ms | CPU gross 15.1 %, net 14.1 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 1 scale 1.25
+global scale factor 1.25, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 1240x764
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.62 ms, mean 0.67 ms, p95 1.15 ms, worst 1.34 ms | CPU gross 11.4 %, net 10.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 1240x764
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.45 ms, mean 1.28 ms, p95 1.71 ms, worst 1.81 ms | CPU gross 15.9 %, net 14.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 1 scale 1.5
+global scale factor 1.50, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 984x620
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.63 ms, mean 0.66 ms, p95 0.79 ms, worst 1.94 ms | CPU gross 11.4 %, net 10.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 984x620
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.39 ms, mean 1.29 ms, p95 1.68 ms, worst 2.33 ms | CPU gross 15.4 %, net 14.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 1 scale 1.75
+global scale factor 1.75, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 801x517
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.59 ms, mean 0.61 ms, p95 0.73 ms, worst 1.28 ms | CPU gross 14.4 %, net 13.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 801x517
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.38 ms, mean 1.26 ms, p95 1.64 ms, worst 2.22 ms | CPU gross 18.0 %, net 17.0 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 1 scale 2.0
+global scale factor 2.00, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 664x440
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.62 ms, mean 0.63 ms, p95 0.76 ms, worst 0.88 ms | CPU gross 11.2 %, net 10.3 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 664x440
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.46 ms, mean 1.34 ms, p95 1.75 ms, worst 1.86 ms | CPU gross 16.4 %, net 15.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 2 scale 1.0
+global scale factor 1.00, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 1624x980
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.64 ms, mean 0.65 ms, p95 0.78 ms, worst 1.22 ms | CPU gross 11.5 %, net 10.5 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 1624x980
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.38 ms, mean 1.24 ms, p95 1.72 ms, worst 2.01 ms | CPU gross 15.2 %, net 14.2 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 2 scale 1.25
+global scale factor 1.25, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 1240x764
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.62 ms, mean 0.62 ms, p95 0.69 ms, worst 0.76 ms | CPU gross 11.2 %, net 10.2 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 1240x764
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.41 ms, mean 1.27 ms, p95 1.66 ms, worst 1.73 ms | CPU gross 16.3 %, net 15.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 2 scale 1.5
+global scale factor 1.50, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 984x620
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.59 ms, mean 0.66 ms, p95 1.13 ms, worst 2.30 ms | CPU gross 11.4 %, net 10.3 % (12.0 s, 60.0 paints/s, baseline 1.1 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 984x620
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.36 ms, mean 1.28 ms, p95 1.69 ms, worst 2.24 ms | CPU gross 15.9 %, net 14.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 2 scale 1.75
+global scale factor 1.75, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 801x517
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.56 ms, mean 0.58 ms, p95 0.71 ms, worst 0.82 ms | CPU gross 13.1 %, net 12.1 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 801x517
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.38 ms, mean 1.28 ms, p95 1.66 ms, worst 1.87 ms | CPU gross 17.8 %, net 16.7 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+== pass 2 scale 2.0
+global scale factor 2.00, physical window sizes requested: 1
+probe counts start 160 end 160, view 0,44 664x440
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | paint median 0.60 ms, mean 0.61 ms, p95 0.73 ms, worst 0.87 ms | CPU gross 10.9 %, net 9.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 160 end 160, view 0,44 664x440
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | paint median 1.43 ms, mean 1.35 ms, p95 1.75 ms, worst 2.34 ms | CPU gross 16.3 %, net 15.3 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1

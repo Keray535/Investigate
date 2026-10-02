@@ -1,0 +1,15 @@
+SOFTWARE = juce::SoftwareImageType image the size of the editor, clip = data rect, ed->paintEntireComponent.
+SOFTWARE 1280x720 | single, secondary off, no SC | median 3.51 ms, mean 3.51 ms, p95 3.64 ms, worst 3.72 ms
+SOFTWARE 1280x720 | single + RT max (factory default view) | median 4.57 ms, mean 4.57 ms, p95 4.68 ms, worst 4.85 ms
+SOFTWARE 1280x720 | dual + 2 secondaries | median 7.82 ms, mean 7.83 ms, p95 8.02 ms, worst 8.23 ms
+SOFTWARE 1280x720 | single + RT max + SC | median 6.25 ms, mean 6.26 ms, p95 6.43 ms, worst 6.59 ms
+SOFTWARE 1280x720 | dual + 2 secondaries + SC | median 9.42 ms, mean 9.46 ms, p95 9.80 ms, worst 10.05 ms
+SOFTWARE 1280x720 | single + RT max + hover card | median 4.96 ms, mean 5.04 ms, p95 5.22 ms, worst 8.66 ms
+SOFTWARE 1280x720 | dual + 2 secondaries + SC + hover (worst case) | median 9.97 ms, mean 9.99 ms, p95 10.26 ms, worst 10.48 ms
+SOFTWARE 2560x1440 | single, secondary off, no SC | median 10.16 ms, mean 10.26 ms, p95 10.93 ms, worst 13.39 ms
+SOFTWARE 2560x1440 | single + RT max (factory default view) | median 12.13 ms, mean 12.28 ms, p95 13.07 ms, worst 15.34 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries | median 19.20 ms, mean 19.38 ms, p95 21.06 ms, worst 23.31 ms
+SOFTWARE 2560x1440 | single + RT max + SC | median 16.08 ms, mean 16.22 ms, p95 17.72 ms, worst 20.37 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries + SC | median 22.76 ms, mean 22.98 ms, p95 24.72 ms, worst 26.75 ms
+SOFTWARE 2560x1440 | single + RT max + hover card | median 12.50 ms, mean 12.63 ms, p95 13.61 ms, worst 15.73 ms
+SOFTWARE 2560x1440 | dual + 2 secondaries + SC + hover (worst case) | median 23.41 ms, mean 23.58 ms, p95 25.23 ms, worst 28.15 ms

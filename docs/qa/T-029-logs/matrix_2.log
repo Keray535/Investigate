@@ -1,0 +1,26 @@
+EcoQoS throttling disabled (process 1, thread 1), process priority high
+
+== Paint benchmark (300 frames per case, 2048-point animated frame) ==
+SOFTWARE = juce::SoftwareImageType image the size of the editor, clip = data rect, ed->paintEntireComponent.
+DIRECT2D = editor on the desktop; message-thread CPU time per frame (GetThreadTimes over the whole loop) minus an idle baseline.
+DIRECT2D: editor on the desktop (default JUCE renderer), frames paced at 60 Hz, synthetic 2048-point animated frame.
+paint ms = wall time between two probe siblings around SpectrumView (z-order), per painted frame.
+CPU % = message-thread cycle time over the paced loop (gross), minus the same loop without handing frames to the view (net), over >= 12 s.
+global scale factor 1.00, physical window sizes requested: 2
+probe counts start 360 end 360, view 0,44 984x620
+calibrated 2676163 cycles per ms (2.68 GHz)
+DIRECT2D 1280x720 | (a) single + RT max (factory default view) | paints 300 | paint median 0.50 ms, mean 0.51 ms, p95 0.62 ms, worst 0.81 ms | CPU gross 10.1 %, net 9.1 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 360 end 360, view 0,44 984x620
+DIRECT2D 1280x720 | (b) dual + 2 secondaries | paints 300 | paint median 0.66 ms, mean 0.73 ms, p95 1.17 ms, worst 1.36 ms | CPU gross 15.2 %, net 14.1 % (12.0 s, 60.0 paints/s, baseline 1.1 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 360 end 360, view 0,44 984x620
+DIRECT2D 1280x720 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 300 | paint median 1.09 ms, mean 1.09 ms, p95 1.55 ms, worst 1.98 ms | CPU gross 14.5 %, net 13.4 % (12.0 s, 60.0 paints/s, baseline 1.1 %) | view data-rect paints/s 30.0 | expected paced 1
+probe counts start 360 end 360, view 0,44 984x620
+DIRECT2D 1280x720 | (d) single + all-time average + SC | paints 300 | paint median 0.93 ms, mean 0.94 ms, p95 1.07 ms, worst 1.16 ms | CPU gross 12.3 %, net 11.2 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | (a) single + RT max (factory default view) | paints 300 | paint median 0.55 ms, mean 0.35 ms, p95 0.80 ms, worst 1.75 ms | CPU gross 9.1 %, net 8.1 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | (b) dual + 2 secondaries | paints 300 | paint median 0.72 ms, mean 0.42 ms, p95 0.92 ms, worst 1.39 ms | CPU gross 11.4 %, net 10.4 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 300 | paint median 1.52 ms, mean 1.34 ms, p95 1.92 ms, worst 2.42 ms | CPU gross 17.7 %, net 16.7 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1
+probe counts start 360 end 360, view 0,44 2264x1340
+DIRECT2D 2560x1440 | (d) single + all-time average + SC | paints 300 | paint median 1.12 ms, mean 0.64 ms, p95 1.38 ms, worst 1.49 ms | CPU gross 11.2 %, net 10.2 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected paced 1

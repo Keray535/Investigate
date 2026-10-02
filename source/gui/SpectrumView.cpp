@@ -22,6 +22,26 @@ namespace
     // a flat 14 % fill if the paint budget is missed.
     constexpr bool useGradientFill = true;
 
+    // The primary gradient (alpha 0.30 at the top of the data rect to 0.04 at
+    // the bottom) is drawn as this many horizontal bands of flat colour: 66
+    // alpha steps in 8 bits, so two steps per band stays within one step of
+    // the smooth ramp.
+    constexpr int gradientBands = 33;
+
+    // Sprite lists are padded to a multiple of this, so frames reuse a handful
+    // of batch sizes (JUCE caches only eight).
+    constexpr int minFillBatch = 64;
+
+    // Extra pixel columns built beyond the clip on each side.
+    constexpr int columnMargin = 2;
+
+    // Added to the width and height of every fill bar, in physical pixels.
+    constexpr float spriteSlackPx = 0.002f;
+
+    // Vertices closer than this (physical pixels) to the line through their
+    // neighbours are dropped from a stroked path.
+    constexpr float simplifyTolerancePx = 0.04f;
+
     // Safe upper bound for physical pixel columns (2560 wide at up to 6x).
     constexpr int maxColumns = 16384;
 
@@ -57,6 +77,11 @@ SpectrumView::SpectrumView (InvestigateProcessor& processorToView, DisplayContex
 
     for (auto* p : { &pathA, &pathScratch, &fillPath })
         p->preallocateSpace (3 * maxVertices + 16);
+
+    pointY.assign ((size_t) SpectrumFrame::maxPoints, 0.0f);
+    columnTops.assign ((size_t) maxColumns, 0.0f);
+    columnTopPx.assign ((size_t) maxColumns, 0);
+    fillRects.ensureStorageAllocated (2 * maxColumns + 2 * minFillBatch);
 
     // The sidechain legend swatch (ui-spec 5.1 mockup SWATCH.sc), 16 x 10.
     const float w = (float) sp::swatchW, h = (float) sp::swatchH, mid = h * 0.5f;
@@ -179,12 +204,41 @@ void SpectrumView::setFrameForTesting (const SpectrumFrame& newFrame)
     if (hovering)
         updateHover();
 
+    requestFrameRepaint();
+}
+
+bool SpectrumView::isPaced() const noexcept
+{
+    const auto d = getDataRect();
+    const double area = (double) d.getWidth() * (double) d.getHeight() * (double) lastPixelScale * (double) lastPixelScale;
+    const int layers = haveFrame ? SpectrumMath::pacing::countLayers (frame->isDual, frame->hasSecondary, showSidechainNow()) : 0;
+    return SpectrumMath::pacing::isPaced (area, layers);
+}
+
+// A new frame asks for a repaint of the plot. When paced, the request is
+// held back until `pacing::minIntervalMs` after the previous one; the next
+// `pollFrame` (one per vblank) issues it. Settings changes, hover, freeze and
+// clicks do not come through here and repaint at once.
+void SpectrumView::requestFrameRepaint()
+{
+    const double now = juce::Time::getMillisecondCounterHiRes();
+
+    if (isPaced() && now - lastFrameRepaintMs < SpectrumMath::pacing::minIntervalMs)
+    {
+        frameRepaintPending = true;
+        return;
+    }
+
+    frameRepaintPending = false;
+    lastFrameRepaintMs = now;
+    lastOverlay = hoverOverlayBounds();
     repaint (getDataRect());
 }
 
 void SpectrumView::pollFrame()
 {
-    bool needsPaint = false;
+    bool needsPaint = false;     // a change the user made or a setting: repaint at once
+    bool newFrame = false;       // data only: may be paced
 
     const auto& range = displayContext.effective();
 
@@ -222,7 +276,7 @@ void SpectrumView::pollFrame()
         if (hovering)
             updateHover();
 
-        needsPaint = true;
+        newFrame = true;
     }
 
     // Toasts repaint only their own bounds, and only while fading (ui-spec 5.6).
@@ -248,8 +302,14 @@ void SpectrumView::pollFrame()
 
     if (needsPaint)
     {
+        frameRepaintPending = false;
+        lastFrameRepaintMs = juce::Time::getMillisecondCounterHiRes();
         lastOverlay = hoverOverlayBounds();
         repaint (getDataRect());
+    }
+    else if (newFrame || frameRepaintPending)
+    {
+        requestFrameRepaint();
     }
 }
 
@@ -644,44 +704,86 @@ void SpectrumView::renderCache (float scale, const SpectrumMath::Mapping& m)
     }
 }
 
-void SpectrumView::tracePolyline (juce::Path& line, juce::Path* fill, float bottomY, int numCols) const
+void SpectrumView::tracePolyline (juce::Path& line, juce::Path* fill, float bottomY, int numCols, float pixelScale,
+                                  float tolerancePx, const TraceRange& range) const
 {
     line.clear();
 
     if (fill != nullptr)
         fill->clear();
 
-    bool started = false;
+    // Only vertices from the last one before the first wanted column up to the
+    // first one after the last wanted column are added to the path. Every
+    // vertex is still run through the simplifier, so the geometry is the same
+    // as a full-width trace.
+    const float xLo = range.left + (float) range.firstCol / pixelScale;
+    const float xHi = range.left + (float) (range.lastCol + 1) / pixelScale;
+
+    bool anyInput = false, pathStarted = false, haveBefore = false, done = false;
     float prevY = 0.0f, lastX = 0.0f;
 
-    auto add = [&] (float x, float y)
+    // Dense points on a smooth curve are collinear to a fraction of a pixel;
+    // dropping them cuts the vertices Direct2D has to widen and tessellate.
+    SpectrumMath::PolylineSimplifier simplifier (tolerancePx / pixelScale);
+    SpectrumMath::PolylineSimplifier::Vertex out, before, lastOut;
+
+    auto emit = [&]
     {
-        if (! started)
+        if (! pathStarted)
         {
-            line.startNewSubPath (x, y);
+            if (out.x < xLo)
+            {
+                before = out;
+                haveBefore = true;
+                return;
+            }
+
+            const auto first = haveBefore ? before : out;
+            line.startNewSubPath (first.x, first.y);
 
             if (fill != nullptr)
             {
-                fill->startNewSubPath (x, bottomY);
-                fill->lineTo (x, y);
+                fill->startNewSubPath (first.x, bottomY);
+                fill->lineTo (first.x, first.y);
             }
 
-            started = true;
+            if (haveBefore)
+            {
+                line.lineTo (out.x, out.y);
+
+                if (fill != nullptr)
+                    fill->lineTo (out.x, out.y);
+            }
+
+            pathStarted = true;
         }
         else
         {
-            x = std::max (x, lastX);
-            line.lineTo (x, y);
+            line.lineTo (out.x, out.y);
 
             if (fill != nullptr)
-                fill->lineTo (x, y);
+                fill->lineTo (out.x, out.y);
         }
+
+        lastOut = out;
+        done = out.x > xHi;
+    };
+
+    auto add = [&] (float x, float y)
+    {
+        if (anyInput)
+            x = std::max (x, lastX);
+
+        anyInput = true;
+
+        if (simplifier.add (x, y, out))
+            emit();
 
         lastX = x;
         prevY = y;
     };
 
-    for (int c = 0; c < numCols; ++c)
+    for (int c = 0; c < numCols && ! done; ++c)
     {
         const auto& col = columns[(size_t) c];
 
@@ -696,8 +798,8 @@ void SpectrumView::tracePolyline (juce::Path& line, juce::Path* fill, float bott
 
         // Keep both extremes, ordered so the line moves toward the next
         // column without doubling back (ui-spec 5.1 curve geometry).
-        const bool topFirst = ! started ? col.xTop <= col.xBottom
-                                        : std::abs (prevY - col.yTop) <= std::abs (prevY - col.yBottom);
+        const bool topFirst = ! anyInput ? col.xTop <= col.xBottom
+                                         : std::abs (prevY - col.yTop) <= std::abs (prevY - col.yBottom);
 
         if (topFirst)
         {
@@ -711,10 +813,168 @@ void SpectrumView::tracePolyline (juce::Path& line, juce::Path* fill, float bott
         }
     }
 
-    if (fill != nullptr && started)
+    if (! done && simplifier.finish (out))
+        emit();
+
+    if (fill != nullptr && pathStarted)
     {
-        fill->lineTo (lastX, bottomY);
+        fill->lineTo (lastOut.x, bottomY);
         fill->closeSubPath();
+    }
+}
+
+// Fills below a curve as flat-colour rectangles, one per run of physical
+// pixel columns. Direct2D tessellates a filled polygon of about 2000 jagged
+// vertices on the CPU (roughly 3 ms a frame at 2560 x 1440), but draws a list
+// of axis-aligned rectangles as one GPU sprite batch. The bar tops follow the
+// curve's silhouette at pixel resolution, which the curve's stroke covers.
+void SpectrumView::flushFillRects (juce::Graphics& g, juce::Colour colour)
+{
+    const int count = fillRects.getNumRectangles();
+
+    if (count == 0)
+        return;
+
+    // JUCE draws a list as sprite batches of power-of-two sizes and keeps only
+    // eight batch objects, so pad the count to a multiple of the smallest batch
+    // with rectangles far outside the clip: every frame then uses the same few
+    // sizes, with at most `minFillBatch - 1` wasted sprites.
+    const int target = std::max (minFillBatch, (count + minFillBatch - 1) / minFillBatch * minFillBatch);
+
+    for (int i = count; i < target; ++i)
+        fillRects.addWithoutMerging ({ -1000.0f, -1000.0f, 2.0f, 2.0f });
+
+    g.setColour (colour);
+    g.fillRectList (fillRects);
+    fillRects.clear();
+}
+
+void SpectrumView::fillUnderCurve (juce::Graphics& g, const std::array<float, SpectrumFrame::maxPoints>& curve,
+                                   const SpectrumMath::Mapping& m, int numPoints, float pixelScale, int numCols,
+                                   const TraceRange& range, juce::Colour colour, float flatAlpha, bool gradient)
+{
+    const int firstCol = range.firstCol, lastCol = range.lastCol;
+
+    for (int i = 0; i < numPoints; ++i)
+        pointY[(size_t) i] = (float) m.dbToYClamped ((double) curve[(size_t) i]);
+
+    SpectrumMath::computeColumnTops (pointX.data(), pointY.data(), numPoints, (float) m.x0, (float) (m.x0 + m.w),
+                                     pixelScale, columnTops.data(), numCols);
+
+    // Everything below is in whole physical pixels, so the rectangles abut
+    // exactly and no seams or half-covered rows appear.
+    const int originPx = (int) std::lround (m.x0 * (double) pixelScale);
+    const int gradTopPx = (int) std::lround (m.y0 * (double) pixelScale);
+    const int bottomPx = (int) std::lround ((m.y0 + m.h) * (double) pixelScale);
+    int* tops = columnTopPx.data();
+    int minTop = bottomPx, maxTop = gradTopPx;
+
+    // The extremes cover every column, not just the ones being drawn, so a
+    // partial repaint lays out the same bands as a full one and leaves no seam.
+    for (int c = 0; c < numCols; ++c)
+    {
+        const float t = columnTops[(size_t) c];
+        tops[c] = std::isfinite (t) ? std::clamp ((int) std::lround ((double) t * (double) pixelScale), gradTopPx, bottomPx)
+                                    : bottomPx;
+        minTop = std::min (minTop, tops[c]);
+        maxTop = std::max (maxTop, tops[c]);
+    }
+
+    if (minTop >= bottomPx)
+        return;
+
+    const float inv = 1.0f / pixelScale;
+
+    // Bars are a hair larger than whole pixels: JUCE aborts the sprite batch for
+    // any rectangle under 1.0 device pixel, and scaling by 1/scale and back can
+    // land a 1-pixel bar at 0.9995 (about one in eight at 125 % or 150 %).
+    auto addBar = [&] (int c0, int c1, int y0, int y1)
+    {
+        fillRects.addWithoutMerging ({ (float) (originPx + c0) * inv, (float) y0 * inv,
+                                       ((float) (c1 - c0) + spriteSlackPx) * inv, ((float) (y1 - y0) + spriteSlackPx) * inv });
+    };
+
+    if (! gradient)
+    {
+        for (int c = firstCol; c <= lastCol;)
+        {
+            const int t = tops[c];
+            int e = c + 1;
+
+            while (e <= lastCol && tops[e] == t)
+                ++e;
+
+            if (bottomPx - t >= 1)
+                addBar (c, e, t, bottomPx);
+
+            c = e;
+        }
+
+        flushFillRects (g, colour.withAlpha (flatAlpha));
+        return;
+    }
+
+    // Below the lowest column top every column is covered: one rectangle with
+    // the exact gradient. Above it, bars of flat colour per gradient band.
+    if (bottomPx - maxTop >= 1)
+    {
+        g.setFillType (primaryFill);
+        g.fillRect ((float) (originPx + firstCol) * inv, (float) maxTop * inv,
+                    (float) (lastCol + 1 - firstCol) * inv, (float) (bottomPx - maxTop) * inv);
+    }
+
+    const int height = bottomPx - gradTopPx;
+    const int bands = std::min (gradientBands, height);
+    const int endCol = lastCol + 1;
+
+    for (int k = 0; k < bands; ++k)
+    {
+        const int e0 = gradTopPx + height * k / bands;
+        const int e1 = gradTopPx + height * (k + 1) / bands;
+        const int eb = std::min (e1, maxTop);
+
+        if (e1 <= minTop || eb <= e0)
+            continue;
+
+        int runStart = -1;
+
+        for (int c = firstCol; c < endCol; ++c)
+        {
+            const int t = tops[c];
+
+            if (t <= e0)
+            {
+                if (runStart < 0)
+                    runStart = c;
+
+                continue;
+            }
+
+            if (runStart >= 0)
+            {
+                addBar (runStart, c, e0, eb);
+                runStart = -1;
+            }
+
+            if (t < eb)
+            {
+                int e = c + 1;
+
+                while (e < endCol && tops[e] == t)
+                    ++e;
+
+                addBar (c, e, t, eb);
+                c = e - 1;
+            }
+        }
+
+        if (runStart >= 0)
+            addBar (runStart, endCol, e0, eb);
+
+        const float centre = (float) (e0 + e1) * 0.5f - (float) gradTopPx;
+        const float alpha = tk::alpha::primaryFillTop
+                          + (tk::alpha::primaryFillBottom - tk::alpha::primaryFillTop) * centre / (float) height;
+        flushFillRects (g, colour.withAlpha (alpha));
     }
 }
 
@@ -734,8 +994,42 @@ void SpectrumView::paintCurves (juce::Graphics& g, float pixelScale)
         pointX[(size_t) i] = (float) (m.x0 + std::log ((double) freq[i] / m.fLo) * xScale);
 
     const int numCols = std::min ((int) std::ceil (m.w * (double) pixelScale), maxColumns);
-    const float bottom = (float) (m.y0 + m.h);
     SpectrumMath::Column* cols = columns.data();
+
+    // Only the columns under the clip are built and handed to Direct2D (a hover
+    // or toast repaint covers a few percent of the plot); the margin keeps the
+    // segments that cross the clip edge and the stroke's half-width.
+    const auto clip = g.getClipBounds().getIntersection (getDataRect());
+
+    if (clip.isEmpty() || numCols <= 0)
+        return;
+
+    const int firstCol = std::clamp ((int) std::floor (((double) clip.getX() - m.x0) * (double) pixelScale) - columnMargin, 0, numCols - 1);
+    const int lastCol = std::clamp ((int) std::ceil (((double) clip.getRight() - m.x0) * (double) pixelScale) + columnMargin, 0, numCols - 1);
+    const TraceRange range { (float) m.x0, firstCol, lastCol };
+
+    // The software renderer is slow with thousands of rectangles and fine with
+    // one polygon, and Direct2D is the other way round (see fillUnderCurve).
+    // It also keeps the exact vertices, so software images are unchanged.
+    const bool software = dynamic_cast<const juce::LowLevelGraphicsSoftwareRenderer*> (&g.getInternalContext()) != nullptr;
+    const float tolerancePx = software ? 0.0f : simplifyTolerancePx;
+    const float bottom = (float) (m.y0 + m.h);
+
+    auto fillCurve = [&] (const std::array<float, SpectrumFrame::maxPoints>& curve, juce::Colour colour, float flatAlpha, bool gradient)
+    {
+        if (! software)
+        {
+            fillUnderCurve (g, curve, m, n, pixelScale, numCols, range, colour, flatAlpha, gradient);
+            return;
+        }
+
+        if (gradient)
+            g.setFillType (primaryFill);
+        else
+            g.setColour (colour.withAlpha (flatAlpha));
+
+        g.fillPath (fillPath);
+    };
 
     auto reduce = [&] (const std::array<float, SpectrumFrame::maxPoints>& curve)
     {
@@ -749,36 +1043,29 @@ void SpectrumView::paintCurves (juce::Graphics& g, float pixelScale)
     if (showSidechainNow())
     {
         reduce (frame->sidechainDb);
-        tracePolyline (pathScratch, &fillPath, bottom, numCols);
-        g.setColour (tk::colour::sidechain.withAlpha (tk::alpha::sidechainFill));
-        g.fillPath (fillPath);
+        tracePolyline (pathScratch, software ? &fillPath : nullptr, bottom, numCols, pixelScale, tolerancePx, range);
+        fillCurve (frame->sidechainDb, tk::colour::sidechain, tk::alpha::sidechainFill, false);
         g.setColour (tk::colour::sidechain.withAlpha (tk::alpha::sidechainStroke));
         g.strokePath (pathScratch, thin);
     }
 
     // 2: primary A fill.
     reduce (frame->primaryDb);
-    tracePolyline (pathA, &fillPath, bottom, numCols);
-
-    if constexpr (useGradientFill)
-        g.setFillType (primaryFill);
-    else
-        g.setColour (tk::colour::primaryA.withAlpha (sp::primaryFillFlat));
-
-    g.fillPath (fillPath);
+    tracePolyline (pathA, software ? &fillPath : nullptr, bottom, numCols, pixelScale, tolerancePx, range);
+    fillCurve (frame->primaryDb, tk::colour::primaryA, sp::primaryFillFlat, useGradientFill);
 
     // 3 and 4: secondaries, opaque and thin.
     if (frame->hasSecondary)
     {
         reduce (frame->secondaryDb);
-        tracePolyline (pathScratch, nullptr, bottom, numCols);
+        tracePolyline (pathScratch, nullptr, bottom, numCols, pixelScale, tolerancePx, range);
         g.setColour (tk::colour::secondaryA);
         g.strokePath (pathScratch, thin);
 
         if (frame->isDual)
         {
             reduce (frame->secondaryBDb);
-            tracePolyline (pathScratch, nullptr, bottom, numCols);
+            tracePolyline (pathScratch, nullptr, bottom, numCols, pixelScale, tolerancePx, range);
             g.setColour (tk::colour::secondaryB);
             g.strokePath (pathScratch, thin);
         }
@@ -788,7 +1075,7 @@ void SpectrumView::paintCurves (juce::Graphics& g, float pixelScale)
     if (frame->isDual)
     {
         reduce (frame->primaryBDb);
-        tracePolyline (pathScratch, nullptr, bottom, numCols);
+        tracePolyline (pathScratch, nullptr, bottom, numCols, pixelScale, tolerancePx, range);
         g.setColour (tk::colour::primaryB);
         g.strokePath (pathScratch, thick);
     }
@@ -993,6 +1280,7 @@ void SpectrumView::paintToasts (juce::Graphics& g)
 void SpectrumView::paint (juce::Graphics& g)
 {
     const float scale = std::max (0.01f, (float) g.getInternalContext().getPhysicalPixelScaleFactor());
+    lastPixelScale = scale;
     rebuildCacheIfNeeded (scale);
 
     g.drawImageTransformed (cache, juce::AffineTransform::scale (1.0f / scale));

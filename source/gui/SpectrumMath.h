@@ -327,4 +327,179 @@ inline void reduceToColumns (const float* xs, const float* db, int n, const Mapp
     }
 }
 
+/** For each physical pixel column, the topmost (smallest) y reached by the
+    polyline through the points, so a fill drawn as one bar per column from
+    that y down to the baseline lies under the same silhouette as the polygon
+    under the polyline and stays hidden beneath the curve's stroke.
+
+    `xs` and `ys` are the point positions (x ascending, the display grid is
+    log-spaced); only segments with both ends inside [left, right] count, as
+    in `reduceToColumns`. Columns the polyline never touches get +infinity.
+    `tops` must hold `numCols` entries. O(points + columns). */
+inline void computeColumnTops (const float* xs, const float* ys, int n, float left, float right,
+                               float pixelsPerUnit, float* tops, int numCols) noexcept
+{
+    constexpr float none = std::numeric_limits<float>::infinity();
+
+    for (int c = 0; c < numCols; ++c)
+        tops[c] = none;
+
+    if (numCols <= 0 || n < 2)
+        return;
+
+    const float colWidth = 1.0f / pixelsPerUnit;
+
+    for (int i = 0; i + 1 < n; ++i)
+    {
+        float xa = xs[i], ya = ys[i], xb = xs[i + 1], yb = ys[i + 1];
+
+        if (xb < xa)
+        {
+            std::swap (xa, xb);
+            std::swap (ya, yb);
+        }
+
+        if (xa < left || xb > right)
+            continue;
+
+        const int c0 = std::clamp ((int) ((xa - left) * pixelsPerUnit), 0, numCols - 1);
+        const int c1 = std::clamp ((int) ((xb - left) * pixelsPerUnit), 0, numCols - 1);
+
+        if (c0 == c1 || xb <= xa)
+        {
+            for (int c = c0; c <= c1; ++c)
+                tops[c] = std::min ({ tops[c], ya, yb });
+
+            continue;
+        }
+
+        const float slope = (yb - ya) / (xb - xa);
+
+        for (int c = c0; c <= c1; ++c)
+        {
+            const float colL = left + (float) c * colWidth;
+            const float x0 = std::max (xa, colL);
+            const float x1 = std::min (xb, colL + colWidth);
+            const float y0 = ya + slope * (x0 - xa);
+            const float y1 = ya + slope * (x1 - xa);
+            tops[c] = std::min ({ tops[c], y0, y1 });
+        }
+    }
+}
+
+/** Streaming polyline simplifier (Reumann-Witkam strip). Feed vertices in
+    order; it emits a subset such that every dropped vertex lies within
+    `tolerance` of the line through the emitted neighbours (twice that in the
+    worst case), and never drops a vertex that turns back along the line.
+    Collinear runs, which dense points on a smooth curve form, collapse to
+    their end points; a jagged curve passes through unchanged. At most one
+    vertex is emitted per `add`, and one more from `finish`. */
+class PolylineSimplifier
+{
+public:
+    struct Vertex { float x = 0.0f, y = 0.0f; };
+
+    explicit PolylineSimplifier (float toleranceToUse) noexcept : tolerance (toleranceToUse) {}
+
+    /** Returns true and sets `out` if a vertex is to be emitted. */
+    bool add (float x, float y, Vertex& out) noexcept
+    {
+        if (count == 0)
+        {
+            anchor = { x, y };
+            count = 1;
+            out = anchor;
+            return true;
+        }
+
+        if (count == 1)
+        {
+            startStrip ({ x, y });
+            return false;
+        }
+
+        const float rx = x - anchor.x, ry = y - anchor.y;
+        const float along = rx * dirX + ry * dirY;
+        const float across = std::abs (rx * dirY - ry * dirX);
+
+        if (across <= tolerance && along >= pendingAlong - tolerance)
+        {
+            pending = { x, y };
+            pendingAlong = std::max (pendingAlong, along);
+            return false;
+        }
+
+        out = pending;
+        anchor = pending;
+        startStrip ({ x, y });
+        return true;
+    }
+
+    /** Emits the final pending vertex, if any. */
+    bool finish (Vertex& out) noexcept
+    {
+        if (count != 2)
+            return false;
+
+        out = pending;
+        count = 1;
+        anchor = pending;
+        return true;
+    }
+
+private:
+    void startStrip (Vertex p) noexcept
+    {
+        const float rx = p.x - anchor.x, ry = p.y - anchor.y;
+        const float len = std::sqrt (rx * rx + ry * ry);
+
+        if (len < 1.0e-6f)
+        {
+            count = 1;
+            return;
+        }
+
+        pending = p;
+        pendingAlong = len;
+        dirX = rx / len;
+        dirY = ry / len;
+        count = 2;
+    }
+
+    float tolerance;
+    int count = 0;   // 0: nothing yet, 1: anchor only, 2: anchor and a pending vertex
+    Vertex anchor, pending;
+    float dirX = 0.0f, dirY = 0.0f, pendingAlong = 0.0f;
+};
+
+//==============================================================================
+/** Frame pacing (T-029). Direct2D's message-thread cost per frame grows with
+    the repainted physical area and with the number of curve layers; above
+    either limit the curves repaint at 30 fps instead of every vblank.
+    Measured (Release, Direct2D, i7-12700H, new frame every 60 Hz vblank): the
+    plot needs about 17 to 20 % of a core at 1280 x 720 with all seven layers
+    and 22 to 25 % at 2560 x 1440, against gates of 18 % and 20 %. */
+namespace pacing
+{
+    /** Physical pixels of the data rect above which frames are paced. */
+    constexpr double minPlotAreaPx = 2.0e6;
+
+    /** Layer count at which frames are paced at any size. */
+    constexpr int minLayerCount = 7;
+
+    constexpr double minIntervalMs = 30.0;
+
+    /** Primary A stroke and fill, primary B stroke (dual), one or two
+        secondary strokes, sidechain stroke and fill. */
+    constexpr int countLayers (bool dual, bool secondary, bool sidechain) noexcept
+    {
+        return 2 + (dual ? 1 : 0) + (secondary ? (dual ? 2 : 1) : 0) + (sidechain ? 2 : 0);
+    }
+
+    constexpr bool isPaced (double plotAreaPx, int layerCount) noexcept
+    {
+        return plotAreaPx > minPlotAreaPx || layerCount >= minLayerCount;
+    }
+}
+
 } // namespace investigate::SpectrumMath

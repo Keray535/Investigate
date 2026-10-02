@@ -31,6 +31,14 @@ class InvestigateLookAndFeel;
     The component covers exactly the plot region; `getDataRect()` is the
     plotted area in its own coordinates.
 
+    Rendering (T-029). Under Direct2D the cost of a frame is mostly work done
+    after `paint()` returns, so `paint()` is shaped around what Direct2D does
+    cheaply: fills are lists of axis-aligned rectangles (a GPU sprite batch),
+    not polygons; strokes drop vertices that lie within 0.04 physical pixels of
+    a straight line; only the pixel columns under the clip are traced. Frames
+    are paced to 30 fps above a plot size or layer count (`SpectrumMath::pacing`).
+    The software renderer keeps the original polygon fills and exact vertices.
+
     Message-thread only. No allocation in `paint()` or `pollFrame()` after the
     first frame beyond what JUCE's own rasteriser and text layout do
     internally: paths, column and point buffers are reused, and the hover
@@ -125,7 +133,6 @@ private:
 
     void rebuildCacheIfNeeded (float scale);
     void renderCache (float scale, const SpectrumMath::Mapping& mapping);
-    void rebuildGradient();
 
     bool showSidechainNow() const noexcept;
     void updateLegend();
@@ -135,7 +142,21 @@ private:
     void paintBadge (juce::Graphics&);
     void paintToasts (juce::Graphics&);
     void drawSwatch (juce::Graphics&, Swatch, int x, int y, float alpha) const;
-    void tracePolyline (juce::Path& line, juce::Path* fill, float bottomY, int numCols) const;
+    void rebuildGradient();
+    bool isPaced() const noexcept;
+    void requestFrameRepaint();
+    struct TraceRange
+    {
+        float left = 0.0f;       // x of column 0
+        int firstCol = 0, lastCol = 0;
+    };
+
+    void tracePolyline (juce::Path& line, juce::Path* fill, float bottomY, int numCols, float pixelScale,
+                        float tolerancePx, const TraceRange&) const;
+    void fillUnderCurve (juce::Graphics&, const std::array<float, SpectrumFrame::maxPoints>& curve,
+                         const SpectrumMath::Mapping&, int numPoints, float pixelScale, int numCols,
+                         const TraceRange&, juce::Colour colour, float flatAlpha, bool gradient);
+    void flushFillRects (juce::Graphics&, juce::Colour);
 
     void updateHover();
     void setHoverFromPosition (juce::Point<float> position);
@@ -169,9 +190,11 @@ private:
     // Reused buffers (sized once).
     std::vector<float> pointX;
     std::vector<SpectrumMath::Column> columns;
-    juce::Path pathA, pathScratch, fillPath, scSwatchPath, scSwatchFill;
+    std::vector<float> pointY, columnTops;
+    std::vector<int> columnTopPx;
+    juce::RectangleList<float> fillRects;
     juce::FillType primaryFill;
-    bool gradientValid = false;
+    juce::Path pathA, pathScratch, fillPath, scSwatchPath, scSwatchFill;
 
     // Static layer: background, grid and labels.
     struct CacheKey
@@ -208,6 +231,14 @@ private:
     bool legendDimmed = false;
     juce::String hintText;
     float hintTextW = 0.0f;
+
+    // Frame pacing (ui-spec 12 fallback, T-029; see `SpectrumMath::pacing`):
+    // when paced, new frames repaint the plot at most every `minIntervalMs`.
+    // The newest frame is always the one painted; only the repaint request is
+    // deferred.
+    float lastPixelScale = 1.0f;
+    double lastFrameRepaintMs = 0.0;
+    bool frameRepaintPending = false;
 
     // Interaction
     bool leftDown = false;

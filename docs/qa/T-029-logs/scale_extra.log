@@ -1,0 +1,22 @@
+== scale 1.1
+probe counts start 160 end 160, view 0,44 1449x882
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | CPU gross 15.9 %, net 14.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+== scale 1.7
+probe counts start 160 end 160, view 0,44 833x535
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | CPU gross 13.8 %, net 12.7 % (12.0 s, 60.0 paints/s, baseline 1.1 %) | view data-rect paints/s 60.0 | expected paced 0
+== scale 1.8
+probe counts start 160 end 160, view 0,44 771x500
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | CPU gross 12.8 %, net 11.8 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+== scale 1.9
+probe counts start 160 end 160, view 0,44 715x468
+DIRECT2D 1920x1080 | (a) single + RT max (factory default view) | paints 100 | CPU gross 12.8 %, net 11.8 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 60.0 | expected paced 0
+DIRECT2D 1920x1080 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | CPU gross 19.0 %, net 17.9 % (12.0 s, 60.0 paints/s, baseline 1.0 %) | view data-rect paints/s 30.0 | expected pa
+scale 1.1
+DIRECT2D 1280x720 | (a) single + RT max (factory default view) | paints 100 | CPU gross 10.2 %, net 9.2 % 60.0 paints/s, paced 0
+DIRECT2D 1280x720 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | CPU gross 14.5 %, net 13.5 % 60.0 paints/s, paced 1
+scale 1.0
+DIRECT2D 1280x720 | (a) single + RT max (factory default view) | paints 100 | CPU gross 11.3 %, net 10.2 % 60.0 paints/s, paced 0
+DIRECT2D 1280x720 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | CPU gross 14.6 %, net 13.5 % 60.0 paints/s, paced 1
+scale 1.1
+DIRECT2D 1280x720 | (a) single + RT max (factory default view) | paints 100 | CPU gross 9.9 %, net 8.9 % 60.0 paints/s, paced 0
+DIRECT2D 1280x720 | (c) dual + 2 secondaries + SC + hover (worst case) | paints 100 | CPU gross 14.0 %, net 13.0 % 60.0 paints/s, paced 1

@@ -36,6 +36,11 @@ The panel applies the `meterScale` display offsets and wires up the statistics r
 - **Silence.** "−inf" and silent values are formatted as the spec says. No NaN is ever shown.
 - **Mono input.** When `isMono` is set, the panel shows a single level bar and dims the correlation meter, as the spec defines.
 - **Math helpers.** Put the scale-mapping and formatting functions in `source/gui/MeterMath.h`, so they are unit-testable without a GUI.
+- **CPU headroom.** T-029 left the spectrum at 14.1 % (1280×720) and 16.8 % (2560×1440) against the 25 % whole-editor budget. The spectrum repaints at 30 fps in its paced cases (see the T-029 log), so a meter that repaints at 60 fps adds a window present (about 4 to 6 % of a core) on the other vblanks. Follow the T-029 rendering rules, especially rule 4 (repaint a bar only when its physical-pixel value changes) and rule 5 (align with the spectrum's repaints where the spec's update rates allow it).
+
+## Carry-over from T-029 (same owner and files)
+1. **O-1, clip-edge seam.** In `SpectrumView`, `fillUnderCurve` computes `minTop` and `maxTop` over the clipped columns only, so a hover or toast repaint can leave a 1-level seam at the clip edge. Compute them over all columns (the tops array is already full width), so a clip-limited paint is bit-identical to the full paint. unit-tester then un-hides the `[strict]` test "SpectrumView: clip-limited paint is bit-identical to the full paint" and it must pass.
+2. **O-A/O-2, fractional display scaling.** At 1920×1080, CPU rises by 2 to 4.5 points at 110 % and 175 % Windows scaling, but not at 125 %, 150 % or 200 %; case (c) reached 17.9 % at 110 %. A suspected cause is sprite-batch rectangles whose transformed width falls just below 1.0 px, which makes JUCE fall back from the sprite path (`juce_DirectX_windows.cpp`, around line 541). Try the small width slack (about 0.002 px) suggested in `docs/qa/T-029-unit.md` O-2, and log the before and after numbers. Keep the change only if it lowers the elevated scales and leaves the rest unchanged.
 
 ## Acceptance criteria
 - [ ] Unit tests of `MeterMath`:
@@ -49,7 +54,14 @@ The panel applies the `meterScale` display offsets and wires up the statistics r
 - [ ] The rendering of each meter scale mode matches the spec. Screenshots are attached to `docs/qa/T-013-validation.md`.
 - [ ] Allocation (roadmap Decisions 2026-10-03): 0 allocations by Investigate code after the first frame in the bar, correlation and ballistics paths, checked by an allocation-counting test. Text readouts rebuild their strings only when the displayed text can change (at most 10 Hz, spec §12), with ≤ 20 allocations per frame. Allocations inside JUCE's own text layout are excluded.
 - [ ] Paint cost (roadmap Decisions 2026-10-03): with the editor in a real on-screen Direct2D window and meters animating, `MeterPanel` paint adds ≤ 1 ms p95 at 1280×720 and 2560×1440.
-- [ ] Whole-editor message-thread CPU (spectrum and meters both animating, the T-029 case matrix, net, at least 12 s) is ≤ 25 % of one core at both 1280×720 and 2560×1440.
+- [ ] Whole-editor message-thread CPU (spectrum and meters both animating, the T-029 case matrix, net, at least 12 s, median of 3 runs) is ≤ 25 % of one core at both 1280×720 and 2560×1440 at 100 % scaling, and at 1920×1080 at 110 %, 125 % and 150 % scaling.
+- [ ] Carry-over 1: the `[strict]` clip-limited paint test is un-hidden and passes. Carry-over 2: the before and after numbers at the fractional scales are in the log.
+- [ ] No regression in T-012 and T-029: the 92 spectrum harness checks pass, and the spectrum screenshots match the T-029 set apart from the O-1 fix.
 - [ ] Warning-clean at `/W4`. `docs/qa/T-013-unit.md` and `docs/qa/T-013-validation.md` report PASS.
+
+## QA split
+- **unit-tester** writes `docs/qa/T-013-unit.md`: the `MeterMath` tests (scales, the AES17 offset, formatting of −inf, −0.04 and +0.05), ballistics and clip-latch logic, the allocation tests for the bar, correlation and ballistics paths and for text, the un-hidden `[strict]` SpectrumView test, the design-token grep audit for the new code, and the full suite in Debug and Release.
+- **plugin-validator** writes `docs/qa/T-013-validation.md`: the processor-driven readouts (−6 dBFS sine, −23 LUFS, clip counts and reset, headroom, balance, correlation, mono layout), screenshots of every meter-scale mode and of the mono layout, the meter paint cost, the whole-editor CPU matrix (extend `spectrum_check` or add a meter check in `tools/render-harness/`), the T-012 regression re-run, and pluginval at strictness 10.
+- Coders never edit `docs/qa/`. Only the testers write reports and verdicts.
 
 ## Log
