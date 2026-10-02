@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.22)
 
+# Refuse in-source builds: they litter the repository with generated files.
+# CMake has already written CMakeCache.txt and CMakeFiles/ by the time this
+# runs, so the message tells the user to delete them.
+get_filename_component(_inv_src "${CMAKE_SOURCE_DIR}" REALPATH)
+get_filename_component(_inv_bin "${CMAKE_BINARY_DIR}" REALPATH)
+if(_inv_src STREQUAL _inv_bin)
+    message(FATAL_ERROR
+        "In-source builds are not supported. Configure with 'cmake --preset <name>' "
+        "(for example windows-msvc) or 'cmake -S . -B build'. Delete the CMakeCache.txt "
+        "file and CMakeFiles/ directory that this attempt just created in ${CMAKE_SOURCE_DIR}.")
+endif()
+
 project(Investigate VERSION 0.1.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)

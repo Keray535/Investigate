@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3
 - Status: TODO
-- Depends on: T-009, T-011, T-029
+- Depends on: T-009, T-011, T-029, T-030
 
 ## Goal
 Implement `MeterPanel`, which shows:

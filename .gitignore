@@ -36,3 +36,13 @@ Thumbs.db
 # Claude Code agent configuration (local only)
 CLAUDE.md
 .claude/
+
+# Accidental in-source CMake outputs (see the guard in CMakeLists.txt)
+CTestTestfile.cmake
+cmake_install.cmake
+*_include.cmake
+Investigate_artefacts/
+juce_binarydata_*/
+vst3_helpers/
+x64/
+*.dir/
