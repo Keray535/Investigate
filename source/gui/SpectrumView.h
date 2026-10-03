@@ -60,6 +60,13 @@ public:
         changes, advances the toasts, and repaints only what changed. */
     void pollFrame();
 
+    /** True when new frames repaint at most every 30 ms (T-029 pacing), and
+        whether the last `pollFrame()` asked for a curve repaint. The meter
+        panel aligns its own repaints with these (T-029 rule 5), so both share
+        one window present. */
+    bool isFramePaced() const noexcept { return isPaced(); }
+    bool requestedRepaintInLastPoll() const noexcept { return pollRequestedRepaint; }
+
     /** The plotted area inside the gutters, in this component's coordinates. */
     juce::Rectangle<int> getDataRect() const noexcept;
 
@@ -75,6 +82,10 @@ public:
     /** Places the hover pointer at a component-local position, as a mouse move
         would. Tools and tests use it; the UI path uses the mouse callbacks. */
     void setHoverForTesting (juce::Point<float> position) { setHoverFromPosition (position); }
+
+    /** True while a new frame's repaint is being held back by the pacing rule
+        (30 ms between curve repaints), until the next `pollFrame()` issues it. */
+    bool isFrameRepaintPendingForTesting() const noexcept { return frameRepaintPending; }
 
     /** The hover frequency's clipboard text for a component-local x, as
         right-click would copy it. */
@@ -239,6 +250,7 @@ private:
     float lastPixelScale = 1.0f;
     double lastFrameRepaintMs = 0.0;
     bool frameRepaintPending = false;
+    bool pollRequestedRepaint = false;
 
     // Interaction
     bool leftDown = false;

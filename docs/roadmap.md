@@ -193,7 +193,7 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | M1 DSP core | DSP dependencies, then the spectrum pipeline and meters in `source/dsp/` with unit tests | T-021, T-004, T-005, T-006, T-007, T-024 | Unit QA reports PASS, including the EBU conformance cases |
 | M2 Parameters and state | APVTS, buses, state, and DSP wiring with the analysis thread | T-008, T-025, T-026, T-009 | Unit and validation QA PASS: bit-exact null test, state round trip, and real-time safety |
 | M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met |
-| M4 Validation | Validation tooling, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-015, T-016, T-017 | All QA reports PASS and all budgets are met |
+| M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met |
 | M5 Packaging | Windows CI, then a signed installer and release docs | T-018, T-019 | CI is green; a signed installer installs, uninstalls and passes pluginval on the installed binary |
 
 ## Working rules for this project
@@ -201,18 +201,29 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 - Source directories are picked up by CMake globbing with `CONFIGURE_DEPENDS` (set up in T-003). Coders therefore add files without editing CMake.
 - Every coder task ends with a unit QA report. Tasks that touch the plugin binary also end with a validation QA report.
 
-## Handoff (architect session ended 2026-09-29)
+## Handoff (architect session ended 2026-10-03)
 
-Status at handoff: M0, M1 and M2 are closed. Every task in them is DONE with passing QA reports; see the Status table and the Decisions log.
+Status at handoff:
+- M0 to M2 are closed.
+- In M3, T-010, T-011, T-012, T-029, T-030 and T-031 are DONE with passing QA reports. The last pushed commit is `2828d7a` (T-031).
+- T-013 (MeterPanel) is DONE, with both QA reports PASS after round 2. Its commit was dispatched to build-engineer at the end of the session. If `git log` does not show a "T-013" commit, commit it first, with an explicit list of files to stage and without `test_audio.wav`.
 
-The next session starts M3:
-1. **T-011** (gui-engineer): editor shell, LookAndFeel, settings controls, About view, resizing and the meter-collapse toggle. Its task file already includes the later decisions: fonts from `InvestigateAssets`, the Level chip built from numeric values, and credits from T-023.
-2. **T-012** (gui-engineer): SpectrumView. It uses the shared `source/dsp/DisplayRange.h`. Paint budget: p95 ≤ 4 ms at 1280×720.
-3. **T-013** (gui-engineer): MeterPanel.
-4. After T-013 passes, offer the user a hands-on review in a DAW and in the Standalone. Include the manual check that "Mute audio input" starts unchecked.
-5. Then M4 (T-014 to T-017) and M5 (T-018 and T-019).
+The next session continues with:
+1. **Check the T-013 commit**, as described above.
+2. **T-032** (build-engineer): move the user's `test_audio.wav` from the repository root to `third_party/_fixtures/audio/`, add the root audio ignore patterns and the `INVESTIGATE_TEST_AUDIO_DIR` hook. It needs a configure run, so wait until no C++ build is in flight. **Until T-032 runs, every commit must leave out `test_audio.wav`.**
+3. T-032 commits its own files: `.gitignore`, the CMake hook, `docs/dependencies.md` and its task file. Never the WAV.
+4. **The user's M3 hands-on review** with `docs/plans/m3-user-review.md`. Triage the findings into tasks, including the frame-pacing look as a decision point. M3 closes after that.
+5. Then M4 (T-014 to T-017, with the real-material checks added to T-015 and T-016) and M5 (T-018 and T-019).
 
 Rules learned in this session. Include them in every dispatch prompt:
+- CMake refuses in-source builds (T-030). Always build in `build/` through the presets.
+- Run `ctest` with `--timeout 300` until T-014 adds a default timeout.
+- New on-screen GUI tests use `tests/unit/GuiTestEnvironment.h`: gate on the environment, SKIP with a reason, and give every wait a deadline (T-031).
+- Editor rendering: follow the rules at the end of the T-029 log. Gate CPU with the T-012/T-029 harness method, median of 3 runs. `paint()` timing alone hides Direct2D cost.
+- When a coder session stops at the usage limit, the architect can dispatch the testers directly, rather than starting a cold coder session.
+- Run only one architect session at a time. A parallel session wrote T-032 at the same time as this one changed the same documents.
+
+Rules from the session that ended 2026-09-29:
 - Only one task that builds C++ runs at a time in the main tree. Documentation and research tasks may run in parallel with it.
 - Coders never edit `docs/qa/`. Only the testers write their reports and verdicts.
 - Timing tests use the hidden Catch2 tag `[.perf]` and assert roadmap budgets. They are run explicitly with `InvestigateUnitTests.exe "[perf]"`.
@@ -316,6 +327,10 @@ Open user decisions:
 | 2026-10-03 | T-030 added: an agent configured CMake in-source at the repository root (a full Visual Studio tree next to the sources). build-engineer removes it by explicit path, never with a broad `git clean`, adds a `FATAL_ERROR` guard against in-source builds, and extends `.gitignore`. Every build uses `build/` through the presets. | Stale trees risk building or measuring the wrong binaries. A guard stops it from happening again. |
 | 2026-10-03 | T-030 accepted (commit `da48a81`). Its verification run exposed a reproducible failure of the T-029 pacing test (#105) and one hung `ctest` run. T-031 (unit-tester) finds the root cause and makes every on-screen test SKIP rather than fail when the desktop delivers no paints or vblanks, with every wait bounded; any production defect goes to gui-engineer through T-013. T-014 adds a default ctest timeout. Until then, testers run `ctest` with `--timeout 300`. | The suite must be deterministic before T-013 adds more GUI tests. The test passed earlier the same day, so the environment (display asleep or session locked) is the main suspect. |
 | 2026-10-03 | T-031 accepted. Test #105 failed because of the environment combined with a fragile test, not a code defect. Vblanks and small repaints still arrived, but the repaint of the large data rect in a window larger than the display was lost, and other desktop activity added unrequested paints. The pacing test now gates on the environment, bounds every wait to 10 s, retries up to 3 times from a quiet window, and SKIPs rather than fails when the desktop misbehaves. A mutation check confirms it still catches a broken pacing deferral. A 60 s watchdog ends the process if a native call blocks. Full suite: 3 of 3 green in Debug and in Release. The hang was not reproduced. | The suite is deterministic again before T-013. The watchdog exit is accepted, and the default ctest timeout in T-014 remains. |
+| 2026-10-03 | The user's M3 hands-on review follows the checklist in `docs/plans/m3-user-review.md`, which covers the Standalone mute-input check, DAW checks, meters, resizing, and the frame-pacing look as an explicit decision point. M3 closes after T-013 QA passes and the user's findings are triaged. | Gives the user a concrete, bounded review and turns feedback into tasks. |
+| 2026-10-03 | `test_audio.wav` (the user's own produced track, added for the test agents) is **local-only and never committed**, by user decision. It was made in FL Studio: 48 kHz, 32-bit float, stereo, 200.8 s, 77 MB, sample peak −0.22 dBFS, very bass-heavy (`docs/research/test-audio-inspection.md`). T-032 (build-engineer) moves it to `third_party/_fixtures/audio/` (gitignored, like the EBU fixture hook), adds root-level audio patterns to `.gitignore`, and exposes the folder to tests as `INVESTIGATE_TEST_AUDIO_DIR`. A folder rather than a file, so a separate master or another track can be added. T-015 adds a real-material null test and a cross-check of loudness, LRA and true peak against libebur128. T-016 adds real-music CPU measurements. Tests SKIP when the file is absent, as in CI. A parallel architect session wrote T-032 at the same time as the main session planned `tests/fixtures/audio/`; T-032's location was kept. | User decision. It keeps the user's unreleased work out of a repository that may later become public under AGPLv3, and at 77 MB it is too large for git history. A real track partly fills the gap left by the unused EBU authentic-programme files. |
+| 2026-10-03 | T-013 validation round 1 was FAIL with 3 small defects, and everything else passed (whole-editor CPU worst median 20.0 %, at 110 % scaling, against 25 %). Round 2 fixes:<br>• the lag of the reset text: a reset forces an immediate text refresh, as an exception to the 10 Hz text rule;<br>• the truncated "MONO" label;<br>• a cap of 60 Hz on editor updates for displays faster than 60 Hz (spec §8.1; the development display runs at 144 Hz);<br>• "M max" and "S max" below −99.9 LUFS display in the silent form.<br>The meter paint limit at 2560×1440 is amended from 1 ms to 1.5 ms. Cold-start loudness (I is −23.1/−23.2 and LRA about 1 LU after 3 s of a steady sine) becomes T-033 (dsp-engineer, M4), checked against libebur128. | The fixes are small and user-visible. The 1 ms meter share was the architect's own allocation, and the governing budgets pass with a wide margin. The cold-start bias is a DSP correctness question, not a GUI one. |
+| 2026-10-03 | T-013 accepted after round 2. Reset clears within one update interval, "MONO" shows in full, editor updates are capped at 60/s on faster displays, and M max and S max read "−inf" in silence. Whole-editor CPU worst medians (60 Hz): 9.9 % (1280×720), 12.9 % (2560×1440) and 20.1 % (1920×1080 at 110 %). Meter paint p95: 0.99 and 1.27 ms. "One UI frame" now means one editor update interval (≤ 21 ms on a 144 Hz display under the 60/s cap). T-016 gates message-thread CPU through the real editor path at the native refresh rate, because the T-013 harness bypassed the limiter. The paced spectrum runs at about 24 fps at 144 Hz with 2560×1440, which is part of the user's pacing review. The flaky lifecycle test #315 is a T-017 watch item. | Every functional and budget criterion passes at the reference rate. The remaining items are measurement-method or polish questions, routed to the tasks that own them. |
 | 2026-10-03 | Editor rendering rules for every editor component: no polygons drawn per frame; one `fillRectList` per colour; cache the static parts as images; repaint only when a physical-pixel value changes; build only what lies under the clip. CPU is gated with the T-012/T-029 harness method, as the median of 3 runs. | Learned in T-029 (rules in its log); Direct2D costs are invisible to `paint()` timing. |
 
 ## Status
@@ -343,7 +358,9 @@ Open user decisions:
 | T-029 | Editor rendering CPU: profile and reduce Direct2D message-thread load | gui-engineer | M3 | T-012 | DONE (`docs/qa/T-029-unit.md` and `docs/qa/T-029-validation.md` PASS; frame pacing used) |
 | T-030 | Remove the in-source build at the root; in-source guard | build-engineer | M3 | T-029 | DONE (commit `da48a81`; the unrelated test failure moves to T-031) |
 | T-031 | Make the on-screen GUI tests deterministic (pacing test failure, test hang) | unit-tester | M3 | T-030 | DONE (`docs/qa/T-031-unit.md` PASS; no production defect) |
-| T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029, T-030, T-031 | IN_PROGRESS (includes the T-029 carry-overs and the T-031 test hook) |
+| T-032 | Local-only test audio: keep it out of git, `INVESTIGATE_TEST_AUDIO_DIR` hook | build-engineer | M3 | none | TODO (runs after the T-013 validation build finishes; never commit the `.wav`) |
+| T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029, T-030, T-031 | DONE (`docs/qa/T-013-unit.md` PASS; `docs/qa/T-013-validation.md` round 2 PASS at the 60 Hz reference; the 144 Hz findings were decided in the log) |
+| T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |
 | T-015 | Black-box validation suite | plugin-validator | M4 | T-009, T-013, T-014 | TODO |
 | T-016 | Performance benchmarks | plugin-validator | M4 | T-012, T-013, T-014 | TODO |

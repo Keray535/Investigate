@@ -75,6 +75,7 @@ private:
 
     // Declared after the components they drive, so they are destroyed first.
     juce::ParameterAttachment scAttachment;
+    MeterMath::UpdateRateLimiter updateLimiter;
     juce::VBlankAttachment vblank;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (InvestigateEditor)

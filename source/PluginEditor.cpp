@@ -177,10 +177,14 @@ void InvestigateEditor::closePopover()
 
 void InvestigateEditor::pollProcessor()
 {
-    // The snapshot copy is lock-free; only its sample rate is needed here.
-    // The spectrum view (T-012) and, later, the meter panel (T-013) pull their
-    // own data from this same vblank callback.
-    const auto sampleRate = processor.getMeterSnapshot().sampleRate;
+    // ui-spec 8.1: at most 60 updates per second, even on a faster display.
+    if (! updateLimiter.shouldUpdate (juce::Time::getMillisecondCounterHiRes()))
+        return;
+
+    // The snapshot copy is lock-free. The spectrum view (T-012) and the meter
+    // panel (T-013) pull their own data from this same vblank callback.
+    const auto snapshot = processor.getMeterSnapshot();
+    const auto sampleRate = snapshot.sampleRate;
 
     if (sampleRate > 0.0 && sampleRate != displayContext.getSampleRate())
     {
@@ -206,6 +210,12 @@ void InvestigateEditor::pollProcessor()
     // After the context refresh, so the view maps frames with the current
     // range and sample rate. One vblank callback serves the whole editor.
     spectrumView.pollFrame();
+
+    // After the spectrum, so the meters can share the vblank on which a paced
+    // spectrum repaints (T-029 rule 5).
+    if (! metersCollapsed)
+        meterPanel.update (snapshot, juce::Time::getMillisecondCounterHiRes(),
+                           { spectrumView.isFramePaced(), spectrumView.requestedRepaintInLastPoll() });
 }
 
 //==============================================================================

@@ -266,6 +266,44 @@ namespace layout
 }
 
 //==============================================================================
+/** Meter strip content (ui-spec 4.4, 8). Bar-column numbers are relative to
+    the bars column, right-column numbers to the right column; the loudness and
+    correlation numbers to their block's top edge. */
+namespace meter
+{
+    // Bars column (8.2)
+    constexpr int lampH = 10, trackTop = 14, trackBottomPad = 16, barW = 22;
+    constexpr int barLeftX = 30, barRightX = 58, barMonoX = 44;
+    constexpr int tickLabelRight = 24, tickLabelH = 12, tickEdgeSlack = 2;
+    constexpr int letterBottom = 14, letterH = 12, letterPad = 4, monoLabelW = 44;
+    constexpr double resetForceTextMs = 250.0;
+    constexpr float lampRadius = 2.0f;
+
+    // Statistics table (8.3)
+    constexpr int tableLabelW = 80, tableValueW = 48, unitGap = 4;
+    constexpr int lampCellH = 16, lampCellPadX = 4, lampCellRepaintLeft = 12;
+
+    // Loudness block (8.4)
+    constexpr int loudColumns = 3;
+    constexpr int loudTitleH = 16, loudLabelH = 12;
+    constexpr int loudRow1LabelY = 20, loudRow1ValueY = 34, loudRow1ValueH = 22;
+    constexpr int loudRow2LabelY = 64, loudRow2ValueY = 80, loudRow2ValueH = 16;
+    constexpr int loudUnitGap = 3;
+
+    // Correlation and balance block (8.5)
+    constexpr int corrBarW = 176, corrBarH = 12, corrTitleH = 16, corrBarY = 20;
+    constexpr int corrFillInset = 2, corrIndicatorW = 2, corrTickOffset = 44;
+    constexpr int corrScaleY = 34, corrScaleH = 12, corrBalanceY = 52, corrBalanceH = 16;
+    constexpr int corrValueX = 88, corrValueW = 88;
+
+    // Repaint policy (8.1, 12; T-029 rule 5)
+    constexpr double textIntervalMs = 100.0;       // numbers refresh at 10 Hz
+    constexpr double maxPacedHoldMs = 34.0;        // longest a bar waits for the spectrum's vblank
+    constexpr float spriteSlackPx = 0.002f;        // keeps a 1 px rectangle on the sprite path
+    constexpr int minBatch = 16;                   // rectangle lists are padded to a multiple of this
+}
+
+//==============================================================================
 /** Spectrum view dimensions (ui-spec 5.1 to 5.7). */
 namespace spectrum
 {

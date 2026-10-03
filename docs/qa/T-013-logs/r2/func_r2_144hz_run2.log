@@ -1,0 +1,139 @@
+DISPLAY 1920x1080 at 144 Hz
+== Processor-driven readouts through the real editor (Direct2D window on the desktop, audio on its own paced thread) ==
+[PASS] MeterPanel found in the editor
+   editor 1200x700, meter panel 296x656 at 904,44
+-- stereo -23 dBFS 1 kHz sine: (A) from a fresh processor, 3.5 s after the sine starts (information)
+   A: fresh start, t=3.5 s: peak −23.0/−23.0  pkMax −23.0/−23.0  TP −23.0/−23.0  TPmax −23.0/−23.0  head 23.0/23.0  rms −26.0/−26.0  crest 3.0/3.0  clips 0/0  tpClips 0/0  | M −23.0 S −23.0 I −23.1 Mmax −23.0 Smax −23.0 LRA 0.8 | corr +1.00 bal C 0.0 dB
+   A: snapshot M -22.993 S -22.993 I -23.126 LRA 0.800 (I and LRA include the 400 ms blocks that straddle the sine onset, which BS.1770 gating keeps)
+-- (B) steady sine for 4 s, then Reset, then 3.5 s: M, S and I are measured from steady blocks only
+   B: 3.5 s after reset: peak −23.0/−23.0  pkMax −23.0/−23.0  TP −23.0/−23.0  TPmax −23.0/−23.0  head 23.0/23.0  rms −26.0/−26.0  crest 3.0/3.0  clips 0/0  tpClips 0/0  | M −23.0 S −23.0 I −23.0 Mmax −23.0 Smax −23.0 LRA 0.0 | corr +1.00 bal C 0.0 dB
+[PASS] M reads -23.0 +-0.1 LUFS: −23.0
+[PASS] S reads -23.0 +-0.1 LUFS: −23.0
+[PASS] I reads -23.0 +-0.1 LUFS: −23.0
+   B: snapshot M -22.993 S -22.993 I -22.950 LRA 0.000
+[PASS] cells equal the snapshot values to 1 decimal
+[PASS] M max near -23.0: −23.0
+[PASS] S max near -23.0: −23.0
+[PASS] LRA near 0 LU for a steady tone: 0.0
+-- stereo -6 dBFS 1 kHz sine, dBFS mode, RMS window 300 ms
+   -6 dBFS dBFS: peak −6.0/−6.0  pkMax −6.0/−6.0  TP −6.0/−6.0  TPmax −6.0/−6.0  head 6.0/6.0  rms −9.0/−9.0  crest 3.0/3.0  clips 0/0  tpClips 0/0  | M −6.0 S −8.4 I −6.3 Mmax −6.0 Smax −8.4 LRA 7.6 | corr +1.00 bal C 0.0 dB
+[PASS] L peak readout is -6.0 dB: −6.0
+[PASS] L RMS readout is -9.0 dB: −9.0
+[PASS] L crest is 3.0 dB: 3.0
+[PASS] L peak max is -6.0 dB: −6.0
+[PASS] R peak readout is -6.0 dB: −6.0
+[PASS] R RMS readout is -9.0 dB: −9.0
+[PASS] R crest is 3.0 dB: 3.0
+[PASS] R peak max is -6.0 dB: −6.0
+-- K scales, same -6 dBFS sine: RMS = reported + 3.01 + N
+[PASS] K-20 RMS cell = +14.0: +14.0 / +14.0
+[PASS] K-20 peak cell unchanged by scale (still dBFS): −6.0
+[PASS] K-14 RMS cell = +8.0: +8.0 / +8.0
+[PASS] K-14 peak cell unchanged by scale (still dBFS): −6.0
+[PASS] K-12 RMS cell = +6.0: +6.0 / +6.0
+[PASS] K-12 peak cell unchanged by scale (still dBFS): −6.0
+-- -20 dBFS peak sine: 0 on K-20, -6 on K-14, -8 on K-12, -23.0 in dBFS
+[PASS] K-20 RMS of a -20 dBFS sine reads 0.0: 0.0
+[PASS] K-14 RMS of a -20 dBFS sine reads -6.0: −6.0
+[PASS] K-12 RMS of a -20 dBFS sine reads -8.0: −8.0
+[PASS] dBFS RMS of a -20 dBFS sine reads -23.0: −23.0
+-- headroom = 0 - TP max
+[PASS] headroom ch0 = 0 - TP max (-5.99 dBTP -> 5.99): 6.0
+[PASS] TP max cell = snapshot truePeakMax: −6.0
+[PASS] headroom ch1 = 0 - TP max (-5.99 dBTP -> 5.99): 6.0
+[PASS] TP max cell = snapshot truePeakMax: −6.0
+   over-full-scale sine: TP max 1.61 dBTP, headroom cell −1.6
+[PASS] negative headroom is shown with U+2212 and equals 0 - TP max: −1.6
+-- balance: L -6 dBFS, R -12 dBFS, after 3.5 s
+   balance: peak −6.0/−12.0  pkMax −6.0/−12.0  TP −6.0/−12.0  TPmax −1.6/−1.6  head 1.6/1.6  rms −9.0/−15.0  crest 3.0/3.0  clips 0/0  tpClips 0/0  | M −8.0 S −8.0 I −6.2 Mmax 1.5 Smax −1.5 LRA 6.5 | corr +1.00 bal L 6.0 dB
+[PASS] balance reads "L 6.0 dB" (snapshot -6.000): L 6.0 dB
+[PASS] swapped channels read "R 6.0 dB": R 6.0 dB
+[PASS] equal levels read "C 0.0 dB": C 0.0 dB
+-- correlation
+[PASS] L = R: bar value 1.000, text +1.00
+[PASS] L = -R: bar value -1.000, text −1.00
+[PASS] independent noise: bar value 0.017, text +0.01 (about 0)
+   independent noise snapshot correlation 0.019
+   step +1 -> -1: before 1.000, crossed zero after 311.887 ms, reached -0.99 after 644.291 ms, min -0.990
+[PASS] the +1 to -1 step crosses zero no earlier than 100 ms (500 ms DSP window + 50 ms display filter)
+-- ballistics through the processor (silence after a -6 dBFS sine)
+   bar at 145.704 ms -7.66 dB, at 1150.82 ms -27.70 dB -> fall 19.9 dB/s
+[PASS] peak bar falls at 20 dB/s: 19.9
+[PASS] peak-hold tick holds for the first 1.3 s: -6.00 -> -6.00 dB
+   hold at 2004.46 ms -19.92, at 3006.66 ms -49.92 -> 29.9 dB/s
+[PASS] hold tick falls at 30 dB/s after 1.5 s: 29.9
+[PASS] hold tick never below the bar
+-- clip lamps, counts, reset
+[PASS] no lamp lit after reset and silence
+   clipped: peak 0.0/−94.1  pkMax 0.0/−inf  TP +1.0/−inf  TPmax +1.0/−inf  head −1.0/—  rms −inf/−inf  crest —/—  clips 15/0  tpClips 6/0  | M −33.6 S −37.6 I −30.6 Mmax −28.8 Smax −37.6 LRA 1.8 | corr 0.00 bal L >60 dB
+   snapshot sample clips 15/0, TP clips 6/0
+[PASS] left lamp latched, right lamp off (clips only on L)
+[PASS] sample clip count cell = snapshot (15 expected from 3 x 5 samples): 15
+[PASS] true-peak clip count cell = snapshot: 6 (snapshot 6)
+[PASS] R counts stay 0
+[PASS] Clips cell of L is a lamp, R is not
+[PASS] lamp stays latched 3.5 s later
+   clipped, 4 s of silence later: peak −69.6/−inf  pkMax 0.0/−inf  TP −68.7/−inf  TPmax +1.0/−inf  head −1.0/—  rms −inf/−inf  crest —/—  clips 15/0  tpClips 6/0  | M −inf S −inf I −30.6 Mmax −28.8 Smax −37.6 LRA 1.8 | corr 0.00 bal C 0.0 dB
+-- reset (Reset button): time from the processor clearing to the panel clearing
+[PASS] before the reset the panel shows a lit lamp, counts and non-empty maxima
+   breakdown after the snapshot cleared (ms): lamps 12.1, clip/TP-clip counts 12.1, peak max / TP max / headroom 12.1, M max / S max / I / LRA 12.1
+[PASS] reset: the lamps clear within 1 UI frame of the snapshot (12.1 ms)
+   click -> snapshot cleared 9.2 ms, click -> panel cleared 21.3 ms
+   after reset: peak −77.9/−inf  pkMax −inf/−inf  TP −inf/−inf  TPmax −inf/−inf  head —/—  rms −inf/−inf  crest —/—  clips 0/0  tpClips 0/0  | M −inf S −inf I — Mmax −inf Smax — LRA — | corr 0.00 bal C 0.0 dB
+[PASS] O-3: after the reset in silence M max reads "−inf" and S max "—" (snapshot -150.1 / -inf), expected the silent form
+[PASS] lamps, counts, peak max, TP max, headroom, M max, S max, I and LRA all clear (found within the 1 s deadline)
+[PASS] panel fully cleared 12.1 ms after the snapshot showed the reset (1 UI frame = 16.7 ms)
+   all 12 lags (ms): 11.5274 18.5245 2.2244 2.9543 2.5595 16.116 2.5142 2.0429 10.1463 16.2572 2.0425 17.6126 | above one frame: 2
+   12 repeats: snapshot-cleared to panel-cleared median 10.1 ms, worst 18.5 ms, timeouts 0
+   12 repeats, lamp only: median 10.1 ms, worst 18.5 ms
+[FAIL] reset: the lamp clears within 1 UI frame in every repeat (worst 18.5 ms)
+[FAIL] reset: every repeat clears the lamps, counts and maxima (text included) within 1 UI frame (worst 18.5 ms)
+[PASS] lamp lit again before the API reset
+[PASS] requestStatsReset + resetHeldValues clears lamps, counts and maxima (deadline 1 s)
+[PASS] peak max shows the clip peak 0.0 before the reset: 0.0
+[PASS] reset during playback: lamp off, clips 0, peak max restarts at the live -6.0: −6.0
+-- stale rule (stop calling processBlock)
+   live peak before stop: −6.0, correlation +1.00, I −5.9
+[PASS] not stale while blocks arrive
+[PASS] not stale 150 ms after the last block
+   stale flag observed 278.36 ms after the last processBlock (rule: 250 ms; the detector samples once per vblank, 16.7 ms)
+[PASS] stale raised 250 to 285 ms after the last block: 278.36 ms
+   stale, 0.7 s after the last block: peak −6.0/−6.0  pkMax 0.0/−6.0  TP −6.0/−6.0  TPmax +2.7/−6.0  head −2.7/6.0  rms −inf/−inf  crest —/—  clips 2/0  tpClips 1/0  | M −inf S −inf I −5.9 Mmax −6.0 Smax −6.0 LRA 0.0 | corr +1.00 bal C 0.0 dB
+[PASS] stale: RMS (ch0), M and S read -inf
+[PASS] stale: RMS (ch1), M and S read -inf
+   stale: peak cell ch0 −6.0, TP cell −6.0 (the peak and TP readouts are the hold-tick values of ui-spec 8.3, which hold 1.5 s and then fall at 30 dB/s)
+   stale: peak cell ch1 −6.0, TP cell −6.0 (the peak and TP readouts are the hold-tick values of ui-spec 8.3, which hold 1.5 s and then fall at 30 dB/s)
+[PASS] stale: peak max holds (0.0 -> 0.0)
+[PASS] stale: TP max holds (+2.7 -> +2.7)
+[PASS] stale: headroom holds (−2.7 -> −2.7)
+[PASS] stale: clips holds (2 -> 2)
+[PASS] stale: TP clips holds (1 -> 1)
+[PASS] stale: I holds (−5.9 -> −5.9)
+[PASS] stale: LRA holds (0.0 -> 0.0)
+[PASS] stale: M max holds (−6.0 -> −6.0)
+[PASS] stale: S max holds (−6.0 -> −6.0)
+[PASS] stale: correlation holds (+1.00 -> +1.00)
+[PASS] stale: balance holds (C 0.0 dB -> C 0.0 dB)
+[PASS] stale: the bar falls at its ballistics (-6.0 -> -13.9 dB)
+   stale: the peak and TP readouts reach -inf 6026.79 ms after the last block (hold 1.5 s, then 30 dB/s down to -120 dBFS = about 5.5 s)
+[PASS] stale: the peak and TP readouts eventually read -inf (deadline 9 s)
+[PASS] recovery on the first counter change (within 2 vblanks): 21.9 ms
+-- silence with processBlock still running: bars fall to the floor, text -inf, maxima hold, not stale
+[PASS] not stale while silence blocks arrive
+[PASS] bar is falling: -55.0 dB 2.5 s after the signal stopped
+   silence 2.5 s: peak −32.1/−32.1  pkMax 0.0/−6.0  TP −31.7/−31.7  TPmax +2.7/−5.6  head −2.7/5.6  rms −inf/−inf  crest —/—  clips 2/0  tpClips 1/0  | M −inf S −13.0 I −6.1 Mmax −6.0 Smax −6.0 LRA 2.9 | corr 0.00 bal C 0.0 dB
+[PASS] silence: RMS and M read -inf
+[PASS] silence: peak readout reaches -inf and the bar the floor (deadline 9 s)
+[PASS] silence: peak max and clip count hold
+-- mono layout
+[PASS] mono: MeterPanel found
+   mono: peak /−6.0  pkMax /−6.0  TP /−6.0  TPmax /−6.0  head /6.0  rms /−9.0  crest /3.0  clips /0  tpClips /0  | M −9.0 S −inf I −9.6 Mmax −9.0 Smax — LRA 0.0 | corr — bal —
+[PASS] mono input: the panel switches to the mono layout (0.000599995 ms)
+[PASS] snapshot isMono is set
+[PASS] one bar: channel 1 has nothing drawn
+[PASS] mono: correlation and balance show dashes: — / —
+[PASS] mono: left value column blank, right column carries the channel: [] [−6.0]
+[PASS] mono: values on the right column read -6.0 / -9.0
+[PASS] mono: no NaN in the correlation state
+
+92 checks, 2 failed

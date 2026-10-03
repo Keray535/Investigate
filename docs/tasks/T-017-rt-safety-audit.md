@@ -26,6 +26,7 @@ Run a whole-codebase white-box audit before release:
 - Run MSVC `/analyze` (or clang-tidy, if available) on `source/`, and triage the findings.
 - If a coverage tool exists: measure line coverage of `source/dsp/`.
 - Check that every timing test added since T-026 carries the hidden `[.perf]` tag (T-026 set up the convention).
+- **Watch item (added 2026-10-03 from T-013):** test #315 in `ProcessorAnalysisLifecycleTest` (`setAnalysisActive` 100 times under concurrent audio) timed out once in Debug while a build ran in parallel; six isolated reruns passed. Run it 20 times in Debug and Release under CPU contention (for example, a parallel build or a busy-loop load on every core). If it times out, measure the analysis-thread stop latency under load against the 50 ms budget, and file a defect for plugin-engineer with the numbers.
 
 ## Acceptance criteria
 - [ ] The call graph and per-function verdicts are in `docs/qa/T-017-unit.md`. The audio-thread paths have 0 violations, or every violation is filed as a defect with file, line and owning agent.

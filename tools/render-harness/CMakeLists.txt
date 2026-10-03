@@ -69,3 +69,24 @@ target_link_libraries(InvestigateSpectrumCheck
 target_compile_options(InvestigateSpectrumCheck PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
 )
+
+# T-013 meter panel black-box check (plugin-validator): processor-driven
+# readouts, screenshots, MeterPanel paint cost, whole-editor CPU matrix and
+# open/close cycles, all through the real editor and a real-time-paced
+# audio thread.
+add_executable(InvestigateMeterCheck
+    meter_check.cpp
+)
+
+target_include_directories(InvestigateMeterCheck PRIVATE "${CMAKE_SOURCE_DIR}/source")
+
+target_link_libraries(InvestigateMeterCheck
+    PRIVATE
+        Investigate
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags
+)
+
+target_compile_options(InvestigateMeterCheck PRIVATE
+    $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
+)

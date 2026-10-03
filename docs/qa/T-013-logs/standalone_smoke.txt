@@ -1,0 +1,2 @@
+running after 6 s: True, window title: Investigate, handles 780, ws MB 142
+exited cleanly, code 0

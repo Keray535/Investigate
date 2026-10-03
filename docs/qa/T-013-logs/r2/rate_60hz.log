@@ -1,0 +1,4 @@
+DISPLAY 1920x1080 at 60 Hz
+RATE 1280x720 over 10.0 s: vblank callbacks 60.1/s | meter panel paint passes 59.7/s | spectrum paint passes 59.7/s | bar repaint requests 141.6/s | text repaint requests 70.9/s
+DISPLAY 1920x1080 at 60 Hz
+RATE 2560x1440 over 10.0 s: vblank callbacks 60.0/s | meter panel paint passes 30.0/s | spectrum paint passes 30.0/s | bar repaint requests 75.8/s | text repaint requests 71.2/s

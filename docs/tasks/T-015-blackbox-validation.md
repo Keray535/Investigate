@@ -45,6 +45,16 @@ This task gates M4 together with T-016 and T-017.
 - [ ] Automation stress: every parameter is swept with random values each block for 60 s of audio while analysis is active. Result: no crash, no NaN or Inf in any `SpectrumFrame` or `MeterSnapshot`, and the output stays bit-exact.
 - [ ] Meter conformance through the processor: every synthesisable EBU Tech 3341 and 3342 case passes within the tolerances in T-006 and T-007. The true-peak cases pass within +0.2/−0.4 dB.
 - [ ] A sidechain layout change at runtime (disabled to stereo to disabled) keeps the output bit-exact, and `isSidechainActive()` follows the layout.
+- [ ] **Real program material** (added 2026-10-03). The user's own track lives in the local fixture folder at `third_party/_fixtures/audio/test_audio.wav`. It is gitignored and never committed (properties in `docs/research/test-audio-inspection.md`: 48 kHz, 32-bit float, stereo, 200.8 s, sample peak −0.22 dBFS, very bass-heavy). Locate the folder through `INVESTIGATE_TEST_AUDIO_DIR` (T-032). If the file is absent, these checks SKIP with a reason, as in CI. With the file present:
+  - Null test: render the whole track through the processor at 48 kHz, with stereo main, the same track on a stereo sidechain, analysis active, and block sizes 128 and randomly varying from 1 to 4096. The output equals the input bit-exactly (maximum absolute difference 0.0).
+  - Loudness and peak cross-check against libebur128 (the test-only oracle, never linked into the plugin) over the whole track:
+    - integrated loudness, maximum momentary and maximum short-term within ±0.1 LU;
+    - LRA within ±0.2 LU;
+    - true-peak maximum within ±0.2 dB;
+    - the sample-peak maximum equals the file's own peak (−0.22 dBFS) within ±0.01 dB.
+
+    Report all values side by side.
+  - Spectrum sanity: the `SpectrumFrame` contains no NaN or Inf over the whole track in every channel mode. With the defaults, the average curve's energy sits mostly below 200 Hz, consistent with the inspection report.
 - [ ] The results are written to `docs/qa/T-015-validation.md`, with the command lines to reproduce every check.
 
 ## Log

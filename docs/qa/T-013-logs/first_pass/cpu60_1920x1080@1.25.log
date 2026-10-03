@@ -1,0 +1,21 @@
+display rate change to 60 Hz (temporary, this process): ok
+DISPLAY 1920x1080 at 60 Hz
+CPU MATRIX physical 1920x1080, global scale 1.25, 3 runs interleaved over the cases, 12 s per measurement, net of the paced baseline
+calibrated 2674046 cycles per ms (2.67 GHz)
+RUN 1 | 1920x1080@1.25 | (a) single + RT max | net 7.2 % (gross 10.9, baseline 3.7) | bar repaints/s 137.6, text repaints/s 68.9 | spectrum data-rect paints/s 56.0
+RUN 1 | 1920x1080@1.25 | (b) dual + 2 secondaries | net 16.5 % (gross 19.9, baseline 3.4) | bar repaints/s 127.2, text repaints/s 64.9 | spectrum data-rect paints/s 51.8
+RUN 1 | 1920x1080@1.25 | (c) dual + 2 secondaries + SC + hover | net 20.9 % (gross 25.0, baseline 4.1) | bar repaints/s 52.2, text repaints/s 65.1 | spectrum data-rect paints/s 32.1
+RUN 1 | 1920x1080@1.25 | (d) single + all-time average + SC | net 17.8 % (gross 22.0, baseline 4.2) | bar repaints/s 126.2, text repaints/s 64.3 | spectrum data-rect paints/s 50.2
+RUN 2 | 1920x1080@1.25 | (a) single + RT max | net 15.3 % (gross 20.6, baseline 5.3) | bar repaints/s 131.6, text repaints/s 66.6 | spectrum data-rect paints/s 54.1
+RUN 2 | 1920x1080@1.25 | (b) dual + 2 secondaries | net 20.0 % (gross 25.2, baseline 5.3) | bar repaints/s 129.8, text repaints/s 66.1 | spectrum data-rect paints/s 52.1
+RUN 2 | 1920x1080@1.25 | (c) dual + 2 secondaries + SC + hover | net 21.6 % (gross 26.8, baseline 5.2) | bar repaints/s 52.9, text repaints/s 65.5 | spectrum data-rect paints/s 31.9
+RUN 2 | 1920x1080@1.25 | (d) single + all-time average + SC | net 20.3 % (gross 25.9, baseline 5.6) | bar repaints/s 125.0, text repaints/s 64.8 | spectrum data-rect paints/s 49.9
+RUN 3 | 1920x1080@1.25 | (a) single + RT max | net 8.3 % (gross 14.2, baseline 5.9) | bar repaints/s 141.6, text repaints/s 67.5 | spectrum data-rect paints/s 58.2
+RUN 3 | 1920x1080@1.25 | (b) dual + 2 secondaries | net 15.6 % (gross 19.0, baseline 3.4) | bar repaints/s 130.6, text repaints/s 65.1 | spectrum data-rect paints/s 54.2
+RUN 3 | 1920x1080@1.25 | (c) dual + 2 secondaries + SC + hover | net 22.2 % (gross 27.4, baseline 5.2) | bar repaints/s 52.3, text repaints/s 67.8 | spectrum data-rect paints/s 31.9
+RUN 3 | 1920x1080@1.25 | (d) single + all-time average + SC | net 10.4 % (gross 14.6, baseline 4.1) | bar repaints/s 136.3, text repaints/s 64.2 | spectrum data-rect paints/s 55.3
+SUMMARY 1920x1080@1.25 | (a) single + RT max | net median 8.3, min 7.2, max 15.3 | bar/s median 137.6 | text/s median 67.5
+SUMMARY 1920x1080@1.25 | (b) dual + 2 secondaries | net median 16.5, min 15.6, max 20.0 | bar/s median 129.8 | text/s median 65.1
+SUMMARY 1920x1080@1.25 | (c) dual + 2 secondaries + SC + hover | net median 21.6, min 20.9, max 22.2 | bar/s median 52.3 | text/s median 65.5
+SUMMARY 1920x1080@1.25 | (d) single + all-time average + SC | net median 17.8, min 10.4, max 20.3 | bar/s median 126.2 | text/s median 64.3
+WORST MEDIAN 1920x1080@1.25: 21.6 % (gate 25)

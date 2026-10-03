@@ -31,6 +31,10 @@ juce::String sidechain (bool busActive);
 juce::String freeze();
 juce::String resetCurves();
 juce::String resetStatistics();
+
+/** The correlation block (500 ms correlation, 3 s balance); the mono text
+    when the input has one channel. */
+juce::String correlation (bool monoInput);
 juce::String metersToggle (bool collapsed);
 juce::String settings (bool controlsHidden);
 

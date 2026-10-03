@@ -124,6 +124,15 @@ juce::String resetStatistics()
     return "Clear peak maxima, clip counts, and the integrated loudness measurement.";
 }
 
+juce::String correlation (bool monoInput)
+{
+    if (monoInput)
+        return "Correlation and balance need two channels.";
+
+    return juce::String ("Correlation over 500 ms: +1 in phase, 0 unrelated, ") + minus()
+         + "1 out of phase. Balance over 3 s: which side is louder, and by how much.";
+}
+
 juce::String metersToggle (bool collapsed)
 {
     return collapsed ? "Show the meter panel" : "Hide the meter panel to give the spectrum more room";

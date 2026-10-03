@@ -181,8 +181,9 @@ TEST_CASE ("SpectrumView: clip-limited paint at fractional scales stays within 1
 }
 
 // Strict: the spec for the clip-limited trace says the vertices equal those of
-// a full trace. Hidden because Direct2D currently differs by one level.
-TEST_CASE ("SpectrumView: clip-limited paint is bit-identical to the full paint", "[.][gui][spectrumview][render][strict]")
+// a full trace. Un-hidden in T-013 after the O-1 fix (min/max tops over all
+// columns).
+TEST_CASE ("SpectrumView: clip-limited paint is bit-identical to the full paint", "[gui][spectrumview][render][strict]")
 {
     forEachClip (false, true, 1.0f, [&] (const char* name, juce::Rectangle<int> clip, const Diff& d)
     {

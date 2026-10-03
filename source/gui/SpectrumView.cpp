@@ -230,6 +230,7 @@ void SpectrumView::requestFrameRepaint()
     }
 
     frameRepaintPending = false;
+    pollRequestedRepaint = true;
     lastFrameRepaintMs = now;
     lastOverlay = hoverOverlayBounds();
     repaint (getDataRect());
@@ -237,6 +238,7 @@ void SpectrumView::requestFrameRepaint()
 
 void SpectrumView::pollFrame()
 {
+    pollRequestedRepaint = false;
     bool needsPaint = false;     // a change the user made or a setting: repaint at once
     bool newFrame = false;       // data only: may be paced
 
@@ -303,6 +305,7 @@ void SpectrumView::pollFrame()
     if (needsPaint)
     {
         frameRepaintPending = false;
+        pollRequestedRepaint = true;
         lastFrameRepaintMs = juce::Time::getMillisecondCounterHiRes();
         lastOverlay = hoverOverlayBounds();
         repaint (getDataRect());
@@ -1281,6 +1284,7 @@ void SpectrumView::paint (juce::Graphics& g)
 {
     const float scale = std::max (0.01f, (float) g.getInternalContext().getPhysicalPixelScaleFactor());
     lastPixelScale = scale;
+
     rebuildCacheIfNeeded (scale);
 
     g.drawImageTransformed (cache, juce::AffineTransform::scale (1.0f / scale));
