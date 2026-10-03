@@ -1,6 +1,7 @@
 # Investigate: UI specification
 
 - Task: T-010. Author: ui-ux-designer. Date: 2026-09-28. Status: final. The user approved `mockup.html` without changes on 2026-09-28. The layout and visual design are frozen for T-011 to T-013. The final pass reconciled the spec with the roadmap Decisions dated 2026-09-28, finalised the fonts (§3.2) and added the About view (§6.2).
+- Addendum T-034 (2026-10-03, milestone M3b): spectrum zoom and pan, new §5.9, with updates to §4.1, §5.3, §5.5 to §5.7, §6, §7.2, §10, §11, §12, §13.3 and §15. The updated mockup awaits the user's approval; T-037 does not start before it. All changes are listed in §16.
 - Companion files: `docs/design/tokens.json` (the source of truth for every value named `token.*` below), `docs/design/mockup.html` (interactive preview), `assets/ui/*.svg`.
 - All sizes are logical pixels at 100 % scale. "x, y, w, h" rectangles are in editor coordinates, with the origin at the top-left of the editor, unless a rectangle is marked as relative to a parent.
 - Minus signs in displayed text are U+2212 (−), never ASCII hyphen. Multiplication signs are U+00D7 (×).
@@ -106,7 +107,7 @@ Every number is set in the monospaced face so digits do not jitter. JUCE cannot 
 
 **Fonts (bundled; license approved by T-022, roadmap Decision 2026-09-28):**
 
-| Font | Pinned release | Files in `assets/ui/fonts/` | Path inside the release zip | License file | Copyright notice |
+| Font | Pinned release | Files in `third_party/fonts/` (not `assets/ui/`) | Path inside the release zip | License file | Copyright notice |
 |---|---|---|---|---|---|
 | Inter | `v4.1`, https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip | `Inter-Medium.ttf` (500), `Inter-SemiBold.ttf` (600). Weight 400 is not used for Inter. | `extras/ttf/`. Do not use `InterDisplay-*` or `InterVariable*`. | `OFL-Inter.txt` (the repository's `LICENSE.txt` at `v4.1`, unmodified) | "Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)" |
 | JetBrains Mono | `v2.304`, https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip | `JetBrainsMono-Regular.ttf` (400), `JetBrainsMono-Medium.ttf` (500) | `fonts/ttf/`. Do not use `JetBrainsMonoNL-*`. | `OFL-JetBrainsMono.txt` (the repository's `OFL.txt` at `v2.304`, unmodified) | "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)" |
@@ -117,10 +118,10 @@ Every number is set in the monospaced face so digits do not jitter. JUCE cannot 
   - the font files are never sold or offered as a download on their own.
 - **Files:** the TTFs are unmodified and not subset. If a later task subsets them for binary size, it must keep the `name` table and the family names (T-022 action item 4).
 - **Loading (T-011):**
-  - The four TTFs reach the binary through the `InvestigateAssets` binary-data target, which globs `assets/ui/`.
+  - T-021 downloads the four TTFs and the two OFL texts, with SHA-256 checks, into `third_party/fonts/` and compiles them into the `InvestigateAssets` binary-data target. The symbols are `BinaryData::InterMedium_ttf`, `InterSemiBold_ttf`, `JetBrainsMonoRegular_ttf`, `JetBrainsMonoMedium_ttf`, `OFLInter_txt` and `OFLJetBrainsMono_txt`. The files are not in `assets/ui/` (roadmap Decision 2026-09-28; T-011 correction, roadmap Decision 2026-10-01).
   - The editor creates each typeface once with `juce::Typeface::createSystemTypefaceFor (data, size)`.
   - The LookAndFeel maps each token in the table above to its typeface by family and weight: Inter 500, Inter 600, JetBrains Mono 400, JetBrains Mono 500. No synthetic bold is used.
-- **Fallbacks:** Segoe UI stands in for Inter and Consolas for JetBrains Mono. Both ship with Windows and are referenced by name only, never embedded. A fallback is used only if a bundled typeface fails to load (a missing resource or `createSystemTypefaceFor` returning null). The layout does not change, because every size in this spec is in logical pixels.
+- **Fallbacks:** Segoe UI stands in for Inter and Consolas for JetBrains Mono. Both ship with Windows and are referenced by name only, never embedded. A fallback is used only if a bundled typeface fails to load (a missing resource or `createSystemTypefaceFor` returning null). The layout does not change, because every size in this spec is in logical pixels. Since T-021 the resources are always compiled in, so the fallback is a defensive rule only.
 
 ### 3.3 Spacing, radii, strokes, shadow, motion
 
@@ -165,6 +166,7 @@ Every number is set in the monospaced face so digits do not jitter. JUCE cannot 
   - the **control bar** (0, H − 56, W − MS, 56), filled with `bg-app`, with a 1 px `border` top line.
 - **Meter strip:** (W − 296, 44, 296, H − 44), `surface`, 1 px `border` left line. It is absent when collapsed.
 - **Data rect** (the plotted area inside the plot region): x = 48, y = 44 + 12, w = (W − MS) − 64, h = (H − 100) − 36. The gutters are left 48 (dB labels), right 16, top 12, bottom 24 (frequency labels). The data rect has a 1 px `border-subtle` frame.
+- **Zoom and pan (T-034, §5.9):** the left gutter (dB labels) and the bottom gutter (frequency labels) are also wheel targets for zooming their axis. While the view is zoomed, the zoom panel (indicator and overview strip) sits at the data rect's top-right corner (§5.9.6). Neither changes the region rectangles above.
 
 ### 4.2 Header contents (right-anchored items use W)
 
@@ -280,9 +282,11 @@ The legend and the hover card repeat each swatch next to its name.
 
 ### 5.3 Grid and axes
 
-The grid and axis labels are painted into a cached `juce::Image` (§2 HiDPI). The cache is rebuilt only on resize, scale-factor change, effective-range change, or sample-rate change.
+The grid and axis labels are painted into a cached `juce::Image` (§2 HiDPI). The cache is rebuilt only on resize, scale-factor change, effective-range change, sample-rate change, or view change (§5.9). During a continuous pan or zoom the image is not rebuilt per frame; §12.1 says what is drawn instead.
 
-**Frequency axis** (log), from `fLoEff` to `fHiEff` (§5.4):
+**View mapping (T-034).** Every mapping in §5.1 to §5.6 (curves, grid, labels, hover, markers, curve clamping, right-click copy) runs over the **view window** (`viewFreqLow` … `viewFreqHigh`, `viewDbLow` … `viewDbHigh`, §5.9.1). At Fit the view window equals the effective home range below (`fLoEff` … `fHiEff`, `dbLoEff` … `dbHi`), so everything in this section is unchanged at Fit. For views narrower than the rules below can label, §5.9.8 extends the frequency label sets and the dB steps.
+
+**Frequency axis** (log), from `fLoEff` to `fHiEff` (§5.4) at Fit, from `viewFreqLow` to `viewFreqHigh` when zoomed:
 - **Lines:** every integer multiple m × 10^k (m = 1 to 9) inside the range. m = 1 lines use `grid-major`, and all others use `grid-minor`. Unlabelled minor lines are skipped when the gap between the 9 × 10^k and 10^(k+1) lines is under 4 px.
 - **Labels:** choose the densest set whose smallest gap between adjacent label centres is ≥ 36 px:
   1. {1, 2, 3, 5, 7} × 10^k;
@@ -321,7 +325,8 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
 
 - **Crosshair:** a vertical 1 px line in `text-primary` at 35 %, spanning the data rect at `round(x) + 0.5`. There is no horizontal line.
 - **Markers:** a circle of radius 3.5 with a `bg-plot` fill and a 1.5 px stroke in the curve colour, at (x, y of the curve) for every curve listed in the card. Primary A is drawn last so it is on top.
-- **Frequency under the pointer:** `f = fLoEff × (fHiEff / fLoEff)^((x − data.x) / data.w)`.
+- **Frequency under the pointer:** `f = viewFreqLow × (viewFreqHigh / viewFreqLow)^((x − data.x) / data.w)`. At Fit this is `fLoEff × (fHiEff / fLoEff)^((x − data.x) / data.w)`. The markers' y uses the view's dB range the same way.
+- **During gestures** (pan, box zoom, pointer over the zoom panel) the crosshair, markers, card and hint line follow §5.9.5.
 - **Level at f:** linear interpolation in dB between the two neighbouring display points, in log-frequency. If either neighbour is −inf, the level is −inf.
 - **Card:**
   - Fill `card`, 1 px `border`, radius 6, padding 8 × 10, minimum width 132. The width fits the content.
@@ -338,7 +343,13 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
   4. Finally clamp it inside the data rect with a 4 px inset.
   
   The card never sits under the pointer. It follows the pointer every frame without easing, and hides immediately when the pointer leaves the data rect.
-- **Hint line:** while the pointer is in the data rect, the text "Click: reset max/avg curves · Right-click: copy frequency" appears. It uses `body-sm` at 10 px in `text-tertiary` on `bg-plot` at 85 %, radius 4, padding 2 × 6, anchored with its bottom-right at (data.right − 8, data.bottom − 6).
+  
+  **While the zoom panel shows (T-034)** the card also avoids the panel. Try four candidates in this order and take the first that lies fully inside the data rect (4 px inset) and does not intersect the panel bounds inflated by 4 px (`zoomLayout.hoverCardExclusion`): (a) `(px + 18, py − 18 − cardH)`; (b) `(px − 18 − cardW, py − 18 − cardH)`; (c) `(px + 18, py + 18)`; (d) `(px − 18 − cardW, py + 18)`. If none qualifies, use steps 1 to 4 above and draw the card over the panel (the card is above the panel in the z-order, §5.9.7). Without the panel, candidates (a) to (d) give the same result as steps 1 to 4, so one implementation serves both.
+- **Hint line:** while the pointer is in the data rect, no pan or box drag is active, and the pointer is not over the zoom panel. It uses `body-sm` at 10 px in `text-tertiary` on `bg-plot` at 85 %, radius 4, padding 2 × 6, anchored with its bottom-right at (data.right − 8, data.bottom − 6). Its text depends on the zoom state (T-034) and switches when the state changes:
+  - At Fit: "Scroll: zoom · Ctrl+drag: box zoom · Click: reset max/avg · Right-click: copy frequency".
+  - While zoomed: "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset max/avg · Right-click: copy frequency".
+  - **Fit rule:** the measured width (text plus 12 px padding) must be at most data.w − 16, which is 544 px at the minimum size 920 × 540. Estimated with Inter 500 at 10 px, the two texts are about 431 px and 474 px wide, so both fit at the minimum size. If the measured width is larger (for example with a fallback font), use the short forms "Scroll: zoom · Ctrl+drag: box · Click: reset · Right-click: copy" and "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy".
+  - Level zoom (Ctrl+scroll, or scroll over the dB labels) is not in the hint, because it does not fit at the minimum size. It is in the zoom panel's tooltip (§5.9.6), the accessible description (§10.3) and the M3b user checklist.
 - **Formats:**
   - **Frequency:** round to 3 significant figures first, then:
     - below 100 Hz: 1 decimal, "43.7 Hz";
@@ -347,6 +358,8 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
     - 10 kHz and above: 1 decimal, "14.3 kHz".
     
     The rounding happens first, so 999.6 Hz shows "1.00 kHz".
+    
+    **Zoom precision (T-034):** while the visible frequency span is below 1 octave (`viewFreqHigh / viewFreqLow < 2`), round to **4** significant figures instead, then: below 100 Hz 2 decimals ("43.72 Hz"); 100 to 999.9 Hz 1 decimal ("437.2 Hz"); 1 to 9.999 kHz 3 decimals ("4.372 kHz"); 10 kHz and above 2 decimals ("14.37 kHz"). Rounding happens first, so 999.96 Hz shows "1.000 kHz". At spans of 1 octave or more the 3-figure rule applies unchanged. Reason: at a 1/6-octave view one pixel is about 0.2 Hz at 1 kHz, and 3 figures (10 Hz steps there) would be coarser than the axis labels (§5.9.8).
   - **Note** (A4 = 440 Hz, sharps only, scientific octave numbering where C4 = 261.63 Hz):
     - `s = 12 × log2 (f / 440)`
     - `n = floor (s + 0.5)`
@@ -363,18 +376,26 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
 
 ### 5.6 Spectrum interactions
 
-All three pointer actions are distinguished by button and movement, so none of them conflicts with hover.
+This table replaces the T-010 table (T-034). The pointer actions are distinguished by button, modifier and movement, so none of them conflicts with hover. "G1" to "G21" refer to the exact rules in §5.9.3; the numbers are repeated here for convenience.
 
-| Input on the data rect | Action | Feedback |
+| Input | Action | Feedback |
 |---|---|---|
-| Hover / move | Hover readout (§5.5) | Crosshair, markers, card |
-| Left button down and up with ≤ 4 px of movement | `requestSpectrumReset()`, which clears the all-time max and all-time average | Only when `secondary` is All-time max or All-time avg: a toast "Max/avg curves reset" centred at the top of the data rect (y = data.y + 8, or data.y + 36 while the FROZEN badge shows), for 900 ms. With Off or RT max nothing visible changes, so no toast appears. |
-| Left drag (> 4 px) | Nothing | Protects against accidental resets |
-| Double-click | The same as two clicks (harmless) | |
-| Right button down | Copy the frequency under the pointer to the system clipboard (`juce::SystemClipboard::copyTextToClipboard`) | Toast "Copied 1250 Hz" at (px + 12, py − 28), clamped inside the data rect, for 1200 ms |
-| Mouse wheel | Nothing, passed to the parent | |
+| Hover / move in the data rect | Hover readout (§5.5) over the view mapping | Crosshair, markers, card, hint line |
+| Wheel, vertical, in the data rect (G1, G2) | Zooms frequency around the pointer: one notch scales the visible span by 0.8 (in) or 1.25 (out); Shift gives 0.95 or 1 / 0.95. Limits: 1/6 octave and the home range. Always consumed. | Curves, grid and zoom panel update on the next editor frame |
+| Ctrl+wheel in the data rect (G3) | Zooms level around the pointer, same factors, limits 6 dB and the home range. A touchpad pinch arrives as Ctrl+wheel and zooms level. | as above |
+| Wheel over the frequency labels or the dB labels (G4, G5) | Zooms that axis around the pointer, no modifier needed | as above |
+| Horizontal wheel or sideways two-finger swipe (G6) | Pans frequency by 10 % of the visible span per notch, only while frequency is zoomed | as above |
+| Left drag (> 4 px) or middle drag (G7 to G9) | Pans both axes while zoomed; does nothing at Fit | Grabbing-hand cursor; hover readout hidden while dragging |
+| Left click, ≤ 4 px of movement, no Ctrl (G11) | After a **250 ms defer**, `requestSpectrumReset()`, which clears the all-time max and all-time average. A double-click inside the defer cancels it. | Only when `secondary` is All-time max or All-time avg: a toast "Max/avg curves reset" centred at the top of the data rect (y = data.y + 8, or data.y + 36 while the FROZEN badge shows), for 900 ms, shifted left clear of the zoom panel (§5.9.7). With Off or RT max nothing visible changes, so no toast appears. |
+| Double-click (G12) | Fit: the view returns to the home range. No spectrum reset. | Zoom panel disappears |
+| Ctrl+left drag (G13 to G15) | Box zoom: on release both axes zoom to the box. A box under 4 px in either dimension cancels; so does Esc when the editor has keyboard focus. | Box-zoom cursor and rubber band |
+| Ctrl+left click, middle click (G10, G14) | Nothing | |
+| Right button down (G16) | Copy the frequency under the pointer to the system clipboard (`juce::SystemClipboard::copyTextToClipboard`). Ignored during a pan or box drag. | Toast "Copied 1250 Hz" at (px + 12, py − 28), clamped inside the data rect and clear of the zoom panel (§5.9.7), for 1200 ms |
+| Zoom panel: Fit button, overview strip (G17 to G21) | Fit; pan by dragging the window; press beside the window to centre the view there; the wheel passes through to the data rect | §5.9.6 |
 
-- **Clipboard text:** the hover frequency rounded to 3 significant figures, in Hz, as a plain number with no unit, so it pastes into any EQ field. It has 1 decimal below 100 Hz ("43.7") and none above ("1250", "14300"). It always matches the card value.
+- **Clipboard text:** the hover frequency in Hz, as a plain number with no unit, so it pastes into any EQ field. It always matches the card value:
+  - 3 significant figures (spans of 1 octave or more): 1 decimal below 100 Hz ("43.7") and none above ("1250", "14300");
+  - 4 significant figures (spans below 1 octave, §5.5 "Zoom precision"): 2 decimals below 100 Hz ("43.72"), 1 decimal from 100 to 999.9 Hz ("437.2"), none above ("1253", "14370").
 - No context menu appears anywhere in the editor.
 - **Toast style:** `surface-3` fill, 1 px `accent` border, radius 4, padding 4 × 8, `body-sm` in `text-primary`. It fades to 0 over its last 200 ms, and repaints only its own bounds.
 
@@ -382,15 +403,22 @@ All three pointer actions are distinguished by button and movement, so none of t
 
 - The Freeze toggle in the header is a view flag, not a parameter, and is not persisted.
 - **While frozen:**
-  - The editor stops pulling frames. It keeps the last `SpectrumFrame` and keeps the hover readout, the legend and the interactions working on it.
-  - Range changes redraw the frozen frame in the new range. Slope, smoothing and other analysis changes do not alter it until unfreeze.
+  - Live updates stop. Since T-034 the editor calls `setSpectrumFrozen (true)` on every freeze change (including auto-unfreeze) and keeps reading frames, but accepts only frames that carry the current freeze epoch. While frozen the engine publishes such frames only as re-maps of its bin-domain freeze snapshot, after a view or home-range change. Until a re-mapped frame arrives, the editor draws the frame it has through the new mapping. The hover readout, the legend and the interactions keep working.
+  - Range changes redraw the frozen data in the new range. Slope, smoothing, the secondary mode and the other analysis settings do not alter it until unfreeze: the snapshot keeps the settings of the freeze moment.
+- **Freeze plus zoom (T-034, plan "Freeze semantics"):**
+  - Zoom and pan keep working while frozen and show **full detail**: each view change re-maps the frozen bin-domain snapshot onto the new view, so zooming into a frozen spectrum reveals real structure rather than a stretched picture.
+  - Freeze and unfreeze never change the view. On unfreeze the engine publishes the live state at once, mapped onto the current view.
+  - The bin-spacing hint (§5.9.6) uses the bin spacing of the frozen data, not the current Block setting.
+  - The overview strip shows the frozen frame's overview, so it stays still with the curves.
+  - A home-range change while frozen follows the view rule of §5.9.1 and redraws the frozen data.
+  - The editor drops any frame whose freeze epoch is not the current one, so a live frame published just before the freeze took effect never appears.
 - **Visuals while frozen:**
   - the button uses the `state-frozen` text, a border at 60 % and the `state-frozen-tint` fill;
   - a "FROZEN" badge (20 high, `state-frozen` fill, `caps` with +0.08 em tracking in `text-on-accent`, radius 4, padding 0 × 8) is centred horizontally at y = data.y + 8;
   - the data-rect frame becomes 1 px `state-frozen`.
 - **Auto-unfreeze:** a `channelMode` change from any source (UI, host automation or state load) turns freeze off before the next frame.
 - **Secondary-curve reset is DSP-side:** `SpectrumAnalyser` clears its secondary accumulators whenever `channelMode`, `fftSize`, `window` or the sample rate changes (roadmap Decision 2026-09-28). The editor does **not** call `requestSpectrumReset()` on any of these changes and shows no toast for them. The first frame after the change already carries the cleared curves. The mockup's `resetCurves(false)` call on a mode change only simulates this DSP behaviour. It is not an editor call to port.
-- Left-click-to-reset still works while frozen. The engine resets, and the effect becomes visible after unfreezing.
+- Left-click-to-reset still works while frozen, after the same 250 ms defer (§5.9.3 G11). The engine resets, and the effect becomes visible after unfreezing.
 
 ### 5.8 No frames
 
@@ -398,6 +426,299 @@ All three pointer actions are distinguished by button and movement, so none of t
 - **Audio stopped or silent:** frames that keep arriving fall according to `avgTime`. If no new frame arrives (the host stopped calling `processBlock`), the last frame stays on screen. This is intended, because the spectrum is a snapshot tool.
 - **Sidechain active but silent:** the silhouette falls to the floor.
 - **Sidechain bus not active:** no silhouette and no legend entry. The SC button shows its "no input" state (§9).
+
+### 5.9 Zoom and pan (T-034, milestone M3b)
+
+Source: `docs/plans/spectrum-zoom-pan.md` (View model, Interaction table, Freeze semantics). Every deviation from its defaults is listed in §5.9.10. Token values are in `tokens.json` groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid` and `cursor`.
+
+#### 5.9.1 View model (user terms)
+
+- **Home range:** what the Frequency and Level chips set, as effective values through `source/dsp/DisplayRange.h` (§5.4). It is saved, automatable, and nothing in this section changes it. **Fit** means "the view equals the home range".
+- **View window:** the part of the home range that the data rect shows: `viewFreqLow`, `viewFreqHigh`, `viewDbLow`, `viewDbHigh`.
+  - It always lies inside the home range. There is no overscroll.
+  - Its smallest span is **1/6 octave** (`minViewSpanOctaves`) and **6 dB** (`minViewSpanDb`); its largest span is the home range.
+  - It lives in the editor only. It is never written to a parameter, so it creates no automation, no undo step and no "project modified" flag. It is not saved: the editor always opens at Fit, and `setAnalysisActive (false)` also returns it to Fit.
+- **Zoomed:** the view differs from the home range on at least one axis. Frequency is zoomed when `|ln (viewFreqLow / fLoEff)| > 1e−6` or `|ln (viewFreqHigh / fHiEff)| > 1e−6`; level is zoomed when `|viewDbLow − dbLoEff| > 1e−4` or `|viewDbHigh − dbHiEff| > 1e−4`. Each axis is zoomed or at Fit on its own.
+- **Where each axis goes:** a frequency view change goes to the analysis thread (`setSpectrumView (fLo, fHi)`), which spreads its display points over the visible range, so zooming shows real detail. Level zoom stays in the editor.
+- **Home-range change** (a chip edit, automation, a state load, or a sample-rate change), decided per axis:
+  1. An axis that was at Fit (compared with the old home range) follows the new home range, so it stays at Fit.
+  2. A zoomed axis keeps its span and its low edge where possible: it is shifted inside the new home range. If its span is larger than the new home span, that axis returns to Fit.
+  
+  The other axis is not touched.
+- **Other events:** a resize, a meter collapse, a `channelMode` change and freeze or unfreeze keep the view (in frequency and dB) unchanged.
+
+#### 5.9.2 View arithmetic (`source/gui/ZoomMath.h`, clamps from `DisplayRange.h`)
+
+Frequency is handled in natural-log units (`u = ln f`), level in dB. The data rect is (x0, y0, w, h). `L = ln (viewFreqHigh / viewFreqLow)`, `S = viewDbHigh − viewDbLow`, and `Lhome`, `Shome` are the home spans. `Lmin = ln 2 / 6`, `Smin = 6`.
+
+- **Pointer fractions:** `t = clamp ((px − x0) / w, 0, 1)` and `s = clamp ((py − y0) / h, 0, 1)` (0 at the top).
+- **Anchored frequency zoom by factor k:** `uA = ln f(px)`; `L' = clamp (L × k, Lmin, Lhome)`; `uLo' = uA − t × L'`; then `clampViewFrequency` shifts `[uLo', uLo' + L']` inside the home range. If `L' ≥ Lhome − 1e−6`, the axis is set exactly to the home range.
+- **Anchored level zoom by factor k:** `dA = dB(py)`; `S' = clamp (S × k, Smin, Shome)`; `viewDbHigh' = dA + s × S'`; `viewDbLow' = viewDbHigh' − S'`; then `clampViewDb`. If `S' ≥ Shome − 1e−4`, the axis is set exactly to the home range.
+- The span is clamped before the anchor is applied, so the value under the pointer stays where it is on every step, including a step that hits the span limit. Only the home-edge clamp can move it.
+- **Wheel notches:** `n = wheel.deltaY / 0.234375`, negated when `wheel.isReversed` (as `juce::Slider` does), clamped to ±3 per event. 0.234375 is the delta that JUCE reports on Windows for one 120-unit notch (60 / 256). Positive n (wheel turned away from the user) zooms in. `k = 0.8^n`; with Shift `k = 0.95^n`. So one notch scales the span by 0.8 in and by 1.25 out; touchpads and high-resolution wheels send fractions of a notch and zoom in proportion.
+- **Horizontal pan:** `uLo += nX × 0.10 × L`, with `nX = −wheel.deltaX / 0.234375` (JUCE reports scrolling right as a negative deltaX) and the same ±3 clamp. One notch moves the view by 10 % of its span; scrolling right shows higher frequencies.
+- **Drag pan by (dx, dy) pixels since the press**, computed from the view at the press (`v0`): `uLo = ln v0.fLo − dx / w × L0` and `viewDbHigh = v0.dbHigh + dy / h × S0`, spans unchanged, then clamped. The point grabbed at the press stays under the pointer until a home edge is reached; there the content stops and the pointer slides over it.
+- **Box to view:** `fLo = f (min x)`, `fHi = f (max x)`, `dbHigh = dB (min y)`, `dbLow = dB (max y)`, with the box corners clamped to the data rect. An axis narrower than its minimum span is widened to the minimum around its centre (the geometric centre `√(fLo × fHi)` for frequency, the arithmetic centre for dB). Both axes are then clamped into the home range by shifting.
+- **Overview to view:** the strip maps the home range (log frequency on x, dB on y with `dbHi` at the top). A press at strip point q has home coordinates `(uq, dq)`. Centring on it gives `uLo = uq − L / 2` and `viewDbHigh = dq + S / 2`, spans unchanged, then clamped.
+
+#### 5.9.3 Gestures
+
+"Data rect" means the plotted area of §4.1. The **frequency gutter** is (data.x, data.bottom, data.w, 24), under the data rect; the **dB gutter** is (plot.x, data.y, 48, data.h), left of it. The bottom-left corner (48 × 24) is neither.
+
+| # | Input | Where | Action | Exact rule |
+|---|---|---|---|---|
+| G1 | Wheel, vertical | Data rect, and the zoom panel (which passes the wheel through to the data rect at the same position) | Zooms frequency, anchored at the pointer's x | `k = 0.8^n`; limits 1/6 octave and the home range. Always consumed, also when nothing changes at a limit. |
+| G2 | Shift+wheel | Data rect | Fine frequency zoom | `k = 0.95^n`. If the platform reports Shift+wheel as horizontal (deltaY = 0, deltaX ≠ 0), deltaX is used as the vertical amount. Shift+wheel never pans. |
+| G3 | Ctrl+wheel, Ctrl+Shift+wheel | Data rect | Zooms level, anchored at the pointer's y; Shift for fine steps | Same factors; limits 6 dB and the home range. A Windows precision-touchpad pinch arrives as Ctrl+wheel and therefore zooms level (accepted v1 limitation, plan risk Z4). |
+| G4 | Wheel, any modifier | Frequency gutter | Zooms frequency, anchored at the pointer's x | Shift for fine steps; Ctrl is ignored, because the gutter chooses the axis |
+| G5 | Wheel, any modifier | dB gutter | Zooms level, anchored at the pointer's y, with no modifier needed | Shift for fine steps |
+| G6 | Horizontal wheel, or a sideways two-finger swipe | Data rect, frequency gutter | Pans frequency | 10 % of the visible span per notch. Consumed only while frequency is zoomed; at frequency Fit it is passed to the parent. An event whose `|deltaX|` exceeds `|deltaY|` pans; otherwise it zooms (G1), so a diagonal swipe never does both. |
+| G7 | Left press, then more than 4 px of movement (Euclidean distance from the press point) | Data rect, while zoomed on either axis | Pans both axes like a hand tool | 1:1 (§5.9.2). The pan includes the first 4 px, so the content does not jump at the threshold. An axis at Fit cannot move. Wheel events during the pan are applied, and the pan continues from the new view. |
+| G8 | Left drag at Fit (both axes) | Data rect | Nothing: no pan and no reset | The crosshair cursor stays and the hover readout continues (the pre-T-034 behaviour that protects against accidental resets) |
+| G9 | Middle press and drag (> 4 px) | Data rect | The same as G7, or G8 at Fit | |
+| G10 | Middle click (≤ 4 px) | Data rect | Nothing | |
+| G11 | Left click: press and release within 4 px, without Ctrl | Data rect | After **250 ms**, `requestSpectrumReset()` and the reset toast (§5.6) | Started on the release. Cancelled by a double-click (G12) that arrives before it fires. A release that ends a pan, a box or a no-op drag never starts it. |
+| G12 | Double-click: JUCE `mouseDoubleClick` (the second press within the OS double-click time and distance) | Data rect | **Fit** both axes, at the second press | Cancels a pending G11 reset. The release that completes the double-click starts no reset. If the second click comes after the 250 ms defer, the first click's reset has already run; this is the same edge case as the chips (§7.1). |
+| G13 | Ctrl+left press, then drag | Data rect | **Box zoom:** a rubber band from the press point to the pointer, clamped to the data rect. On release both axes zoom to it (§5.9.2). | The mode is fixed at the press: releasing Ctrl during the drag keeps the box. A box narrower or lower than **4 px** at the release cancels (no zoom, no reset). An axis below its minimum span is widened, and the widened result is previewed (§5.9.6, box style). |
+| G14 | Ctrl+left click (no movement) | Data rect | Nothing | So a cancelled box never resets curves |
+| G15 | Esc during a box drag | Editor with keyboard focus | Cancels the box | SpectrumView never takes keyboard focus (§7.2), so Esc works only when the host has given the editor focus and a control in it holds the focus. Otherwise, dragging back to a box under 4 px cancels. |
+| G16 | Right press | Data rect | Copies the frequency under the pointer (view mapping, §5.6) | Ignored while a pan or a box drag is active |
+| G17 | Fit button, click | Zoom panel | **Fit** both axes, on release inside the button | |
+| G18 | Press on the view window, then drag | Overview strip | Pans both axes | The pointer's offset from the window centre is kept; 1:1 in strip coordinates |
+| G19 | Press outside the view window | Overview strip | The view centres on that point at once (both axes, spans kept, clamped); continuing to drag pans as in G18 | The press acts on mouse-down, so there is no click or double-click ambiguity in the strip |
+| G20 | Double-click, right-click, middle press | Zoom panel | Nothing (a double-click on the strip is two G19 presses) | |
+| G21 | Wheel | Zoom panel | Passes through to the data rect at the same position (G1 to G3) | The panel component does not override `mouseWheelMove`, so JUCE forwards the event to SpectrumView |
+
+**Coalescing:** the input handlers only record the requested view. The editor applies it once per editor update (§12), so a burst of wheel events or drag moves produces at most one repaint and one `setSpectrumView` per update.
+
+#### 5.9.4 Cursors
+
+| State | Cursor | Source |
+|---|---|---|
+| Data rect, no button down, Ctrl not held (zoomed or not) | Crosshair | `juce::MouseCursor::CrosshairCursor` |
+| Data rect, Ctrl held, no button down | Box zoom | `assets/ui/cursor-zoom-box.svg`, hotspot (7.5, 7.5) |
+| Box drag (G13) | Box zoom | as above |
+| Press, before the 4 px threshold | Unchanged | |
+| Pan (G7, G9) | Grabbing hand | `assets/ui/cursor-hand-grab.svg`, hotspot (12, 12) |
+| Drag at Fit (G8) | Crosshair | |
+| Frequency and dB gutters | Normal arrow | |
+| Zoom panel background and text rows | Normal arrow | |
+| Fit button | The cursor the header buttons use (T-011) | |
+| Overview strip, over the window's hit area | Open hand | `assets/ui/cursor-hand-open.svg`, hotspot (12, 12) |
+| Overview strip, outside the window | `juce::MouseCursor::PointingHandCursor` | |
+| Overview drag (G18, G19) | Grabbing hand | |
+
+- **Ctrl state:** take it from the modifiers of the latest mouse event, and from `modifierKeysChanged` when the host delivers it. Some hosts do not deliver key changes to an unfocused plugin window; then the cursor updates on the next mouse move.
+- **Custom cursors:** render each SVG once per display scale into an ARGB `juce::Image` of 24 × scale pixels, and create `juce::MouseCursor (juce::ScaledImage (image, scale), hotspot)`. T-037 checks that the hotspot lands on the logical point given above at 100 % and 200 %. The cursors are fixed black and white and are never recoloured (§11).
+
+#### 5.9.5 Hover readout, crosshair, markers and hint during gestures
+
+| State | Crosshair | Markers | Hover card | Legend fade (§5.2) | Hint line |
+|---|---|---|---|---|---|
+| Hover, no button | shown | shown | shown | normal rule | shown |
+| Press, before the 4 px threshold | shown | shown | shown | normal rule | shown |
+| Drag at Fit (G8) | shown | shown | shown | normal rule | shown |
+| Pan (G7, G9) | hidden | hidden | hidden | 100 % | hidden |
+| Box drag (G13) | hidden | hidden | hidden | 100 % | hidden |
+| Wheel zoom (G1 to G6) | shown, recomputed in the same frame | shown | shown, values recomputed (the anchored frequency stays fixed) | normal rule | shown (text follows the zoom state) |
+| Pointer over the zoom panel | hidden | hidden | hidden | 100 % | hidden |
+| Overview drag (G18, G19) | hidden | hidden | hidden | 100 % | hidden |
+
+- After a pan or a box ends with the pointer inside the data rect, the readout reappears at the pointer on the next frame, with no delay.
+- Why hidden: during a pan every value in the card changes under a moving spectrum, the card covers the data the user is dragging, and hiding it reduces the paint cost (§12).
+- The readout uses the view mapping, so the frequency, note and levels are correct at every zoom. Levels outside the visible dB range still show their true values (§5.5).
+
+#### 5.9.6 Zoom panel: indicator and overview strip
+
+The indicator and the overview strip form one **zoom panel**: a child component of SpectrumView at the top-right corner of the data rect. It shows only while the view is zoomed, and it appears and disappears instantly (no animation, §3.3).
+
+**Geometry** (`zoomLayout`):
+- Width `Wz = clamp (round (data.w / 4), 200, 280)`.
+- Position x = data.right − 8 − Wz, y = data.y + 8.
+- Height 92, or 108 while the bin-spacing row shows (the panel grows downwards and the strip moves with it).
+- Fill `zoom.panel-fill` (opaque, so text contrast does not depend on the curves beneath), 1 px `zoom.panel-border` inside the bounds, radius 6.
+
+Panel-relative layout:
+
+| Item | Rect (panel-relative) | Content |
+|---|---|---|
+| Row 1, frequency range | (8, 6, Wz − 60, 16) | Text, left-aligned, vertically centred |
+| Fit button | (Wz − 44, 2, 40, 24) | "Fit" |
+| Row 2, level range | (8, 26, Wz − 16, 16) | Text |
+| Row 3, bin spacing (only when fewer than 16 bins are in view) | (8, 42, Wz − 16, 16) | Text |
+| Overview strip | (6, 46, Wz − 12, 40), or (6, 62, Wz − 12, 40) with row 3 | Mini-map |
+
+Resolved in editor coordinates:
+
+| Size | Data rect | Wz | Panel | Fit button | Row 1 | Row 2 | Row 3 | Strip |
+|---|---|---|---|---|---|---|---|---|
+| 1200 × 700 (default) | (48, 56, 840, 564) | 210 | (670, 64, 210, 92 or 108) | (836, 66, 40, 24) | (678, 70, 150, 16) | (678, 90, 194, 16) | (678, 106, 194, 16) | (676, 110, 198, 40), or (676, 126, 198, 40) |
+| 920 × 540 (minimum) | (48, 56, 560, 404) | 200 | (400, 64, 200, 92 or 108) | (556, 66, 40, 24) | (408, 70, 140, 16) | (408, 90, 184, 16) | (408, 106, 184, 16) | (406, 110, 188, 40), or (406, 126, 188, 40) |
+| 1200 × 700, meters collapsed | (48, 56, 1136, 564) | 280 | (896, 64, 280, 92 or 108) | (1132, 66, 40, 24) | (904, 70, 220, 16) | (904, 90, 264, 16) | (904, 106, 264, 16) | (902, 110, 268, 40), or (902, 126, 268, 40) |
+| 2560 × 1600 (maximum) | (48, 56, 2200, 1464) | 280 | (1960, 64, 280, 92 or 108) | (2196, 66, 40, 24) | (1968, 70, 220, 16) | (1968, 90, 264, 16) | (1968, 106, 264, 16) | (1966, 110, 268, 40), or (1966, 126, 268, 40) |
+
+**Indicator text** (font `axis`: JetBrains Mono 400, 11 px, drawn in a 16 px row):
+- **Row 1, frequency:** each end in the 3-figure format of §5.5. When both ends have the same unit, the unit appears once: "1.00 … 1.12 kHz", "500 … 900 Hz"; otherwise both carry their unit: "437 Hz … 1.25 kHz". The separator is " … " (U+2026 with a space on each side), as in the Level chip. The longest possible text, for example "43.7 Hz … 1.25 kHz", is 18 characters = 119 px, which fits the 140 px row at the minimum size.
+- **Row 2, level:** each end with 1 decimal, U+2212 for negative values, "+" for positive values and "0.0" for zero, then " dB": "−30.0 … −24.0 dB". The longest, "−150.0 … −144.0 dB", is 18 characters = 119 px.
+- **Colour:** `zoom.range-text-zoomed` (text-primary) for an axis that is zoomed, `zoom.range-text-full` (text-secondary) for an axis at Fit. The brighter row tells the user which axis is zoomed.
+- **Row 3, bin spacing:** shown when `binsInView = (viewFreqHigh − viewFreqLow) / binHz < 16`, where `binHz` is the bin spacing of the displayed data (sample rate / block size; the freeze-time value while frozen; §15 question 6). Text "Bin spacing " plus `binHz` in the 3-figure format of §5.5: "Bin spacing 11.7 Hz" (48 kHz, 4096), "Bin spacing 93.8 Hz" (48 kHz, 512), "Bin spacing 0.7 Hz" (48 kHz, 65536). Colour `zoom.bin-hint-text` (state-warn). At most 19 characters = 125 px.
+- **Text cost:** the strings change only when the view changes. They are drawn from the label-image cache (§12).
+
+**Fit button** (40 × 24, radius 4, label "Fit" in `body`, Inter 500 12 px, centred):
+
+| State | Fill | Border | Label |
+|---|---|---|---|
+| Normal | none (panel fill shows) | 1 px `zoom.panel-border` | `zoom.range-text-full` |
+| Hover | `zoom.fit-hover-fill` | 1 px `zoom.panel-border` | `zoom.range-text-zoomed` |
+| Pressed | `zoom.fit-hover-fill` | 1 px `zoom.fit-pressed` | `zoom.fit-pressed` |
+
+It acts on release inside the button, like the other action buttons (§7.1). It has no icon.
+
+**Overview strip:**
+- **Frame and background:** a 1 px `zoom.panel-border` frame drawn inside the strip rect. The inner rect I (the strip inset by 1 px: 196 × 38 at the default size, 186 × 38 at the minimum) is filled with `zoom.overview-bg`.
+- **Axes:** x is log frequency over the whole home range (`fLoEff` to `fHiEff`); y is dB over the home range (`dbHi` at the top). There is no grid and there are no labels.
+- **Curve:** primary A only (in dual modes, L or M), from the frame's 256-point overview (`overviewFreqHz`, `overviewDb`, plan "Data flow"). For each physical pixel column of I, take the highest dB of the points that fall in the column. If none falls in it, interpolate linearly in log frequency between the neighbours. Clamp y to I; a non-finite value goes to the bottom.
+  - **Body:** one rect per column, from y down to the bottom of I, in `zoom.overview-fill`.
+  - **Top line:** one rect per column, from `min (y, yPrevious)` to `max (y, yPrevious) + 1 physical px`, in `zoom.overview-line`. This gives a continuous 1 px line without paths.
+- **View window:** the view mapped into I: x1 = x (viewFreqLow), x2 = x (viewFreqHigh), y1 = y (viewDbHigh), y2 = y (viewDbLow).
+  - Each axis is widened to at least **6 px** around its centre (`windowMinPx`) and shifted to stay inside I. At the 1/6-octave minimum the window would otherwise be about 3 px wide.
+  - **Outside the window:** `zoom.overview-shade` (`#0A0D13` at 60 %), up to 4 rects.
+  - **Outline:** 1 px `zoom.window-stroke` along the inside of the window rect. When an axis is at Fit, that axis's outline runs along the edges of I.
+  - **Hit area:** the window rect widened to at least **16 × 16 px** around its centre (`windowHitMinPx`). It may extend past I.
+
+Strip states:
+
+| State | Window fill | Other | Cursor |
+|---|---|---|---|
+| Normal | none | | arrow outside the strip |
+| Pointer over the window's hit area | `zoom.window-fill-hover` (accent at 12 %) | | open hand |
+| Pointer in the strip, outside the hit area | none | 1 px `zoom.window-ghost` outline of the window that a press there would produce (centred on the pointer, clamped) | pointing hand |
+| Dragging (G18, G19) | `zoom.window-fill-drag` (accent at 20 %) | no ghost | grabbing hand |
+| Frozen | as above | The curve comes from the frozen frames, so it stands still | |
+| No frame yet | as above | Background, frame, shade and window only | |
+
+**Box-zoom rubber band** (G13), drawn over the curves and the zoom panel (z-order in §5.9.7):
+- Fill `zoom.box-fill` (`#E8ECF3` at 8 %), one rect.
+- Outline 1 px `zoom.box-stroke`, 4 rects, on physical pixel edges.
+- If either axis of the current box is below its minimum span, the widened and clamped result (§5.9.2) is also outlined in 1 px `zoom.box-target`, clipped to the data rect. This shows the user what the release will produce.
+- The box outline is neutral white, so it can never be mistaken for a curve.
+
+**Tooltips** (700 ms delay, standard tooltip style):
+- Fit button: "Show the full range set by the Frequency and Level chips. Double-clicking the spectrum does the same."
+- Rows 1 and 2: "Visible range. Scroll to zoom frequency; Ctrl+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan."
+- Row 3: "Fewer than 16 FFT bins are in view, so the curve is drawn straight between bins. Raise Block for finer detail."
+- Overview strip: "Overview of the full range. Drag the window to pan, or click beside it to jump there."
+
+#### 5.9.7 Collision rules
+
+**Z-order inside the plot region**, back to front:
+1. the grid (cached image or rect lists, §12);
+2. the curves;
+3. the crosshair;
+4. the markers;
+5. the legend;
+6. the FROZEN badge;
+7. the zoom panel;
+8. the box-zoom rubber band;
+9. the hover card;
+10. the hint line;
+11. the toasts.
+
+Items 8 to 11 are painted in `paintOverChildren` (or by components above the panel), so they are never hidden by the panel. The frozen data-rect frame stays as it is today.
+
+**Positions at the two reference sizes** (editor coordinates; the legend, badge and toast widths are estimates for Inter at the token sizes):
+
+| Element | 1200 × 700 | 920 × 540 | Rule |
+|---|---|---|---|
+| Legend | x 56 to at most 317 (the widest case: dual mode, "All-time max" and "Sidechain", about 261 px), y 64 to 84 | the same | Top-left, unchanged. It never reaches the panel: 353 px clearance at the default size, 83 px at the minimum. |
+| FROZEN badge | about 60 px wide, centred at x 468: 438 to 498, y 64 to 84 | centred at x 328: 298 to 358 | Unchanged. Clearance to the panel: 172 px and 42 px. |
+| Reset toast | centred at x 468, y 64 (y 92 while frozen), about 134 px wide: 401 to 535 | centred at x 328: 261 to 395 | While the panel shows, if the toast's right edge would pass panel.x − 8, shift it left so it ends at panel.x − 8 (`toastClearance`). At the minimum size this moves it 3 px, to 258 to 392. |
+| Zoom panel | x 670 to 880, y 64 to 156 (172 with row 3) | x 400 to 600, y 64 to 156 (172) | Top-right, §5.9.6 |
+| Hint line | right edge 880, y 596 to 614, at most 474 px wide, so x ≥ 406 | right edge 600, y 436 to 454, so x ≥ 126 | Bottom-right, unchanged. Vertical clearance to the panel: 424 px and 264 px. |
+| Copy toast | at (px + 12, py − 28), clamped inside the data rect | the same | If it would intersect the panel bounds inflated by 4 px, place it at px − 12 − its width instead (still clamped). It is always drawn above the panel. |
+| Hover card | follows the pointer | the same | Avoids the panel with the candidate rule of §5.5; it is above the panel when no candidate fits |
+
+Consequences:
+- The panel never covers the legend, the FROZEN badge or a toast: the first two are at different positions at every size from 920 × 540 up (the panel's left edge only moves right as the data rect grows), and the toasts are drawn above it.
+- The legend's 25 % fade rule (§5.2) is unchanged. The panel does not fade, because it is an interactive control.
+- The pointer over the panel shows no crosshair, card or hint (§5.9.5).
+
+#### 5.9.8 Deep-zoom grid rules
+
+These rules extend §5.3. At Fit, and at every view the §5.3 rules already label well, they give exactly the §5.3 result.
+
+**Frequency labels.** Inputs: the view `[fL, fH]`, the data width w, the plot-region width PW, and the label advance a = 6.6 px per character (JetBrains Mono 11 px is 0.6 em per character, and every label character is one monospaced cell).
+- **Gap rule:** a candidate label set qualifies when
+  - the smallest distance between adjacent label centres, over all its values inside the view (before edge skipping), is at least **G = max (36, 6.6 × the longest label's character count + 16)**; and
+  - at least 2 of its labels survive the §5.3 edge rule (a label is skipped if it would extend past x = 2 or x = PW − 2).
+  
+  G is 36 px for the 3-character labels of §5.3, so wide views are unchanged; longer labels such as "1.25k" (5 characters) need 49 px, which keeps at least 16 px of space between labels.
+- **Candidates:**
+  1. **Decade sets** (§5.3): {1, 2, 3, 5, 7} × 10^k, then {1, 2, 5} × 10^k, then {1} × 10^k. Take the densest one that qualifies. Its labels use the §5.3 format ("20", "300", "1k", "20k").
+  2. **Linear step:** the smallest step s in {1, 2, 5} × 10^n Hz (n any integer) that qualifies. Its labels are all multiples of s inside the view. Search upwards from n = floor (log10 (fH − fL)) − 3, and skip any step with more than 400 multiples in view. On a log axis the smallest gap is always between the two highest multiples, so only that gap needs checking.
+  
+  **Choose** the candidate with more surviving labels; on a tie, the decade set. At 20 Hz to 20 kHz the decade set has 16 labels against the linear step's 2, so wide views keep the §5.3 look, and narrow views get linear steps.
+- **Fallback** (a guard; it is not reached at any allowed span and size): the smallest linear step whose top gap is at least 36 px, ignoring label width.
+- **Linear label format:** values are computed as k × s and rounded to 6 decimals, so a 0.2 Hz step never prints "20.200000001".
+  - Below 1000 Hz: plain Hz, with d = max (0, −floor (log10 s)) decimals. s = 1 or 2 gives "102", "104"; s = 0.2 or 0.5 gives "20.2", "20.5"; s = 0.05 gives "10.25".
+  - From 1000 Hz up: kHz with "k", with d = max (0, −floor (log10 (s / 1000))) decimals and trailing zeros kept, so one set has one label width. s = 100 gives "1.0k", "1.1k", "1.2k"; s = 10, 20 or 50 gives "1.00k", "1.25k", "3.05k"; s ≥ 1000 gives "11k", "12k".
+- **Lines:**
+  - Decade mode: unchanged (§5.3).
+  - Linear mode: a line at every multiple of s in view (`grid-major` when the value is a power of ten, otherwise `grid-minor`), plus an unlabelled `grid-minor` line at every odd multiple of s / 2 when the gap between the two highest half-step lines is at least 16 px (`deepGrid.halfStepMinPx`).
+
+**dB labels.**
+- **Step:** the smallest of **{0.1, 0.2, 0.5, 1, 2, 3, 6, 12, 24} dB** whose pixel spacing is at least 20 px. This is the §5.3 rule with three sub-dB steps added below 1 dB. Lines sit on multiples of the step (k × step, rounded to 6 decimals); the 0 dB line uses `grid-major`.
+- **Format:** for steps of 1 dB or more, signed integers as in §5.3 ("+6", "0", "−12"). For steps below 1 dB, signed with 1 decimal: "−12.5", "0.0", "+0.5". The longest label, "−149.5", is 6 characters = 39.6 px; right-aligned at data.x − 8 = 40, it starts at x = 0.4, inside the 48 px gutter.
+- Labels whose centre would be within 6 px of the plot region's top or bottom edge are skipped, as today.
+
+**Guarantees and how they are verified:**
+- **dB:** consecutive steps differ by at most 2.5 ×, so the chosen spacing is below 50 px, unless even 24 dB is under 20 px, which cannot happen: the widest home span is 180 dB and the smallest data height is 404 px, so 12 dB is at least 26.9 px. With h ≥ 404 px there are therefore at least 8 dB lines, all at least 20 px apart.
+- **Frequency:** the worked table below shows 7 to 16 labels at the extremes (the minimum span at the minimum width, and Fit). T-037 adds a `ZoomMath` unit test that sweeps the view span from 1/6 octave to the widest home range (10 Hz to 40 kHz), with centres from 10 Hz to 24 kHz, at w = 560 and w = 840. It asserts at least 2 labels and adjacent label centres at least 36 px apart for every case.
+
+**Worked examples** (plot region widths PW = 904 at 1200 × 700 and PW = 624 at 920 × 540; "gap" is the smallest distance between adjacent label centres):
+
+| # | Size | View | Frequency labels | Smallest gap / G | dB step, labels | dB spacing |
+|---|---|---|---|---|---|---|
+| A | 1200 × 700 | Fit: 20 Hz to 20 kHz, −90 to +6 dB | Decade {1, 2, 3, 5, 7}: 20, 30, 50, 70, 100, 200, 300, 500, 700, 1k, 2k, 3k, 5k, 7k, 10k, 20k (16). The linear candidate (s = 10 kHz) has 2. | 40.9 px (50 to 70) / 36 | 6 dB: −90 … +6 (17) | 35.3 px |
+| B | 920 × 540 | Fit: 20 Hz to 20 kHz, −90 to +6 dB | Decade {1, 2, 5}: 20, 50, 100, 200, 500, 1k, 2k, 5k, 10k, 20k (10). {1, 2, 3, 5, 7} fails (27.3 px). | 56.2 px / 36 | 6 dB: −90 … +6 (17) | 25.3 px |
+| C | 1200 × 700 | 500 Hz to 2 kHz, −48 to −12 dB | Linear s = 200 Hz: 600, 800, 1.0k, 1.2k, 1.4k, 1.6k, 1.8k, 2.0k (8), against 4 for the decade set (500, 700, 1k, 2k). s = 100 Hz fails (31.1 px). | 63.8 px (1.8k to 2.0k) / 42.4 | 2 dB: −48 … −12 (19) | 31.3 px |
+| D | 1200 × 700 | 3.00 to 3.37 kHz (1/6 octave), −20 to −14 dB | Linear s = 50 Hz: 3.00k, 3.05k, 3.10k, 3.15k, 3.20k, 3.25k, 3.30k, 3.35k (8). s = 20 Hz fails (43.4 px). | 109.3 px / 49.0 | 0.5 dB: −20.0 … −14.0 (13) | 47.0 px |
+| E | 920 × 540 | **minimum span at the minimum size:** 1.00 to 1.12 kHz (1/6 octave), −30 to −24 dB (6 dB) | Linear s = 20 Hz: 1.00k, 1.02k, 1.04k, 1.06k, 1.08k, 1.10k, 1.12k (7). s = 10 Hz fails (43.5 px against 49). | 87.3 px / 49.0 | 0.5 dB: −30.0 … −24.0 (13) | 33.7 px |
+| F | 920 × 540 | **minimum span at the minimum size, at the bottom of the default range:** 20.0 to 22.4 Hz (1/6 octave), −90 to −84 dB | Linear s = 0.2 Hz: 20.0, 20.2, …, 22.4 (13). s = 0.1 Hz fails (21.7 px). | 43.5 px / 42.4 | 0.5 dB: −90.0 … −84.0 (13) | 33.7 px |
+
+Edge checks: in A, "20k" at x = 888 ends at 897.9 ≤ 902; in E, "1.12k" at x = 597.4 ends at 613.9 ≤ 622; in F, "22.4" ends at 610.6 ≤ 622.
+
+#### 5.9.9 Fit and no-op cases
+
+- **At Fit (both axes):** a left or middle drag does nothing (G8): no pan, no reset, the crosshair stays and the readout continues. A horizontal wheel is passed to the parent. A vertical wheel that would zoom out is consumed and changes nothing. The zoom panel is hidden.
+- **One axis at Fit:** a drag pans only the zoomed axis; the other axis is clamped and does not move. The overview window then spans the strip's full height (or width) on that axis.
+- **At a limit:** zooming in at the minimum span, zooming out at the home range, and panning against a home edge change nothing. There is no flash, sound, toast or animation.
+- **Returning to Fit** by zooming out step by step: when both spans reach the home spans, the view is set exactly to the home range (§5.9.2), the panel disappears and the hint switches to its Fit text.
+- **Fit** (double-click or the Fit button) never resets curves and never changes a parameter.
+
+#### 5.9.10 Changes from the plan
+
+| # | Plan default | This spec | Reason |
+|---|---|---|---|
+| 1 | One notch scales the span by 0.8 or 1.25; Shift by 0.95 or 1.05 | The factors apply **per notch-equivalent**: `k = 0.8^n` and `0.95^n`, where n is the wheel delta divided by one notch (0.234375 in JUCE on Windows), clamped to ±3 per event. Zooming in by one notch is 0.8 and out is 1.25, as planned. Fine zooming out is 1 / 0.95 = 1.0526 instead of 1.05. | Touchpads and high-resolution wheels send many small deltas; counting each event as a notch would make touchpad zoom far too fast. With exact inverse factors, zooming in and back out returns to the same view. |
+| 2 | Horizontal wheel pans frequency (no amount) | 10 % of the visible log span per notch-equivalent; an event pans only when `|deltaX| > |deltaY|`, otherwise it zooms | The plan gave no number. The dominant-axis rule keeps a slightly diagonal touchpad swipe from zooming and panning at once. |
+| 3 | Home-range change: clamp, keep span, else Fit | Decided **per axis**, and an axis at Fit follows the new home range | A Level chip change should not reset the frequency zoom, and a chip change while unzoomed must not produce a "zoomed" state. |
+| 4 | Overview: click outside the rectangle centres the view | A **press** outside the window centres at once, and continuing the drag pans | One gesture to jump and fine-tune. It also removes any click or double-click ambiguity in the strip. |
+| 5 | Not specified | Middle click, Ctrl+click and a right-click during a drag do nothing; a release that ends a pan, box or no-op drag never resets; the release that completes a double-click does not start a reset | Clarifications, so no gesture can reset curves by accident. |
+| 6 | Not specified | The hover card and clipboard use 4 significant figures while the visible span is below 1 octave (§5.5, §5.6) | At deep zoom, 3 figures are coarser than the axis labels and the pixel resolution. The unzoomed formats, and the T-012 tests that pin them, are unchanged. |
+| 7 | An indicator and an overview strip | Both in one **zoom panel** at the top-right of the data rect | One rectangle to keep clear of the legend, badge, toasts, hint and hover card, at every size. |
+| 8 | One view change per editor update | The same, and view-change repaints follow the T-029 frame pacing (§12) | A view change repaints the whole data rect, like a new frame, so it must obey the same pacing to stay inside the CPU budget. |
+| 9 | Esc cancels a box when the editor has focus | The same; SpectrumView never takes keyboard focus itself | Taking focus on a click could stop the host's Space (transport) key from working in some hosts. |
+| 10 | Not specified | The wheel over the zoom panel passes through to the data rect | The panel covers part of the data rect; the wheel should not stop working there. |
+| 11 | Not specified | The box-zoom preview outlines the widened result when an axis is below its minimum span | The user sees in advance what the release will produce. |
+| — | Minimum spans 1/6 octave and 6 dB; 4 px drag threshold; 250 ms click defer; 4 px box cancel | **Unchanged** | Checked against the grid rules: the 1/6-octave span at 560 px still has 7 to 13 labels (§5.9.8, E and F), and 6 dB at 404 px has 13 dB lines 33.7 px apart. |
+
+#### 5.9.11 What the mockup simplifies
+
+- **Engine:** the mockup's synthetic analyser keeps 4096 log-spaced points from 10 Hz to Nyquist as its stand-in for the engine's bin-domain spectra, and draws the ones in view (at most 2 vertices per physical column, §5.1). Zooming therefore shows more detail, as the real re-mapping does. The real engine uses linear FFT bins, so below the bin-spacing hint threshold the plugin shows straight segments between bins, while the mockup stays smooth.
+- **Wheel units:** the browser reports 100 px (or 3 lines) per notch rather than JUCE's 0.234375. The mockup normalises to notches the same way (§5.9.2).
+- **Double-click:** the mockup uses the browser's click count on the second press, which follows the OS double-click time, the same as JUCE's `mouseDoubleClick`.
+- **Rendering:** the mockup draws with Canvas 2D and DOM elements. It shows the look and behaviour, not the T-029 drawing method of §12.
 
 ## 6. Control inventory
 
@@ -437,7 +758,8 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
 | Action | Control | Size | Behaviour |
 |---|---|---|---|
 | Freeze | Header toggle "Freeze" | 84 × 28 | §5.7 |
-| Reset spectrum curves | Header button "Reset curves", and a left-click on the spectrum | 116 × 28 | `requestSpectrumReset()`; toast as in §5.6 |
+| Reset spectrum curves | Header button "Reset curves", and a left-click on the spectrum (after the 250 ms defer, §5.9.3 G11) | 116 × 28 | `requestSpectrumReset()`; toast as in §5.6 |
+| Fit view (T-034) | "Fit" button in the zoom panel, and a double-click on the spectrum | 40 × 24 | Returns the view window to the home range (§5.9). Not a parameter, not undoable, not saved. |
 | Reset statistics | Meter-strip button "Reset" | 68 × 28 | `requestStatsReset()`. The next snapshot shows the cleared values. The editor also clears its own held values (peak-hold ticks, TP hold, crest window) immediately. |
 | Collapse meters | Header icon toggle | 28 × 28 | §4.5; persisted in `ViewState.metersCollapsed` |
 | Settings panel | Header icon button | 28 × 28 | §6.1 |
@@ -501,15 +823,14 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
      - "JetBrains Mono 2.304. Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono). Licensed under the SIL Open Font License, Version 1.1."
      - "The font software is not sold separately. The full license texts are below and in the installed THIRD-PARTY-NOTICES.txt."
   2. Heading "Software".
-     - "JUCE 8.0.15. Copyright (c) Raw Material Software Limited. {JUCE license line}". The license line depends on the JUCE license tier, which the user chooses before M5 (roadmap Risk 9; Open question 1).
+     - "JUCE 8.0.15. Copyright (c) Raw Material Software Limited. {JUCE license line}". The license line depends on the JUCE license tier, which the user chooses before M5 (roadmap Risk 9). It stays a placeholder until M5 (T-019); JUCE 8's open-source option is AGPLv3 (§15, closed question 1).
      - "pffft (marton78 fork). A BSD-style license. The copyright notices, conditions and disclaimer follow in full." The copyright holders are listed as they appear in pffft's license file at the pinned version (they are expected to be Julien Pommier and, for the FFTPACK-derived parts, UCAR). They are copied from that file, not typed by hand.
-  3. Heading "SIL Open Font License 1.1: Inter": the contents of `assets/ui/fonts/OFL-Inter.txt`, verbatim.
-  4. Heading "SIL Open Font License 1.1: JetBrains Mono": the contents of `assets/ui/fonts/OFL-JetBrainsMono.txt`, verbatim.
+  3. Heading "SIL Open Font License 1.1: Inter": the contents of `BinaryData::OFLInter_txt` (`third_party/fonts/OFL-Inter.txt`), verbatim.
+  4. Heading "SIL Open Font License 1.1: JetBrains Mono": the contents of `BinaryData::OFLJetBrainsMono_txt` (`third_party/fonts/OFL-JetBrainsMono.txt`), verbatim.
   5. Heading "pffft license": the full text of pffft's license file at the pinned version, verbatim. The BSD terms require the conditions and disclaimer in binary distributions.
   6. Heading "JUCE license": only if the license tier chosen at M5 requires more text than the line in item 2.
 - **Sources of the texts:** each full text comes from a binary-data resource, so nothing is retyped in C++.
-  - The two OFL texts are in `assets/ui/fonts/`, which the `InvestigateAssets` glob picks up.
-  - The pffft license file must be added to binary data by build-engineer (Open question 2).
+  - The two OFL texts and the pffft license are in `third_party/fonts/` and compiled into `InvestigateAssets` by T-021: `BinaryData::OFLInter_txt`, `OFLJetBrainsMono_txt` and `LICENSEpffft_txt` (§15, closed questions 2 and 3).
   - If a resource is missing, the viewport shows "License text missing: {file name}" in `state-error` in place of that text. A test can then catch the omission.
 
 **Behaviour:**
@@ -573,6 +894,7 @@ Other pointer rules:
 - **Keys on Mode:** arrows step and Delete resets.
 - **Keys on buttons:** Space/Enter activate.
 - The editor defines no global shortcuts, because hosts own most keys.
+- **Zoom and pan (T-034):** there are no keys for zoom or pan, and Space is never used (it is the host's transport key). SpectrumView and the zoom panel are not focusable and never take keyboard focus on a click. The only key is **Esc during a box drag** (§5.9.3 G15): if the host has given the editor keyboard focus, the editor's key handling forwards Esc to SpectrumView, which cancels the box.
 
 ## 8. Meters and statistics
 
@@ -745,14 +1067,48 @@ Non-text graphics against `bg-plot` (WCAG 1.4.11, ≥ 3:1):
   - Every curve's name and swatch is in the legend and the hover card, so no decision depends on colour alone.
 - **Meters:** teal, yellow, orange and red become blue-grey, yellow, dark yellow and olive-brown under deuteranopia. The zones are also positional (fixed thresholds on the scale). The clip state is also shown as a number, and the correlation sign is shown by the side of the centre line.
 
+### 10.2a Zoom and pan elements (T-034)
+
+Text (WCAG 1.4.3, at least 4.5 : 1). Relative luminances: `card` 0.0109, `surface-3` 0.0251, `bg-plot` 0.0040.
+
+| Foreground | Background | Ratio | Use |
+|---|---|---|---|
+| `zoom.range-text-zoomed` #E8ECF3 | `zoom.panel-fill` #151B27 | 14.6 : 1 | Range text of a zoomed axis |
+| `zoom.range-text-full` #A3AEC2 | `zoom.panel-fill` | 7.7 : 1 | Range text at Fit, Fit label |
+| `zoom.bin-hint-text` #EAC75A | `zoom.panel-fill` | 10.5 : 1 | Bin-spacing hint |
+| `text-primary` #E8ECF3 | `zoom.fit-hover-fill` #232C3E | 11.8 : 1 | Fit label on hover |
+| `zoom.fit-pressed` #62D6F0 | `zoom.fit-hover-fill` | 8.3 : 1 | Fit label while pressed |
+| `text-tertiary` #75829A | `bg-plot` #0A0D13 | 5.0 : 1 | Deep-zoom axis labels (same colour as §5.3) |
+
+`text-tertiary` on `card` would be only 4.4 : 1, which is why no panel text uses it.
+
+Non-text graphics (WCAG 1.4.11, at least 3 : 1):
+
+| Graphic | Against | Ratio |
+|---|---|---|
+| Overview curve line `zoom.overview-line` #3E8FA3 | `zoom.overview-bg` #0A0D13 | 5.2 : 1 |
+| View-window outline `zoom.window-stroke` #62D6F0 | `zoom.overview-bg` | 11.5 : 1 |
+| View-window outline | the shaded strip (60 % `bg-plot` over the curve body) | 10.1 : 1 |
+| View-window outline | the curve body inside the window, `zoom.overview-fill` #1C353F | 7.6 : 1 |
+| Ghost outline `zoom.window-ghost` #75829A | `zoom.overview-bg` | 5.0 : 1 |
+| Box outline `zoom.box-stroke` #E8ECF3 | `bg-plot` | 16.4 : 1 |
+| Box outline | the densest primary-A fill (30 % #62D6F0 over `bg-plot`, #244955) | 8.2 : 1 |
+| Box target outline `zoom.box-target` #75829A | `bg-plot` | 5.0 : 1 |
+
+- Decorative, with no requirement: the overview body `zoom.overview-fill` (1.5 : 1, always paired with the 5.2 : 1 line), the panel border and the strip frame (the panel is identified by its text and strip, like the hover card), and the box fill.
+- Cursors use the OS convention of a white fill with a 1 px black outline, so they show on any background.
+- **Colour vision:** the window, ghost and box differ by position, line style and fill, not by hue. The box outline is neutral white, so it never reads as a curve. In the strip, the window outline (luminance 0.57) is much lighter than the overview line (0.23) under every simulation of §10.2. The bin-spacing hint is text, not colour alone, and which axis is zoomed is also readable from the range text itself.
+
 ### 10.3 Hit targets and names
 
+- **Zoom targets (T-034):** the Fit button is 40 × 24. The overview window's hit area is at least 16 × 16; this is below 24 × 24 but covered by the WCAG 2.5.8 equivalent-control exception, because dragging in the data rect pans the same way. The whole strip (at least 186 × 38) accepts presses.
 - **Minimum target:** 24 × 24 (WCAG 2.2 target-size minimum). Mode segments are 32 to 44 × 24; buttons and inline chips are 28 high; chips are 40 high; each chip half's hit area is its side of the chip, split at the "…" separator, at the full chip height of 40, so every half is at least 50 × 40 (the mockup approximates this with text-sized hit areas); the resize grip is 12 × 12, and host-edge resizing is the alternative.
 - **Accessible names** (`setTitle`) and values (`AccessibilityHandler` value interface, returning the formatted display string):
   - Channel mode, Block size, Overlap, Window, Average time, Smoothing, Slope, Secondary curve, Frequency low, Frequency high, Range low, Range high, Sidechain trace, Meter scale, RMS window.
   - Freeze display, Reset spectrum curves, Reset statistics, Show meters, Settings, About.
   - The About view names are listed in §6.2.
-  - The spectrum view has the description "Spectrum display. Hover for a readout; click to reset the max and average curves; right-click to copy the frequency."
+  - The spectrum view has the description "Spectrum display. Hover for a readout. Scroll to zoom frequency, Ctrl+scroll to zoom level, drag to pan, double-click to fit, Ctrl+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency." (updated by T-034).
+  - Zoom panel (T-034): a group named "Zoom", whose accessible value is the visible range, for example "1.00 to 1.12 kHz, −30.0 to −24.0 dB", followed by ", bin spacing 11.7 Hz" while row 3 shows. The Fit button is named "Fit view", with the description "Show the full range set by the Frequency and Level chips", and supports the press action. The overview strip is named "Spectrum overview" and has the same value as the group. None of them is in the Tab order (§7.2), but assistive technology can press Fit through its accessibility handler.
   - Meter readouts are labels with names such as "Left peak max", "Integrated loudness" and "Correlation".
 
 ## 11. Assets (`assets/ui/`)
@@ -766,6 +1122,12 @@ Non-text graphics against `bg-plot` (WCAG 1.4.11, ≥ 3:1):
 | `icon-settings.svg` / `-16.svg` | 24 / 16 | Settings | Three sliders |
 | `icon-sidechain.svg` / `-16.svg` | 24 / 16 | SC toggle | A silhouette plus a line, which mirrors the in-plot sidechain style |
 | `icon-meters.svg` / `-16.svg` | 24 / 16 | Meters toggle | A panel with a right column and a chevron; drawn mirrored when collapsed |
+| `cursor-hand-open.svg` (T-034) | 0 0 24 24 | Open hand over the overview window (§5.9.4) | Hotspot (12, 12) |
+| `cursor-hand-grab.svg` (T-034) | 0 0 24 24 | Grabbing hand while panning | Hotspot (12, 12) |
+| `cursor-zoom-box.svg` (T-034) | 0 0 24 24 | Ctrl held over the data rect, and during a box drag | Hotspot (7.5, 7.5), the open centre of the crosshair |
+
+- **Cursor exception (T-034):** the three cursor SVGs use a fixed `#FFFFFF` fill with a 1 px `#000000` outline instead of `currentColor`, which is the OS cursor convention and keeps them visible on any background. They are rendered to images (§5.9.4) and never recoloured. They are otherwise clean: a `viewBox`, a `<title>`, no raster images, scripts or external references.
+- The Fit button is text-only, so there is no Fit icon.
 
 - **Size variants:**
   - The 24-grid icons use 2-unit strokes on integer coordinates, so they are pixel-exact at 24 px and 48 px.
@@ -775,16 +1137,17 @@ Non-text graphics against `bg-plot` (WCAG 1.4.11, ≥ 3:1):
 - **Colour at runtime:** the colour is applied by replacing `currentColor` with the state's token colour at load time (one `Drawable` per state colour, cached).
 - **Resize grip:** drawn in code (§2).
 
-**Fonts and license texts (`assets/ui/fonts/`)**, all taken unmodified from the pinned release archives (§3.2):
+**Fonts and license texts** are not in `assets/ui/`. T-021 downloads them, unmodified and with SHA-256 checks, from the pinned release archives (§3.2) into **`third_party/fonts/`**, and compiles them into the **`InvestigateAssets`** binary-data target (roadmap Decision 2026-09-28; T-011 correction, roadmap Decision 2026-10-01):
 
-| File | Source |
-|---|---|
-| `Inter-Medium.ttf`, `Inter-SemiBold.ttf` | `Inter-4.1.zip`, `extras/ttf/` |
-| `JetBrainsMono-Regular.ttf`, `JetBrainsMono-Medium.ttf` | `JetBrainsMono-2.304.zip`, `fonts/ttf/` |
-| `OFL-Inter.txt` | Inter `LICENSE.txt` at tag `v4.1` |
-| `OFL-JetBrainsMono.txt` | JetBrains Mono `OFL.txt` at tag `v2.304` |
+| File in `third_party/fonts/` | Source | `BinaryData` symbol |
+|---|---|---|
+| `Inter-Medium.ttf`, `Inter-SemiBold.ttf` | `Inter-4.1.zip`, `extras/ttf/` | `InterMedium_ttf`, `InterSemiBold_ttf` |
+| `JetBrainsMono-Regular.ttf`, `JetBrainsMono-Medium.ttf` | `JetBrainsMono-2.304.zip`, `fonts/ttf/` | `JetBrainsMonoRegular_ttf`, `JetBrainsMonoMedium_ttf` |
+| `OFL-Inter.txt` | Inter `LICENSE.txt` at tag `v4.1` | `OFLInter_txt` |
+| `OFL-JetBrainsMono.txt` | JetBrains Mono `OFL.txt` at tag `v2.304` | `OFLJetBrainsMono_txt` |
+| `LICENSE-pffft.txt` | pffft's license file at the pinned version | `LICENSEpffft_txt` |
 
-The `InvestigateAssets` binary-data target globs `assets/ui/`, so these files are embedded automatically. The OFL texts are shown in the About view (§6.2) and also go into the installer's `THIRD-PARTY-NOTICES.txt` (T-019).
+The `InvestigateAssets` target also globs `assets/ui/`, so the SVGs above (including the T-034 cursors) are embedded automatically. The OFL texts are shown in the About view (§6.2) and also go into the installer's `THIRD-PARTY-NOTICES.txt` (T-019).
 
 ## 12. Performance rules (for T-011 to T-013)
 
@@ -802,6 +1165,37 @@ The `InvestigateAssets` binary-data target globs `assets/ui/`, so these files ar
   - The header, control bar and strip header repaint only on interaction or parameter change.
 - **Allocation:** no allocation in paint or in the vblank callback after the first frame. Reuse the paths, point buffers, crest ring buffer and preformatted strings; format into a fixed `char` buffer or reuse a `juce::String` with sufficient capacity.
 - **Fallback:** if the T-012 paint budget is missed, the first thing to drop is the primary gradient. Replace it with a flat #62D6F0 fill at 14 %, which is visually close. Only after that consider OpenGL, with the architect's approval.
+
+### 12.1 Zoom and pan (T-034, for T-037 and T-038)
+
+Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap Decision 2026-10-03): no polygons drawn per frame; one `fillRectList` per colour; static parts cached as images; repaint only when a physical-pixel value changes; build only what lies under the clip.
+
+- **Coalescing.** Wheel, drag and overview handlers write a pending view only. The editor update callback (vblank, at most 60 per second) applies it at most once per update.
+  - The update is dropped when it would move none of the four view edges by 0.5 physical px or more in the current mapping. This is the "repaint only on a physical-pixel change" rule for views; it absorbs tiny touchpad deltas and wheel steps at a limit.
+  - `setSpectrumView (fLo, fHi)` is called at most once per update, and only when the frequency view changed. Level-only changes never reach the processor.
+  - A view change repaints the whole data rect, like a new frame, so it follows the T-029 frame pacing: when the spectrum is paced (physical plot area above 2.0 Mpx, or 7 curve layers), view changes are applied at most 30 times per second. Hover, clicks and the Fit button still respond within one editor update.
+- **Repaint regions.** A frequency-only change repaints the data rect and the frequency gutter; a level-only change repaints the data rect and the dB gutter; a change on both axes repaints both gutters. The header, control bar and meter strip never repaint because of zoom or pan.
+- **Curves until the re-mapped frame arrives.** The editor draws the frame it has through the new mapping (its points carry `freqHz`), using the existing T-029 curve path: one bar per physical column for fills, simplified strokes, columns built only under the clip. Where that frame has no points (a margin exposed by a pan or a zoom-out), nothing is drawn for that frame (§15 question 5).
+- **Grid during an interaction.** The cached grid image is not rebuilt per view change. While the view differs from the view the cached image was built for:
+  - grid lines are drawn as **two `fillRectList` calls**, one in `grid-minor` and one in `grid-major`, each line a rect 1 physical px wide (or high) snapped to physical pixels, built only for lines under the clip;
+  - axis labels come from the label-image cache (next item);
+  - the data-rect frame is one `fillRectList` of 4 rects in its current colour (`border-subtle`, or `state-frozen` while frozen).
+  
+  After the view has been unchanged for **200 ms** (`gridIdleRebuildMs`), the cached grid image is rebuilt once for the new view and the single blit returns. The steady-state cost is therefore the same as before T-034.
+- **Label-image cache.** Key: the label text, formatted into a fixed `char` buffer, plus its colour. Value: a `juce::Image` at physical scale. 128 entries (`labelCacheEntries`), least recently used evicted, storage preallocated. At most **16 new entries per frame** (`maxNewLabelsPerFrame`); any further missing label that frame is drawn directly with `drawText` (allocations inside JUCE's text layout are excluded by the allocation rule) and cached on a later frame. Axis labels, the zoom-panel range texts and the bin-spacing text all use this cache. A pan mostly moves existing labels and adds one or two at the edges; a zoom changes the label set only when the step changes.
+- **Zoom panel.**
+  - The chrome (fill, border, radius, the Fit button in its current state, the strip frame and background) is one cached image per panel size, display scale and Fit-button state.
+  - The overview curve is two `fillRectList` calls: the body in `zoom.overview-fill` and the top line in `zoom.overview-line`, one rect each per physical column of the strip (at most 268 × 2 = 536 columns at 200 %).
+  - The shade is one `fillRectList` of up to 4 rects in `zoom.overview-shade`; the window outline is one of 4 rects; the hover or drag fill is one rect; the ghost outline is 4 rects.
+  - There are no paths: rounded corners exist only in the cached chrome.
+  - The panel repaints with the data rect. When only its own state changes (Fit hover or press, strip hover, the ghost), only the panel bounds repaint.
+- **Box zoom.** One alpha rect plus a 4-rect outline (plus 4 rects for the widened-result outline), painted in `paintOverChildren`. When only the box changes, repaint the union of the old and new box bounds, inflated by 2 px (and the old and new target outlines).
+- **Hover elements** are hidden during a pan or a box drag (§5.9.5), so those frames draw no crosshair, markers or card.
+- **Budgets** (plan "Budgets"; measured in Release at 48 kHz with the T-012/T-029 harness method, median of 3):
+  - whole-editor message thread during a continuous pan or zoom: ≤ 25 % of one core at 1280 × 720 and at 2560 × 1440;
+  - editor paint during a pan: p95 ≤ 4 ms at 1280 × 720 and ≤ 8 ms at 2560 × 1440;
+  - no per-frame allocation in Investigate's pan and zoom code; text follows the ≤ 20 per frame rule;
+  - from a view change to the re-mapped frame being published: p95 ≤ 10 ms, max ≤ 20 ms (analysis side, T-035).
 
 ## 13. Coverage checklist
 
@@ -868,6 +1262,13 @@ The `InvestigateAssets` binary-data target globs `assets/ui/`, so these files ar
 | `ViewState.editorWidth/Height` | Resizing | 2 |
 | `ViewState.metersCollapsed` | Meters toggle | 4.5 |
 | About view (version, font notices, OFL texts, JUCE and pffft notices) | Settings title bar, "About" | 6.2 |
+| View window (`viewFreqLow`, `viewFreqHigh`, `viewDbLow`, `viewDbHigh`), T-034 | Editor only. Not a parameter, **not in `ViewState`, not persisted**: the editor always opens at Fit, and `setAnalysisActive (false)` returns it to Fit. Follows the per-axis home-range rule. | 5.9.1 |
+| `setSpectrumView (fLo, fHi)` | At most once per editor update, on frequency changes only | 5.9.3, 12.1 |
+| `setSpectrumFrozen (bool)` and the freeze epoch | Called on every freeze change, including auto-unfreeze; frames with a stale epoch are dropped | 5.7 |
+| Frame view range (`viewFreqLow`, `viewFreqHigh` of the frame) | Mapping the current frame until the re-mapped one arrives | 12.1 |
+| Frame overview (`overviewFreqHz[256]`, `overviewDb[256]`, primary A over the home range) | Overview strip curve | 5.9.6 |
+| Bin spacing of the displayed data | Bin-spacing row of the zoom panel | 5.9.6, 15 |
+| Zoom panel, box zoom, cursors | Indicator, Fit button, overview strip, rubber band, custom cursors | 5.9.4 to 5.9.7 |
 
 ## 14. IP check against T-001 §8
 
@@ -891,8 +1292,20 @@ The `InvestigateAssets` binary-data target globs `assets/ui/`, so these files ar
 - The note-name examples are 452.6 Hz for "A4 +49c" and 452.9 Hz for "A#4 −50c" (§5.5).
 - The correlation window is 500 ms (§8.5).
 
+**Closed on 2026-10-01** (T-011 task-file correction, roadmap Decision 2026-10-01; folded into this spec by T-034). The numbers are kept so that older references stay valid:
+1. **JUCE notice line:** JUCE 8's open-source option is AGPLv3; T-021 corrected `docs/dependencies.md`. The notice line itself stays a placeholder until M5 (T-019).
+2. **pffft license text in binary data:** done by T-021, as `BinaryData::LICENSEpffft_txt` from `third_party/fonts/LICENSE-pffft.txt`.
+3. **Font files:** done by T-021, in `third_party/fonts/` and compiled into `InvestigateAssets` (§3.2, §11), not in `assets/ui/fonts/`. The Segoe UI and Consolas fallback and the "License text missing" placeholder are defensive only.
+
 **Open:**
-1. **JUCE notice line (M5, user and researcher):** the About view's JUCE line (§6.2) depends on the license tier the user chooses. Also, `docs/dependencies.md` records JUCE 8 as "GPLv3 or commercial". My understanding is that JUCE 8's open-source option is AGPLv3, not GPLv3. Please have researcher verify this against the pinned 8.0.15 `LICENSE.md` before the notice text is fixed.
-2. **pffft license text in binary data (build-engineer, T-021):** the About view shows pffft's license file verbatim from a binary-data resource. Please have build-engineer add the pinned pffft license file to a binary-data target, and record its exact copyright lines in `docs/dependencies.md`. The designer cannot add it, because it lives under `third_party/`.
-3. **Font files not yet in `assets/ui/fonts/`:** this designer session had no shell or binary-download tool, so the four TTFs and the two OFL texts could not be fetched byte-exact. Please route the download to an agent with a shell (for example build-engineer), with exactly the sources in §3.2 and §11. Until then T-011 falls back to Segoe UI and Consolas (§3.2), and the About view shows its "License text missing" placeholder for the OFL texts.
 4. **Other notices (researcher):** the VST3 build links the Steinberg VST3 SDK (MIT from 3.8, roadmap Decisions). Its MIT notice, and possibly a Steinberg "VST" trademark line, may also need to appear in the About view and in `THIRD-PARTY-NOTICES.txt`. If so, they are added as further entries under "Software" in §6.2, in the same style.
+5. **Curve margin while panning (dsp-engineer, T-035; T-034):** a frame carries curves only over the view it was mapped for. During a continuous pan, or right after a zoom-out step, the editor has no points for the newly exposed margin until the re-mapped frame arrives (up to one editor frame; p95 ≤ 10 ms). In a fast pan this shows as an empty strip flickering at the leading edge. **Recommended answer:** the mapper also maps a margin of 25 % of the visible log-frequency span on each side (clamped to the home range) at the same point density, so at most 1.5 × 2048 = 3072 points per curve, and the frame's view range records the mapped range. 25 % covers one zoom-out notch (12.5 % per side) and a pan of a quarter of the view per frame. If this is declined, §12.1 applies as written and the margin stays empty for that frame.
+6. **Bin spacing in the frame (dsp-engineer, T-035; T-034):** the bin-spacing row (§5.9.6) needs the bin spacing of the data on screen. That differs from `sampleRate / fftSize` while frozen, and for one frame after a Block change. **Recommended answer:** add `float binHz` to `SpectrumFrame`; the freeze snapshot already stores it (plan, "Changes per module"). Until it exists, the editor uses `sampleRate / fftSize`, captured at the moment of freezing while frozen.
+
+## 16. Change log
+
+| Date | Task | Change |
+|---|---|---|
+| 2026-09-28 | T-010 | First version. The user approved `mockup.html` without changes; layout and visual design frozen for T-011 to T-013. |
+| 2026-10-03 | T-034 | **Spectrum zoom and pan (M3b).** New §5.9: view model, view arithmetic, gestures G1 to G21 with exact numbers, cursors, hover behaviour during gestures, zoom panel (indicator, Fit button, bin-spacing row, overview strip) with geometry at four sizes, collision rules, deep-zoom grid rules with worked examples, Fit and no-op cases, changes from the plan, mockup simplifications. Updated: §4.1 (gutters as wheel targets, panel position); §5.3 (view mapping, cache rule); §5.5 (view-based frequency formula, 4-figure zoom precision, hover-card candidates around the panel, new hint-line texts and fit rule); §5.6 (interaction table replaced, clipboard precision); §5.7 (freeze plus zoom, freeze epoch); §6 (Fit view action, deferred click reset); §7.2 (no zoom keys, Esc during a box drag); §10 (new §10.2a contrast tables, names, hit targets); §11 (three cursor SVGs); §12.1 (rendering and budgets for zoom and pan); §13.3 (view state not persisted, new frame fields); §15 (questions 5 and 6). `tokens.json` 1.1.0 adds the groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid` and `cursor`. New assets: `cursor-hand-open.svg`, `cursor-hand-grab.svg`, `cursor-zoom-box.svg`. `mockup.html` implements every gesture and no longer loads web fonts, so it opens from the file system with no network access. |
+| 2026-10-03 | T-034 (fold-in) | Two stale points that T-011 had overridden in its task file (roadmap Decision 2026-10-01) are folded in: the font files and license texts live in `third_party/fonts/` and the `InvestigateAssets` binary-data target, not in `assets/ui/fonts/` (§3.2, §6.2, §11, and the font file paths in `tokens.json`); and the old §15 open questions 1 to 3 are closed (§15). |

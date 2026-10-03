@@ -3,11 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Investigate - UI mockup (T-010)</title>
-<!-- Web fonts are optional. Offline, the mockup falls back to Segoe UI and Consolas (the same fallbacks the spec defines). -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<title>Investigate - UI mockup (T-010, zoom and pan T-034)</title>
+<!-- Self-contained: no network resources. Inter and JetBrains Mono are used if installed locally;
+     otherwise the mockup falls back to Segoe UI and Consolas (the same fallbacks the spec defines). -->
 <style>
 :root{
   --bg-app:#0E1219; --bg-plot:#0A0D13; --surface:#131924; --surface-2:#1A2130; --surface-3:#232C3E; --card:#151B27;
@@ -58,7 +56,6 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
 /* plot */
 #plotWrap{position:absolute;left:0;top:44px;background:var(--bg-plot);cursor:default}
 #plot{position:absolute;left:0;top:0;display:block}
-#plotWrap.in-data{cursor:crosshair}
 .legend{position:absolute;display:flex;gap:10px;align-items:center;padding:3px 8px;border-radius:4px;background:rgba(10,13,19,.85);font:500 11px/14px var(--ui);color:var(--text-secondary);pointer-events:none;transition:opacity .12s}
 .legend .li{display:flex;align-items:center;gap:5px}
 .legend svg,.hover svg{display:block;flex:none}
@@ -71,6 +68,19 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
 .hover .hr .v{margin-left:auto;padding-left:12px;font:400 12px/16px var(--mono);color:var(--text-primary)}
 .hint{position:absolute;padding:2px 6px;border-radius:4px;background:rgba(10,13,19,.85);font:500 10px/14px var(--ui);color:var(--text-tertiary);pointer-events:none;display:none;white-space:nowrap}
 .toast{position:absolute;padding:4px 8px;border-radius:4px;background:var(--surface-3);border:1px solid var(--accent);color:var(--text-primary);font:500 11px/14px var(--ui);pointer-events:none;white-space:nowrap;z-index:30;transition:opacity .2s linear}
+/* zoom and pan (T-034, spec section 5.9) */
+#ovl{position:absolute;left:0;top:0;pointer-events:none;z-index:5}
+.zpanel{position:absolute;z-index:4;background:var(--card);border:1px solid var(--border);border-radius:6px;display:none;cursor:default}
+.zpanel .zrow{position:absolute;left:7px;height:16px;font:400 11px/16px var(--mono);white-space:nowrap;color:var(--text-secondary)}
+.zpanel .zrow.on{color:var(--text-primary)}
+.zpanel .z1{top:5px}
+.zpanel .z2{top:25px}
+.zpanel .z3{top:41px;color:var(--warn);display:none}
+.zfit{position:absolute;top:1px;width:40px;height:24px;padding:0;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-secondary);font:500 12px/16px var(--ui);cursor:pointer}
+.zfit:hover{background:var(--surface-3);color:var(--text-primary)}
+.zfit:active{background:var(--surface-3);border-color:var(--accent);color:var(--accent)}
+.zpanel canvas{position:absolute;left:5px;display:block}
+#devbar .dv-zoom{color:#9fd9e8}
 /* footer and chips */
 #footer{position:absolute;background:var(--bg-app);border-top:1px solid var(--border)}
 .chip{position:absolute;top:8px;height:40px;border-radius:6px;background:var(--surface-2);padding:5px 8px 0;cursor:ns-resize;border:1px solid transparent}
@@ -147,7 +157,7 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
 </head>
 <body>
 <div id="devbar">
-  <div class="dv-title"><b>Investigate</b> editor mockup for T-010 <small>Simulated audio. The controls above this line belong to the preview, not the plugin.</small></div>
+  <div class="dv-title"><b>Investigate</b> editor mockup for T-010, with spectrum zoom and pan from T-034 <small>Simulated audio. The controls above this line belong to the preview, not the plugin.</small></div>
   <div class="dv-row">
     <span>Size</span>
     <button data-size="1200x700">Default 1200 x 700</button>
@@ -172,6 +182,9 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
     <button id="dvAuto">Host automates Slope</button>
     <span class="dv-note">Try: hover the spectrum, click it, right-click it, drag or scroll any chip, double-click to reset, click a value to type.</span>
   </div>
+  <div class="dv-row dv-zoom">
+    <span><b>Zoom and pan:</b> scroll over the spectrum to zoom frequency (Shift: fine) · Ctrl+scroll, or scroll over the dB labels, to zoom level · scroll over the frequency labels · drag (left or middle) to pan · double-click or Fit for the full view · Ctrl+drag to zoom into a box (Esc cancels) · drag or click the overview strip · sideways touchpad swipe pans. A single click resets the max/avg curves after 250 ms. Set Block to 512 and zoom in to see the bin-spacing hint. A touchpad pinch zooms level, as it will in the plugin.</span>
+  </div>
 </div>
 
 <div id="stage">
@@ -189,12 +202,20 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
     <button class="btn icon" id="btnSettings" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.5H8.5M11.5 3.5H13.5M1.5 7.5H3.5M6.5 7.5H13.5M1.5 11.5H7M10 11.5H13.5"/><circle cx="10" cy="3.5" r="1.5"/><circle cx="5" cy="7.5" r="1.5"/><circle cx="8.5" cy="11.5" r="1.5"/></svg><span class="dot"></span></button>
   </header>
 
-  <div id="plotWrap" aria-label="Spectrum display. Hover for a readout, click to reset the max and average curves, right-click to copy the frequency.">
+  <div id="plotWrap" aria-label="Spectrum display. Hover for a readout. Scroll to zoom frequency, Ctrl+scroll to zoom level, drag to pan, double-click to fit, Ctrl+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency.">
     <canvas id="plot"></canvas>
     <div id="legend" class="legend"></div>
     <div id="badge" class="badge">FROZEN</div>
+    <div id="zpanel" class="zpanel" role="group" aria-label="Zoom">
+      <span id="zFreq" class="zrow z1"></span>
+      <button id="zFit" class="zfit" aria-label="Fit view">Fit</button>
+      <span id="zDb" class="zrow z2"></span>
+      <span id="zBin" class="zrow z3"></span>
+      <canvas id="zOv" aria-label="Spectrum overview"></canvas>
+    </div>
+    <canvas id="ovl"></canvas>
     <div id="hover" class="hover"></div>
-    <div id="hint" class="hint">Click: reset max/avg curves &nbsp;&middot;&nbsp; Right-click: copy frequency</div>
+    <div id="hint" class="hint"></div>
   </div>
 
   <div id="footer"></div>
@@ -349,10 +370,10 @@ function setParam(id, v, external = false) {
 function resetParam(id) { setParam(id, DEFS[id].def); }
 function onParamSideEffects(id) {
   if (id === 'channelMode') { if (frozen) setFrozen(false); resetCurves(false); }
-  if (['freqLow', 'freqHigh', 'dbLow', 'dbHigh'].includes(id)) { gridDirty = true; refreshClampViews(); }
+  if (['freqLow', 'freqHigh', 'dbLow', 'dbHigh'].includes(id)) { gridDirty = true; refreshClampViews(); syncHome(); }
   if (['channelMode', 'secondary', 'showSidechain'].includes(id)) updateLegend();
   if (id === 'meterScale') updateTableUnits();
-  if (id === 'fftSize') refreshTipsDynamic();
+  if (id === 'fftSize') { refreshTipsDynamic(); updatePanel(); }
 }
 
 /* =========================================================================
@@ -572,9 +593,11 @@ function buildSegments() {
 
 function setFrozen(on) {
   frozen = on;
+  if (on) frozenBinHz = SRATE / +CH.fftSize[P.fftSize];   // the bin spacing of the frozen data (spec 5.7)
   const b = $('btnFreeze');
   b.classList.toggle('frozen', on); b.setAttribute('aria-pressed', on);
   $('badge').style.display = on ? 'block' : 'none';
+  updatePanel();
 }
 function buildHeaderButtons() {
   const sc = $('btnSC');
@@ -824,14 +847,25 @@ function layout() {
   place($('grip'), W - 12, H - 12);
   positionPopover();
   const hint = $('hint'); hint.style.right = (PW - (D.x + D.w) + 8) + 'px'; hint.style.bottom = (PH - (D.y + D.h) + 6) + 'px';
+  sizeCanvas($('ovl'), PW, PH);
+  updatePanel(); updateHint();
 }
 
 /* =========================================================================
    Spectrum simulation (fake audio that behaves like music)
    ========================================================================= */
-const NPTS = 640;
-let F = new Float64Array(NPTS), LOGSPAN = 1;
-function buildPoints() { const hi = Math.min(40000, SRATE / 2); for (let i = 0; i < NPTS; i++) F[i] = 10 * Math.pow(hi / 10, i / (NPTS - 1)); LOGSPAN = Math.log(F[NPTS - 1] / F[0]); }
+/* T-034: 4096 log-spaced points from 10 Hz to Nyquist stand in for the engine's bin-domain spectra.
+   The view draws only the points it shows (at most 2 vertices per physical column), so zooming in
+   reveals more detail, as the real engine's re-mapping does. */
+const NPTS = 4096;
+let F = new Float64Array(NPTS), LNF = new Float64Array(NPTS), DF = new Float64Array(NPTS), LOGSPAN = 1;
+const NZ_RHO = new Float64Array(NPTS), NZ_INN = new Float64Array(NPTS), NZ_S = new Float64Array(NPTS);
+function buildPoints() {
+  const hi = Math.min(40000, SRATE / 2);
+  for (let i = 0; i < NPTS; i++) { F[i] = 10 * Math.pow(hi / 10, i / (NPTS - 1)); LNF[i] = Math.log(F[i]); }
+  for (let i = 0; i < NPTS; i++) DF[i] = i + 1 < NPTS ? F[i + 1] - F[i] : DF[i - 1];
+  LOGSPAN = Math.log(F[NPTS - 1] / F[0]);
+}
 const idxOf = f => Math.log(f / F[0]) / LOGSPAN * (NPTS - 1);
 const dB2P = db => Math.pow(10, db / 10);
 const gauss = (x, s) => Math.exp(-0.5 * x * x / (s * s));
@@ -876,12 +910,19 @@ function model(t, v, o, isSC) {
   const chord = v.chords[Math.floor(tt / 2) % 4];
   const mel = v.melody[Math.floor(tt / 0.5) % 8] * (1 + 0.004 * Math.sin(2 * Math.PI * 5.5 * tt));
   const voxGate = (tt % 2) < 1.6 ? 1 : 0.25;
+  // Analysis noise, correlated over the resolution bandwidth B (window ENBW or smoothing width),
+  // so the texture does not depend on how densely the points are spaced.
+  for (let i = 0; i < NPTS; i++) {
+    const B = Math.max(Bres, sK * F[i]);
+    const rho = Math.exp(-DF[i] / B);
+    NZ_RHO[i] = rho; NZ_INN[i] = Math.sqrt(1 - rho * rho);
+    NZ_S[i] = Math.min(1, 1 / Math.sqrt(Math.max(1, B / binW)));
+  }
   for (let c = 0; c < 4; c++) {
-    let g = 0; const rf = RF[c];
+    let g = randn(); const rf = RF[c];
     for (let i = 0; i < NPTS; i++) {
-      g = 0.6 * g + 0.8 * randn();
-      const B = Math.max(Bres, sK * F[i]);
-      const s = Math.min(1, 1 / Math.sqrt(Math.max(1, B / binW)));
+      g = NZ_RHO[i] * g + NZ_INN[i] * randn();
+      const s = NZ_S[i];
       rf[i] = Math.exp(s * g - s * s / 2);
     }
   }
@@ -992,64 +1033,324 @@ const gridCanvas = document.createElement('canvas'), gctx = gridCanvas.getContex
 let gridDirty = true, gradA = null;
 const COL = { plotBg: '#0A0D13', minor: '#161D2A', major: '#243047', frame: '#1A2130', axis: '#75829A',
   pa: '#62D6F0', pb: '#FFB454', sa: '#3E8FA3', sb: '#A87A3C', sc: 'rgba(165,139,255,0.26)', scEdge: 'rgba(165,139,255,0.7)', scSolid: '#A58BFF' };
-function fmtFreqLabel(f) { return f < 1000 ? String(f) : (f / 1000) + 'k'; }
+/* =========================================================================
+   Zoom and pan view (spec section 5.9). The view window lives in the editor only:
+   it never touches a parameter and is not saved, so the editor always opens at Fit.
+   ========================================================================= */
+const ZOOM = { notchIn: 0.8, fineIn: 0.95, minSpanOct: 1 / 6, minSpanDb: 6, dragPx: 4, clickDeferMs: 250,
+  boxCancelPx: 4, hPanPerNotch: 0.10, maxNotches: 3, binHint: 16, pxPerNotch: 100, linesPerNotch: 3 };
+const LN_MIN_SPAN = Math.LN2 * ZOOM.minSpanOct;
+const EPS_LN = 1e-6, EPS_DB = 1e-4;
+let V = null, lastHome = null, frozenBinHz = 0, lastZoomedState = null;
+let G = null;            // active spectrum gesture: { kind: 'press' | 'pan' | 'noop' | 'box', ... }
+let OG = null;           // active overview drag
+let ovHover = null;      // pointer over the overview strip (strip-local)
+let lastPtr = null;      // last pointer position over the plot (plot-local)
+let ZP = { x: 0, y: 0, w: 200, h: 92, stripY: 46, stripW: 188, stripH: 40, bin: false };
+function homeRange() { const r = effRange(); return { fLo: r.fLo, fHi: r.fHi, dbLo: r.dbLo, dbHi: r.dbHi }; }
+function freqAtHome(v, h) { return Math.abs(Math.log(v.fLo / h.fLo)) < EPS_LN && Math.abs(Math.log(v.fHi / h.fHi)) < EPS_LN; }
+function dbAtHome(v, h) { return Math.abs(v.dbLo - h.dbLo) < EPS_DB && Math.abs(v.dbHi - h.dbHi) < EPS_DB; }
+function freqZoomed() { return !!V && !freqAtHome(V, homeRange()); }
+function dbZoomed() { return !!V && !dbAtHome(V, homeRange()); }
+function isZoomed() { return freqZoomed() || dbZoomed(); }
+/* What DisplayRange.h clampViewFrequency and clampViewDb do: span limits first, then shift inside the home range */
+function clampFreq(lnLo, lnSpan) {
+  const h = homeRange(), hLo = Math.log(h.fLo), hSpan = Math.log(h.fHi / h.fLo);
+  const span = clamp(lnSpan, Math.min(LN_MIN_SPAN, hSpan), hSpan);
+  if (span >= hSpan - EPS_LN) return { fLo: h.fLo, fHi: h.fHi };
+  const lo = clamp(lnLo, hLo, hLo + hSpan - span);
+  return { fLo: Math.exp(lo), fHi: Math.exp(lo + span) };
+}
+function clampDb(hi, span) {
+  const h = homeRange(), hSpan = h.dbHi - h.dbLo;
+  span = clamp(span, Math.min(ZOOM.minSpanDb, hSpan), hSpan);
+  if (span >= hSpan - EPS_DB) return { dbLo: h.dbLo, dbHi: h.dbHi };
+  hi = clamp(hi, h.dbLo + span, h.dbHi);
+  return { dbLo: hi - span, dbHi: hi };
+}
+function setFreqView(lnLo, lnSpan) { Object.assign(V, clampFreq(lnLo, lnSpan)); }
+function setDbView(hi, span) { Object.assign(V, clampDb(hi, span)); }
+function xToF(x) { return V.fLo * Math.pow(V.fHi / V.fLo, (x - D.x) / D.w); }
+function fToX(f) { return D.x + Math.log(f / V.fLo) / Math.log(V.fHi / V.fLo) * D.w; }
+function yToDb(y) { return V.dbHi - (y - D.y) / D.h * (V.dbHi - V.dbLo); }
+function dbToY(db) { return D.y + (V.dbHi - db) / (V.dbHi - V.dbLo) * D.h; }
+function zoomFreqAt(x, k) {                       // anchored: the frequency under x stays under x
+  const h = homeRange(), hSpan = Math.log(h.fHi / h.fLo);
+  const t = clamp((x - D.x) / D.w, 0, 1), lnA = Math.log(xToF(x));
+  const span = clamp(Math.log(V.fHi / V.fLo) * k, Math.min(LN_MIN_SPAN, hSpan), hSpan);
+  setFreqView(lnA - t * span, span); viewChanged();
+}
+function zoomDbAt(y, k) {                         // anchored: the level under y stays under y
+  const h = homeRange(), hSpan = h.dbHi - h.dbLo;
+  const s = clamp((y - D.y) / D.h, 0, 1), a = yToDb(y);
+  const span = clamp((V.dbHi - V.dbLo) * k, Math.min(ZOOM.minSpanDb, hSpan), hSpan);
+  setDbView(a + s * span, span); viewChanged();
+}
+function panBy(v0, dx, dy) {                      // pixels since the press; the grabbed point follows the pointer
+  const L = Math.log(v0.fHi / v0.fLo), S = v0.dbHi - v0.dbLo;
+  setFreqView(Math.log(v0.fLo) - dx / D.w * L, L);
+  setDbView(v0.dbHi + dy / D.h * S, S);
+  viewChanged();
+}
+function panFreqNotches(n) { const L = Math.log(V.fHi / V.fLo); setFreqView(Math.log(V.fLo) + n * ZOOM.hPanPerNotch * L, L); viewChanged(); }
+function boxTarget(x1, y1, x2, y2) {              // spec 5.9.2 "Box to view"; axes below the minimum are widened around their centre
+  let lo = Math.log(xToF(Math.min(x1, x2))), hi = Math.log(xToF(Math.max(x1, x2)));
+  let dHi = yToDb(Math.min(y1, y2)), dLo = yToDb(Math.max(y1, y2));
+  let widened = false;
+  if (hi - lo < LN_MIN_SPAN) { const c = (lo + hi) / 2; lo = c - LN_MIN_SPAN / 2; hi = c + LN_MIN_SPAN / 2; widened = true; }
+  if (dHi - dLo < ZOOM.minSpanDb) { const c = (dHi + dLo) / 2; dHi = c + ZOOM.minSpanDb / 2; dLo = c - ZOOM.minSpanDb / 2; widened = true; }
+  return { f: clampFreq(lo, hi - lo), db: clampDb(dHi, dHi - dLo), widened };
+}
+function fitView() { V = { ...homeRange() }; viewChanged(); }
+/* Home-range change (chip edit, automation, state load, sample rate), per axis (spec 5.9.1) */
+function syncHome() {
+  const h = homeRange();
+  if (!V) { V = { ...h }; lastHome = h; viewChanged(); return; }
+  const old = lastHome; lastHome = h;
+  if (old && old.fLo === h.fLo && old.fHi === h.fHi && old.dbLo === h.dbLo && old.dbHi === h.dbHi) return;
+  if (!old || freqAtHome(V, old)) { V.fLo = h.fLo; V.fHi = h.fHi; } else setFreqView(Math.log(V.fLo), Math.log(V.fHi / V.fLo));
+  if (!old || dbAtHome(V, old)) { V.dbLo = h.dbLo; V.dbHi = h.dbHi; } else setDbView(V.dbHi, V.dbHi - V.dbLo);
+  viewChanged();
+}
+function viewChanged() {
+  gridDirty = true;
+  updatePanel();
+  const z = isZoomed();
+  if (z !== lastZoomedState) { lastZoomedState = z; updateHint(); }
+}
+
+/* ---------- zoom panel: indicator and overview strip (spec 5.9.6) ---------- */
+function binHzNow() { return frozen ? frozenBinHz : SRATE / +CH.fftSize[P.fftSize]; }
+function binHintOn() { return (V.fHi - V.fLo) / binHzNow() < ZOOM.binHint; }
+function fmtRangeFreq(lo, hi) { const [a, ua] = fmtFreqParts(lo), [b, ub] = fmtFreqParts(hi); return ua === ub ? `${a} … ${b} ${ub}` : `${a} ${ua} … ${b} ${ub}`; }
+function fmtRangeDb(lo, hi) { return `${signed1(lo)} … ${signed1(hi)} dB`; }
+function updatePanel() {
+  if (!V) return;
+  const zp = $('zpanel');
+  const on = isZoomed() && D.w > 0;
+  zp.style.display = on ? 'block' : 'none';
+  if (!on) { ovHover = null; return; }
+  const w = clamp(Math.round(D.w / 4), 200, 280), bin = binHintOn();
+  const rowsBottom = bin ? 58 : 42;
+  ZP = { x: D.x + D.w - 8 - w, y: D.y + 8, w, h: rowsBottom + 4 + 40 + 6, stripY: rowsBottom + 4, stripW: w - 12, stripH: 40, bin };
+  place(zp, ZP.x, ZP.y, ZP.w, ZP.h);
+  $('zFit').style.left = (w - 44 - 1) + 'px';
+  const fTxt = fmtRangeFreq(V.fLo, V.fHi), dTxt = fmtRangeDb(V.dbLo, V.dbHi);
+  const zf = $('zFreq'), zd = $('zDb'), zb = $('zBin');
+  zf.textContent = fTxt; zf.classList.toggle('on', freqZoomed());
+  zd.textContent = dTxt; zd.classList.toggle('on', dbZoomed());
+  zb.style.display = bin ? 'block' : 'none';
+  if (bin) zb.textContent = 'Bin spacing ' + fmtFreqParts(binHzNow()).join(' ');
+  const c = $('zOv'), k = dpr();
+  if (c.width !== Math.round(ZP.stripW * k) || c.height !== Math.round(ZP.stripH * k)) sizeCanvas(c, ZP.stripW, ZP.stripH);
+  c.style.top = (ZP.stripY - 1) + 'px';
+  const value = fTxt.replace(' … ', ' to ') + ', ' + dTxt.replace(' … ', ' to ') + (bin ? ', bin spacing ' + fmtFreqParts(binHzNow()).join(' ') : '');
+  zp.setAttribute('aria-valuetext', value); c.setAttribute('aria-valuetext', value);
+}
+const OVC = { bg: '#0A0D13', fill: '#1C353F', line: '#3E8FA3', shade: 'rgba(10,13,19,0.6)', frame: '#2A3447',
+  win: '#62D6F0', winHover: 'rgba(98,214,240,0.12)', winDrag: 'rgba(98,214,240,0.20)', ghost: '#75829A' };
+function ovMap() {                               // strip-local css px over the home range, inside the 1 px frame
+  const h = homeRange(), sw = ZP.stripW - 2, sh = ZP.stripH - 2, lnLo = Math.log(h.fLo), Lh = Math.log(h.fHi / h.fLo);
+  return { h, sw, sh, lnLo, Lh,
+    x: f => 1 + (Math.log(f) - lnLo) / Lh * sw, y: db => 1 + (h.dbHi - db) / (h.dbHi - h.dbLo) * sh,
+    u: x => lnLo + clamp((x - 1) / sw, 0, 1) * Lh, v: y => h.dbHi - clamp((y - 1) / sh, 0, 1) * (h.dbHi - h.dbLo) };
+}
+function minSize(a, b, m, lo, hi) {             // widen [a, b] to at least m around its centre, kept inside [lo, hi]
+  if (b - a >= m) return [a, b];
+  const c = (a + b) / 2; let a2 = c - m / 2, b2 = c + m / 2;
+  if (a2 < lo) { b2 += lo - a2; a2 = lo; }
+  if (b2 > hi) { a2 -= b2 - hi; b2 = hi; }
+  return [a2, b2];
+}
+function viewRectIn(M, v) {
+  const [x1, x2] = minSize(M.x(v.fLo), M.x(v.fHi), 6, 1, 1 + M.sw);
+  const [y1, y2] = minSize(M.y(v.dbHi), M.y(v.dbLo), 6, 1, 1 + M.sh);
+  return { x1, x2, y1, y2 };
+}
+function inWindowHit(q, M) {
+  const R = viewRectIn(M, V);
+  const [x1, x2] = minSize(R.x1, R.x2, 16, -1e9, 1e9), [y1, y2] = minSize(R.y1, R.y2, 16, -1e9, 1e9);
+  return q.x >= x1 && q.x <= x2 && q.y >= y1 && q.y <= y2;
+}
+function centredView(u, v) {                     // the view a press at home point (u, v) would produce
+  const L = Math.log(V.fHi / V.fLo), S = V.dbHi - V.dbLo;
+  return { ...clampFreq(u - L / 2, L), ...clampDb(v + S / 2, S) };
+}
+function drawOverview() {
+  if (!V || !isZoomed()) return;
+  const c = $('zOv'), ctx = c.getContext('2d'), k = dpr(), M = ovMap();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = OVC.bg; ctx.fillRect(0, 0, c.width, c.height);
+  const f1 = Math.max(1, Math.round(k));                    // 1 css px in physical px
+  const ix = f1, iy = f1, iw = c.width - 2 * f1, ih = c.height - 2 * f1;
+  if (S.init && iw > 0) {
+    // primary A over the home range: the highest level per physical column (the frame's 256-point overview in the plugin)
+    const col = new Float64Array(iw).fill(-Infinity);
+    for (let i = 0; i < NPTS; i++) {
+      if (F[i] < M.h.fLo || F[i] > M.h.fHi) continue;
+      const cI = Math.min(iw - 1, Math.floor((LNF[i] - M.lnLo) / M.Lh * iw));
+      if (DSP.A[i] > col[cI]) col[cI] = DSP.A[i];
+    }
+    const span = M.h.dbHi - M.h.dbLo;
+    const yOf = v => iy + (isFinite(v) ? clamp((M.h.dbHi - v) / span, 0, 1) : 1) * ih;
+    const ys = new Float64Array(iw);
+    for (let cI = 0; cI < iw; cI++) ys[cI] = Math.round(yOf(col[cI]));
+    ctx.fillStyle = OVC.fill;                                // body: one rect per column (one fillRectList)
+    for (let cI = 0; cI < iw; cI++) ctx.fillRect(ix + cI, ys[cI], 1, iy + ih - ys[cI]);
+    ctx.fillStyle = OVC.line;                                // top line: one rect per column, joined vertically
+    for (let cI = 0; cI < iw; cI++) { const p = cI ? ys[cI - 1] : ys[cI]; const t = Math.min(p, ys[cI]); ctx.fillRect(ix + cI, t, 1, Math.max(p, ys[cI]) - t + f1); }
+  }
+  const R = viewRectIn(M, V), P2 = v => Math.round(v * k);
+  const wx1 = P2(R.x1), wx2 = P2(R.x2), wy1 = P2(R.y1), wy2 = P2(R.y2);
+  ctx.fillStyle = OVC.shade;                                 // outside the window: up to 4 rects
+  ctx.fillRect(ix, iy, iw, Math.max(0, wy1 - iy));
+  ctx.fillRect(ix, wy2, iw, Math.max(0, iy + ih - wy2));
+  ctx.fillRect(ix, wy1, Math.max(0, wx1 - ix), wy2 - wy1);
+  ctx.fillRect(wx2, wy1, Math.max(0, ix + iw - wx2), wy2 - wy1);
+  const hoverWin = !OG && ovHover && inWindowHit(ovHover, M);
+  if (OG || hoverWin) { ctx.fillStyle = OG ? OVC.winDrag : OVC.winHover; ctx.fillRect(wx1, wy1, wx2 - wx1, wy2 - wy1); }
+  const outline = (x1, y1, x2, y2, colr) => { ctx.fillStyle = colr; ctx.fillRect(x1, y1, x2 - x1, f1); ctx.fillRect(x1, y2 - f1, x2 - x1, f1); ctx.fillRect(x1, y1, f1, y2 - y1); ctx.fillRect(x2 - f1, y1, f1, y2 - y1); };
+  if (!OG && ovHover && !hoverWin) {                         // ghost: the window a press here would produce
+    const g = viewRectIn(M, centredView(M.u(ovHover.x), M.v(ovHover.y)));
+    outline(P2(g.x1), P2(g.y1), P2(g.x2), P2(g.y2), OVC.ghost);
+  }
+  outline(wx1, wy1, wx2, wy2, OVC.win);
+  outline(0, 0, c.width, c.height, OVC.frame);
+}
+
+/* ---------- hint line (spec 5.5) ---------- */
+const HINTS = {
+  fit: ['Scroll: zoom · Ctrl+drag: box zoom · Click: reset max/avg · Right-click: copy frequency', 'Scroll: zoom · Ctrl+drag: box · Click: reset · Right-click: copy'],
+  zoomed: ['Drag: pan · Double-click: fit · Scroll: zoom · Click: reset max/avg · Right-click: copy frequency', 'Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy'],
+};
+function updateHint() {
+  const h = $('hint'), set = isZoomed() ? HINTS.zoomed : HINTS.fit, was = h.style.display;
+  h.style.visibility = 'hidden'; h.style.display = 'block';
+  h.textContent = set[0];
+  if (D.w > 0 && h.offsetWidth > D.w - 16) h.textContent = set[1];
+  h.style.display = was; h.style.visibility = '';
+}
+
+/* ---------- deep-zoom grid rules (spec 5.3 and 5.9.8) ---------- */
+const AXIS_ADV = 6.6;                                       // JetBrains Mono 11 px advance (0.6 em) per character
+const labelWidth = t => t.length * AXIS_ADV;
+const DB_STEPS = [0.1, 0.2, 0.5, 1, 2, 3, 6, 12, 24];
+const DECADE_SETS = [[1, 2, 3, 5, 7], [1, 2, 5], [1]];
+const isPow10 = f => Math.abs(Math.log10(f) - Math.round(Math.log10(f))) < 1e-9;
+function fmtDecadeLabel(f) { return f < 1000 ? String(Math.round(f)) : String(Math.round(f / 1000)) + 'k'; }
+function fmtLinearLabel(f, s) {
+  if (f < 1000) return f.toFixed(Math.max(0, -Math.floor(Math.log10(s) + 1e-9)));
+  return (f / 1000).toFixed(Math.max(0, -Math.floor(Math.log10(s / 1000) + 1e-9))) + 'k';
+}
+function freqTicks(vLo, vHi, w, x0, plotW) {
+  const L = Math.log(vHi / vLo), X = f => x0 + Math.log(f / vLo) / L * w;
+  const survives = l => { const x = X(l.f), hw = labelWidth(l.text) / 2; return x - hw >= 2 && x + hw <= plotW - 2; };
+  const gapRule = texts => Math.max(36, Math.max(0, ...texts.map(labelWidth)) + 16);
+  let dec = null;
+  for (const set of DECADE_SETS) {
+    const vals = [];
+    for (let e = Math.floor(Math.log10(vLo)); e <= Math.ceil(Math.log10(vHi)); e++) for (const m of set) { const f = m * Math.pow(10, e); if (f >= vLo * (1 - 1e-9) && f <= vHi * (1 + 1e-9)) vals.push(f); }
+    vals.sort((a, b) => a - b);
+    const texts = vals.map(fmtDecadeLabel);
+    let gap = Infinity; for (let i = 1; i < vals.length; i++) gap = Math.min(gap, X(vals[i]) - X(vals[i - 1]));
+    const labels = vals.map((f, i) => ({ f, text: texts[i] })).filter(survives);
+    if (gap >= gapRule(texts) && labels.length >= 2) { dec = { mode: 'decade', labels }; break; }
+  }
+  const linear = minGap => {                                // the smallest qualifying 1-2-5 step
+    const span = vHi - vLo, e0 = Math.floor(Math.log10(span));
+    for (let e = e0 - 3; e <= e0 + 1; e++) for (const m of [1, 2, 5]) {
+      const s = m * Math.pow(10, e);
+      const k0 = Math.ceil(vLo / s - 1e-9), k1 = Math.floor(vHi / s + 1e-9), n = k1 - k0 + 1;
+      if (n > 400) continue;
+      if (n < 2) return null;
+      const vals = []; for (let k = k0; k <= k1; k++) vals.push(Number((k * s).toFixed(6)));
+      const texts = vals.map(f => fmtLinearLabel(f, s));
+      const gap = X(vals[n - 1]) - X(vals[n - 2]);              // on a log axis the top gap is the smallest
+      if (gap >= (minGap || gapRule(texts))) {
+        const labels = vals.map((f, i) => ({ f, text: texts[i] })).filter(survives);
+        if (labels.length >= 2 || minGap) return { mode: 'linear', step: s, values: vals, labels };
+      }
+    }
+    return null;
+  };
+  const lin = linear(0);
+  let pick = lin && (!dec || lin.labels.length > dec.labels.length) ? lin : dec;
+  if (!pick) pick = linear(36) || { mode: 'linear', step: vHi - vLo, values: [], labels: [] };   // guard, not reached
+  const lines = [];
+  if (pick.mode === 'decade') {
+    const minorOk = w * Math.log(10 / 9) / L >= 4, lab = new Set(pick.labels.map(l => l.f));
+    for (let e = Math.floor(Math.log10(vLo)); e <= Math.ceil(Math.log10(vHi)); e++) for (let m = 1; m <= 9; m++) {
+      const f = m * Math.pow(10, e);
+      if (f < vLo * (1 - 1e-9) || f > vHi * (1 + 1e-9)) continue;
+      if (m !== 1 && !minorOk && !lab.has(f)) continue;
+      lines.push({ f, major: m === 1 });
+    }
+  } else {
+    const s = pick.step, n = pick.values.length;
+    for (const f of pick.values) lines.push({ f, major: isPow10(f) });
+    if (n >= 1 && X(pick.values[n - 1]) - X(pick.values[n - 1] - s / 2) >= 16) {
+      const h = s / 2;
+      for (let k = Math.ceil(vLo / h - 1e-9); k * h <= vHi * (1 + 1e-9); k++) if (k % 2) lines.push({ f: k * h, major: false });
+    }
+  }
+  return { ...pick, lines };
+}
+function dbTicks(lo, hi, h) {
+  const pxPerDb = h / (hi - lo);
+  const step = DB_STEPS.find(s => s * pxPerDb >= 20) || 24;
+  const ticks = [];
+  for (let k = Math.ceil(lo / step - 1e-9); k * step <= hi + 1e-9; k++) {
+    const v = Number((k * step).toFixed(6));
+    ticks.push({ v, text: step >= 1 ? fmtDbInt(v) : signed1(v), major: Math.abs(v) < 1e-9 });
+  }
+  return { step, ticks };
+}
 function buildGrid() {
-  const r = effRange(), d = D, ctx = gctx, k = dpr();
+  const d = D, ctx = gctx, k = dpr();
   ctx.setTransform(k, 0, 0, k, 0, 0);
   ctx.fillStyle = COL.plotBg; ctx.fillRect(0, 0, PW, PH);
-  const lx = Math.log(r.fHi / r.fLo);
-  const X = f => d.x + Math.log(f / r.fLo) / lx * d.w;
   const snapPx = v => Math.round(v) + 0.5;
-  const pxPerDec = d.w / Math.log10(r.fHi / r.fLo);
-  const minorOk = pxPerDec * Math.log10(10 / 9) >= 4;
-  // label density
-  const sets = [[1, 2, 3, 5, 7], [1, 2, 5], [1]];
-  let labels = [];
-  for (const set of sets) {
-    const fs = [];
-    for (let e = Math.floor(Math.log10(r.fLo)); e <= Math.ceil(Math.log10(r.fHi)); e++) for (const m of set) { const f = m * Math.pow(10, e); if (f >= r.fLo - 1e-9 && f <= r.fHi + 1e-9) fs.push(Math.round(f)); }
-    fs.sort((a, b) => a - b);
-    let minGap = Infinity; for (let i = 1; i < fs.length; i++) minGap = Math.min(minGap, X(fs[i]) - X(fs[i - 1]));
-    labels = fs; if (minGap >= 36) break;
-  }
-  const labelled = new Set(labels);
+  const T = freqTicks(V.fLo, V.fHi, d.w, d.x, PW), DT = dbTicks(V.dbLo, V.dbHi, d.h);
   ctx.lineWidth = 1;
-  for (let e = Math.floor(Math.log10(r.fLo)); e <= Math.ceil(Math.log10(r.fHi)); e++) for (let m = 1; m <= 9; m++) {
-    const f = Math.round(m * Math.pow(10, e));
-    if (f < r.fLo || f > r.fHi) continue;
-    if (m !== 1 && !minorOk && !labelled.has(f)) continue;
-    ctx.strokeStyle = m === 1 ? COL.major : COL.minor;
-    const x = snapPx(X(f)); ctx.beginPath(); ctx.moveTo(x, d.y); ctx.lineTo(x, d.y + d.h); ctx.stroke();
+  for (const pass of [false, true]) {                        // minor lines first, major on top
+    ctx.strokeStyle = pass ? COL.major : COL.minor;
+    for (const l of T.lines) if (l.major === pass) { const x = snapPx(fToX(l.f)); ctx.beginPath(); ctx.moveTo(x, d.y); ctx.lineTo(x, d.y + d.h); ctx.stroke(); }
+    for (const t of DT.ticks) if (t.major === pass) { const y = snapPx(dbToY(t.v)); ctx.beginPath(); ctx.moveTo(d.x, y); ctx.lineTo(d.x + d.w, y); ctx.stroke(); }
   }
-  // dB lines
-  const pxPerDb = d.h / (r.dbHi - r.dbLo);
-  const step = [1, 2, 3, 6, 12, 24].find(s => s * pxPerDb >= 20) || 24;
-  const dbLines = [];
-  for (let v = Math.ceil(r.dbLo / step) * step; v <= r.dbHi; v += step) dbLines.push(v);
-  for (const v of dbLines) { const y = snapPx(d.y + (r.dbHi - v) * pxPerDb); ctx.strokeStyle = v === 0 ? COL.major : COL.minor; ctx.beginPath(); ctx.moveTo(d.x, y); ctx.lineTo(d.x + d.w, y); ctx.stroke(); }
   ctx.strokeStyle = COL.frame; ctx.strokeRect(d.x + 0.5, d.y + 0.5, d.w - 1, d.h - 1);
-  // labels
   ctx.fillStyle = COL.axis; ctx.font = '400 11px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono');
   ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
-  for (const v of dbLines) { const y = d.y + (r.dbHi - v) * pxPerDb; if (y < 6 || y > PH - 6) continue; ctx.fillText(fmtDbInt(v), d.x - 8, y); }
+  for (const t of DT.ticks) { const y = dbToY(t.v); if (y < 6 || y > PH - 6) continue; ctx.fillText(t.text, d.x - 8, y); }
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-  for (const f of labels) { const x = X(f); const t = fmtFreqLabel(f); const tw = ctx.measureText(t).width; if (x - tw / 2 < 2 || x + tw / 2 > PW - 2) continue; ctx.fillText(t, x, d.y + d.h + 6); }
+  for (const l of T.labels) ctx.fillText(l.text, fToX(l.f), d.y + d.h + 6);
   gridDirty = false;
 }
+/* Curves over the view: the points in view plus one on each side, at most 2 vertices per physical column (spec 5.1) */
 function tracePath(ctx, arr, close) {
-  const r = effRange(), d = D;
-  const lx = Math.log(r.fHi / r.fLo), span = r.dbHi - r.dbLo, bottom = d.y + d.h;
-  const i0 = Math.max(0, Math.floor(idxOf(r.fLo))), i1 = Math.min(NPTS - 1, Math.ceil(idxOf(r.fHi)));
+  const d = D, k = dpr(), bottom = d.y + d.h;
+  const lnLo = Math.log(V.fLo), L = Math.log(V.fHi / V.fLo), span = V.dbHi - V.dbLo;
+  const i0 = Math.max(0, Math.floor(idxOf(V.fLo)) - 1), i1 = Math.min(NPTS - 1, Math.ceil(idxOf(V.fHi)) + 1);
   ctx.beginPath();
-  let fx = 0, lxp = 0;
+  let first = true, fx = 0, lastX = 0;
+  let col = null, cnt = 0, ax = 0, ay = 0, tX = 0, tY = 0, bX = 0, bY = 0;
+  const emit = (x, y) => { if (first) { ctx.moveTo(x, y); fx = x; first = false; } else ctx.lineTo(x, y); lastX = x; };
+  const flush = () => {
+    if (col === null) return;
+    if (cnt === 1) emit(ax, ay);
+    else if (tX <= bX) { emit(tX, tY); emit(bX, bY); } else { emit(bX, bY); emit(tX, tY); }
+  };
   for (let i = i0; i <= i1; i++) {
-    const x = d.x + Math.log(F[i] / r.fLo) / lx * d.w;
+    const x = d.x + (LNF[i] - lnLo) / L * d.w;
     const v = arr[i];
-    const y = isFinite(v) ? clamp(d.y + (r.dbHi - v) / span * d.h, d.y, bottom) : bottom;
-    if (i === i0) { ctx.moveTo(x, y); fx = x; } else ctx.lineTo(x, y);
-    lxp = x;
+    const y = isFinite(v) ? clamp(d.y + (V.dbHi - v) / span * d.h, d.y, bottom) : bottom;
+    const c = Math.floor((x - d.x) * k);
+    if (c !== col) { flush(); col = c; cnt = 0; tY = Infinity; bY = -Infinity; }
+    cnt++; ax = x; ay = y;
+    if (y < tY) { tY = y; tX = x; }
+    if (y > bY) { bY = y; bX = x; }
   }
-  if (close) { ctx.lineTo(lxp, bottom + 1); ctx.lineTo(fx, bottom + 1); ctx.closePath(); }
+  flush();
+  if (close && !first) { ctx.lineTo(lastX, bottom + 1); ctx.lineTo(fx, bottom + 1); ctx.closePath(); }
 }
 function levelAt(arr, f) {
   const p = idxOf(f); if (p < 0 || p > NPTS - 1) return -Infinity;
@@ -1067,7 +1368,20 @@ function noteName(f) {
   return names[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1) + ' ' + (cents >= 0 ? '+' : MINUS) + Math.abs(cents) + 'c';
 }
 function fmtHoverLevel(v) { return (!isFinite(v) || v <= -200) ? MINUS + 'inf dB' : fmtUnsigned1(v) + ' dB'; }
-function copyString(f) { const r = round3(f); return r < 100 ? r.toFixed(1) : String(Math.round(r)); }
+/* Zoom precision (spec 5.5): 4 significant figures while the visible span is below 1 octave */
+const zoomSig = () => (V && Math.log2(V.fHi / V.fLo) < 1) ? 4 : 3;
+function fmtHoverFreqParts(f) {
+  if (zoomSig() === 3) return fmtFreqParts(f);
+  const r = Number(f.toPrecision(4));
+  if (r < 100) return [r.toFixed(2), 'Hz'];
+  if (r < 1000) return [r.toFixed(1), 'Hz'];
+  if (r < 10000) return [(r / 1000).toFixed(3), 'kHz'];
+  return [(r / 1000).toFixed(2), 'kHz'];
+}
+function copyString(f) {
+  if (zoomSig() === 4) { const r = Number(f.toPrecision(4)); return r < 100 ? r.toFixed(2) : r < 1000 ? r.toFixed(1) : String(Math.round(r)); }
+  const r = round3(f); return r < 100 ? r.toFixed(1) : String(Math.round(r));
+}
 const SWATCH = {
   pa: '<svg width="16" height="10"><rect x="0" y="4" width="16" height="6" fill="#62D6F0" fill-opacity=".22"/><path d="M0 4.5H16" stroke="#62D6F0" stroke-width="1.5"/></svg>',
   pb: '<svg width="16" height="10"><path d="M0 5H16" stroke="#FFB454" stroke-width="1.5"/></svg>',
@@ -1086,13 +1400,46 @@ function updateLegend() {
   $('legend').innerHTML = h;
 }
 let hover = null;
+/* Hover card placement (spec 5.5): four candidates that avoid the zoom panel, then the T-010 rule */
+function placeCard(px, py, cw, ch) {
+  const d = D, inset = 4;
+  const ex = isZoomed() ? { x: ZP.x - 4, y: ZP.y - 4, w: ZP.w + 8, h: ZP.h + 8 } : null;
+  const fits = (x, y) => x >= d.x + inset && y >= d.y + inset && x + cw <= d.x + d.w - inset && y + ch <= d.y + d.h - inset;
+  const hits = (x, y) => !!ex && x < ex.x + ex.w && x + cw > ex.x && y < ex.y + ex.h && y + ch > ex.y;
+  for (const [x, y] of [[px + 18, py - 18 - ch], [px - 18 - cw, py - 18 - ch], [px + 18, py + 18], [px - 18 - cw, py + 18]]) if (fits(x, y) && !hits(x, y)) return [x, y];
+  let cx = px + 18, cy = py - 18 - ch;
+  if (cx + cw > d.x + d.w - 4) cx = px - 18 - cw;
+  if (cy < d.y + 4) cy = py + 18;
+  return [clamp(cx, d.x + 4, d.x + d.w - 4 - cw), clamp(cy, d.y + 4, d.y + d.h - 4 - ch)];
+}
+/* Box-zoom rubber band on the overlay canvas, above the zoom panel (spec 5.9.6, 5.9.7) */
+function drawBox() {
+  const c = $('ovl'), ctx = c.getContext('2d'), k = dpr();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, c.width, c.height);
+  if (!G || G.kind !== 'box') return;
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  const x1 = Math.min(G.start.x, G.cur.x), x2 = Math.max(G.start.x, G.cur.x), y1 = Math.min(G.start.y, G.cur.y), y2 = Math.max(G.start.y, G.cur.y);
+  ctx.lineWidth = 1;
+  if (x2 - x1 >= ZOOM.boxCancelPx && y2 - y1 >= ZOOM.boxCancelPx) {
+    const t = boxTarget(x1, y1, x2, y2);
+    if (t.widened) {
+      const tx1 = clamp(fToX(t.f.fLo), D.x, D.x + D.w), tx2 = clamp(fToX(t.f.fHi), D.x, D.x + D.w);
+      const ty1 = clamp(dbToY(t.db.dbHi), D.y, D.y + D.h), ty2 = clamp(dbToY(t.db.dbLo), D.y, D.y + D.h);
+      ctx.strokeStyle = '#75829A'; ctx.strokeRect(Math.round(tx1) + 0.5, Math.round(ty1) + 0.5, Math.round(tx2 - tx1) - 1, Math.round(ty2 - ty1) - 1);
+    }
+  }
+  ctx.fillStyle = 'rgba(232,236,243,0.08)'; ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  ctx.strokeStyle = '#E8ECF3'; ctx.strokeRect(Math.round(x1) + 0.5, Math.round(y1) + 0.5, Math.max(0, Math.round(x2 - x1) - 1), Math.max(0, Math.round(y2 - y1) - 1));
+}
 function drawPlot() {
   const ctx = pctx, k = dpr(), d = D;
   if (gridDirty) buildGrid();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(gridCanvas, 0, 0);
   ctx.setTransform(k, 0, 0, k, 0, 0);
-  if (!S.init) return;
+  drawBox();
+  drawOverview();
+  if (!S.init) { $('hover').style.display = 'none'; return; }
   if (!gradA) { gradA = ctx.createLinearGradient(0, d.y, 0, d.y + d.h); gradA.addColorStop(0, 'rgba(98,214,240,0.30)'); gradA.addColorStop(1, 'rgba(98,214,240,0.04)'); }
   const showSC = DSP.hasSC && P.showSidechain && scConnected;
   ctx.save(); ctx.beginPath(); ctx.rect(d.x, d.y, d.w, d.h); ctx.clip();
@@ -1109,12 +1456,11 @@ function drawPlot() {
   tracePath(ctx, DSP.A, false); ctx.strokeStyle = COL.pa; ctx.stroke();
   const card = $('hover');
   if (hover) {
-    const r = effRange();
-    const f = r.fLo * Math.pow(r.fHi / r.fLo, (hover.x - d.x) / d.w);
+    const f = xToF(hover.x);
     const x = Math.round(hover.x) + 0.5;
     ctx.strokeStyle = 'rgba(232,236,243,0.35)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, d.y); ctx.lineTo(x, d.y + d.h); ctx.stroke();
-    const yOf = v => clamp(d.y + (r.dbHi - v) / (r.dbHi - r.dbLo) * d.h, d.y, d.y + d.h);
+    const yOf = v => clamp(dbToY(v), d.y, d.y + d.h);
     const rows = [];
     const names = curveNames();
     const marker = (v, col) => { if (!isFinite(v)) return; ctx.beginPath(); ctx.arc(hover.x, yOf(v), 3.5, 0, Math.PI * 2); ctx.fillStyle = COL.plotBg; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = col; ctx.stroke(); };
@@ -1123,14 +1469,10 @@ function drawPlot() {
     else if (DSP.hasSec && P.secondary > 0) { const vS = levelAt(DSP.secA, f); rows.push([SWATCH.sa, CH.secondary[P.secondary], vS]); marker(vS, COL.sa); }
     if (showSC) { const vC = levelAt(DSP.SC, f); rows.push([SWATCH.sc, 'Sidechain', vC]); marker(vC, COL.scSolid); }
     marker(vA, COL.pa);
-    const [fn, fu] = fmtFreqParts(f);
+    const [fn, fu] = fmtHoverFreqParts(f);
     card.innerHTML = `<div class="hf">${fn} ${fu}</div><div class="hn">${noteName(f)}</div><div class="sep"></div>` + rows.map(([sw, n, v]) => `<div class="hr">${sw}${n}<span class="v">${fmtHoverLevel(v)}</span></div>`).join('');
     card.style.display = 'block';
-    const cw = card.offsetWidth, chh = card.offsetHeight;
-    let cx = hover.x + 18, cy = hover.y - 18 - chh;
-    if (cx + cw > d.x + d.w - 4) cx = hover.x - 18 - cw;
-    if (cy < d.y + 4) cy = hover.y + 18;
-    cx = clamp(cx, d.x + 4, d.x + d.w - 4 - cw); cy = clamp(cy, d.y + 4, d.y + d.h - 4 - chh);
+    const [cx, cy] = placeCard(hover.x, hover.y, card.offsetWidth, card.offsetHeight);
     card.style.left = Math.round(cx) + 'px'; card.style.top = Math.round(cy) + 'px';
     const lg = $('legend'), lr = { x: lg.offsetLeft - 16, y: lg.offsetTop - 16, w: lg.offsetWidth + 32, h: lg.offsetHeight + 32 };
     lg.style.opacity = (hover.x > lr.x && hover.x < lr.x + lr.w && hover.y > lr.y && hover.y < lr.y + lr.h) ? 0.25 : 1;
@@ -1141,39 +1483,168 @@ function drawPlot() {
 function toastAt(text, x, y, ms, centred) {
   const t = document.createElement('div'); t.className = 'toast'; t.textContent = text;
   $('plotWrap').appendChild(t);
-  const w = t.offsetWidth;
-  const left = centred ? x - w / 2 : clamp(x + 12, D.x + 4, D.x + D.w - 4 - w);
-  t.style.left = Math.round(left) + 'px'; t.style.top = Math.round(centred ? y : Math.max(D.y + 4, y - 28)) + 'px';
+  const w = t.offsetWidth, th = t.offsetHeight;
+  let left = centred ? x - w / 2 : clamp(x + 12, D.x + 4, D.x + D.w - 4 - w);
+  const top = centred ? y : Math.max(D.y + 4, y - 28);
+  if (isZoomed()) {                                          // collision rules, spec 5.9.7
+    if (centred) { if (left + w > ZP.x - 8 && top < ZP.y + ZP.h) left = ZP.x - 8 - w; }
+    else {
+      const ex = { x: ZP.x - 4, y: ZP.y - 4, w: ZP.w + 8, h: ZP.h + 8 };
+      const hit = left < ex.x + ex.w && left + w > ex.x && top < ex.y + ex.h && top + th > ex.y;
+      if (hit) left = clamp(x - 12 - w, D.x + 4, D.x + D.w - 4 - w);
+    }
+  }
+  t.style.left = Math.round(left) + 'px'; t.style.top = Math.round(top) + 'px';
   setTimeout(() => { t.style.opacity = 0; }, ms - 200);
   setTimeout(() => t.remove(), ms);
 }
+/* Cursors (spec 5.9.4): the same SVGs as assets/ui/cursor-*.svg, inlined so the file needs no other files */
+const SVG_CURSOR = {
+  hand: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><g fill="none" stroke="#000000" stroke-width="4.5" stroke-linecap="round"><path d="M9 13V6.25M12 12.5V4.75M15 12.5V5.75M18 13.5V8.25M9.75 16.75L5.5 12.5"/></g><rect x="6.75" y="9.5" width="13.5" height="12" rx="4.5" fill="#000000"/><g fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"><path d="M9 13V6.25M12 12.5V4.75M15 12.5V5.75M18 13.5V8.25M9.75 16.75L5.5 12.5"/></g><rect x="7.75" y="10.5" width="11.5" height="10" rx="3.5" fill="#FFFFFF"/></svg>',
+  grab: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><g fill="none" stroke="#000000" stroke-width="4.5" stroke-linecap="round"><path d="M9 12.5V10.25M12 12V9.5M15 12V10M18 12.5V11M10.25 16.25L7.5 13.75"/></g><rect x="6.75" y="9.5" width="13.5" height="12" rx="4.5" fill="#000000"/><g fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"><path d="M9 12.5V10.25M12 12V9.5M15 12V10M18 12.5V11M10.25 16.25L7.5 13.75"/></g><rect x="7.75" y="10.5" width="11.5" height="10" rx="3.5" fill="#FFFFFF"/><path d="M10.5 11.5V13M13.5 11.25V12.75M16.5 11.5V13" fill="none" stroke="#000000" stroke-width="0.75" stroke-linecap="round"/></svg>',
+  box: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path d="M7.5 1.5V5M7.5 10V13.5M1.5 7.5H5M10 7.5H13.5" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="square"/><circle cx="16.5" cy="16.5" r="5" fill="#000000"/><path d="M19.75 19.75L22 22" fill="none" stroke="#000000" stroke-width="4" stroke-linecap="round"/><path d="M7.5 1.5V5M7.5 10V13.5M1.5 7.5H5M10 7.5H13.5" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/><circle cx="16.5" cy="16.5" r="4" fill="#FFFFFF"/><path d="M19.75 19.75L22 22" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/><path d="M14.5 16.5H18.5M16.5 14.5V18.5" fill="none" stroke="#000000" stroke-width="1.25"/></svg>',
+};
+const svgCursor = (svg, x, y, fallback) => `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${x} ${y}, ${fallback}`;
+const CURSOR = { hand: svgCursor(SVG_CURSOR.hand, 12, 12, 'grab'), grab: svgCursor(SVG_CURSOR.grab, 12, 12, 'grabbing'), box: svgCursor(SVG_CURSOR.box, 7, 7, 'crosshair') };
+
+/* Spectrum gestures (spec 5.9.3, G1 to G16) */
 function bindPlot() {
   const wrap = $('plotWrap');
-  let downAt = null;
-  const inData = (x, y) => x >= D.x && x <= D.x + D.w && y >= D.y && y <= D.y + D.h;
+  let clickTimer = null, suppressUp = false, ctrlHeld = false;
+  const inData = p => p.x >= D.x && p.x <= D.x + D.w && p.y >= D.y && p.y <= D.y + D.h;
+  const inFreqGutter = p => p.x >= D.x && p.x <= D.x + D.w && p.y > D.y + D.h && p.y <= PH;
+  const inDbGutter = p => p.x >= 0 && p.x < D.x && p.y >= D.y && p.y <= D.y + D.h;
+  const overPanel = p => isZoomed() && p.x >= ZP.x && p.x < ZP.x + ZP.w && p.y >= ZP.y && p.y < ZP.y + ZP.h;
   const local = e => { const r = wrap.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const updateCursor = () => {
+    const p = lastPtr;
+    let cur = '';
+    if (G && G.kind === 'pan') cur = CURSOR.grab;
+    else if (G && G.kind === 'box') cur = CURSOR.box;
+    else if (p && inData(p) && !overPanel(p)) cur = ctrlHeld ? CURSOR.box : 'crosshair';
+    wrap.style.cursor = cur;
+  };
+  const showHover = p => {                                   // spec 5.9.5
+    if (p && inData(p) && !overPanel(p) && !OG) { hover = p; $('hint').style.display = 'block'; }
+    else { hover = null; $('hint').style.display = 'none'; }
+    updateCursor();
+  };
+  const rebase = () => { if (G && G.kind === 'pan' && lastPtr) { G.v0 = { ...V }; G.start = { ...lastPtr }; } };
   wrap.addEventListener('pointermove', e => {
-    const p = local(e);
-    if (inData(p.x, p.y)) { hover = p; wrap.classList.add('in-data'); $('hint').style.display = 'block'; }
-    else { hover = null; wrap.classList.remove('in-data'); $('hint').style.display = 'none'; }
+    const p = local(e); lastPtr = p; ctrlHeld = e.ctrlKey;
+    if (G) {
+      const dx = p.x - G.start.x, dy = p.y - G.start.y;
+      if (G.kind === 'press' && Math.hypot(dx, dy) > ZOOM.dragPx) G.kind = isZoomed() ? 'pan' : 'noop';   // G7 / G8
+      if (G.kind === 'pan') { panBy(G.v0, dx, dy); showHover(null); return; }
+      if (G.kind === 'box') { G.cur = { x: clamp(p.x, D.x, D.x + D.w), y: clamp(p.y, D.y, D.y + D.h) }; updateCursor(); return; }
+    }
+    showHover(p);
   });
-  wrap.addEventListener('pointerleave', () => { hover = null; wrap.classList.remove('in-data'); $('hint').style.display = 'none'; });
-  wrap.addEventListener('pointerdown', e => { if (e.button === 0) { const p = local(e); downAt = inData(p.x, p.y) ? p : null; } });
-  wrap.addEventListener('pointerup', e => {
-    if (e.button !== 0 || !downAt) return;
-    const p = local(e);
-    if (Math.hypot(p.x - downAt.x, p.y - downAt.y) <= 4) resetCurves(true);
-    downAt = null;
+  wrap.addEventListener('pointerleave', () => { if (!G) { lastPtr = null; showHover(null); } });
+  wrap.addEventListener('pointerdown', e => {
+    const p = local(e); lastPtr = p;
+    if (G || OG || overPanel(p) || !inData(p)) return;
+    if (e.button === 0 && e.ctrlKey) {                       // G13 box zoom
+      G = { kind: 'box', button: 0, start: p, cur: p };
+      wrap.setPointerCapture(e.pointerId); showHover(null); return;
+    }
+    if (e.button === 0 || e.button === 1) {                  // G7 to G11
+      if (e.button === 1) e.preventDefault();
+      G = { kind: 'press', button: e.button, start: p, v0: { ...V } };
+      wrap.setPointerCapture(e.pointerId);
+    }
   });
-  wrap.addEventListener('contextmenu', e => {
+  wrap.addEventListener('mousedown', e => {
+    if (e.button === 1) e.preventDefault();                  // no browser auto-scroll on a middle press
+    const p = local(e);
+    if (e.button !== 0 || e.ctrlKey || e.detail < 2 || overPanel(p) || !inData(p)) return;
+    // G12: the second press of a double-click (as JUCE's mouseDoubleClick) fits and cancels the pending reset
+    clearTimeout(clickTimer); clickTimer = null; suppressUp = true; fitView();
+  });
+  const endGesture = cancelled => {
+    if (!G) return;
+    const g = G; G = null;
+    if (!cancelled && g.kind === 'box') finishBox(g);
+    if (!cancelled && g.kind === 'press' && g.button === 0) {   // G11: a click resets after the 250 ms defer
+      if (suppressUp) suppressUp = false;
+      else { clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickTimer = null; resetCurves(true); }, ZOOM.clickDeferMs); }
+    }
+    if (g.kind !== 'press') suppressUp = false;
+    showHover(lastPtr);
+  };
+  wrap.addEventListener('pointerup', e => { if (G && e.button === G.button) endGesture(false); });
+  wrap.addEventListener('pointercancel', () => endGesture(true));
+  wrap.addEventListener('auxclick', e => { if (e.button === 1) e.preventDefault(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && G && G.kind === 'box') { G = null; showHover(lastPtr); }   // G15
+    if (e.key === 'Control') { ctrlHeld = true; updateCursor(); }
+  });
+  document.addEventListener('keyup', e => { if (e.key === 'Control') { ctrlHeld = false; updateCursor(); } });
+  wrap.addEventListener('wheel', e => {                      // G1 to G6, G21
+    const p = local(e);
+    const region = inData(p) ? 'data' : inFreqGutter(p) ? 'fg' : inDbGutter(p) ? 'dbg' : null;
+    if (!region) return;
+    const unit = e.deltaMode === 1 ? ZOOM.linesPerNotch : e.deltaMode === 2 ? 1 : ZOOM.pxPerNotch;
+    let dy = e.deltaY, dx = e.deltaX;
+    if (e.shiftKey && dy === 0) { dy = dx; dx = 0; }          // browsers report Shift+wheel as horizontal
+    if (Math.abs(dx) > Math.abs(dy)) {                       // G6: horizontal pans frequency
+      if (region === 'dbg' || !freqZoomed()) return;
+      e.preventDefault(); panFreqNotches(clamp(dx / unit, -ZOOM.maxNotches, ZOOM.maxNotches)); rebase(); return;
+    }
     e.preventDefault();
-    const p = local(e); if (!inData(p.x, p.y)) return;
-    const r = effRange(); const f = r.fLo * Math.pow(r.fHi / r.fLo, (p.x - D.x) / D.w);
+    const n = clamp(-dy / unit, -ZOOM.maxNotches, ZOOM.maxNotches);
+    if (!n) return;
+    const k = Math.pow(e.shiftKey ? ZOOM.fineIn : ZOOM.notchIn, n);
+    const levelAxis = region === 'dbg' || (region === 'data' && e.ctrlKey);
+    if (levelAxis) zoomDbAt(clamp(p.y, D.y, D.y + D.h), k); else zoomFreqAt(clamp(p.x, D.x, D.x + D.w), k);
+    rebase();
+    if (!G) showHover(p);
+  }, { passive: false });
+  wrap.addEventListener('contextmenu', e => {                // G16
+    e.preventDefault();
+    const p = local(e); if (G || OG || !inData(p) || overPanel(p)) return;
+    const f = xToF(p.x);
     const s = copyString(f);
     const done = () => toastAt('Copied ' + s + ' Hz', p.x, p.y, 1200, false);
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s).then(done, () => { legacyCopy(s); done(); });
     else { legacyCopy(s); done(); }
   });
+}
+function finishBox(g) {                                    // G13: a box under 4 px in either dimension cancels
+  const x1 = Math.min(g.start.x, g.cur.x), x2 = Math.max(g.start.x, g.cur.x), y1 = Math.min(g.start.y, g.cur.y), y2 = Math.max(g.start.y, g.cur.y);
+  if (x2 - x1 < ZOOM.boxCancelPx || y2 - y1 < ZOOM.boxCancelPx) return;
+  const t = boxTarget(x1, y1, x2, y2);
+  Object.assign(V, t.f, t.db); viewChanged();
+}
+/* Zoom panel: Fit button and overview strip (spec 5.9.6, G17 to G21) */
+function bindZoomPanel() {
+  const zp = $('zpanel'), ov = $('zOv');
+  const lp = e => { const r = ov.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const centreOn = (u, v) => { Object.assign(V, centredView(u, v)); viewChanged(); };
+  zp.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
+  ov.addEventListener('pointermove', e => {
+    const q = lp(e), M = ovMap();
+    if (OG) { centreOn(M.u(q.x) - OG.du, M.v(q.y) - OG.dv); ov.style.cursor = CURSOR.grab; return; }
+    ovHover = q; ov.style.cursor = inWindowHit(q, M) ? CURSOR.hand : 'pointer';
+  });
+  ov.addEventListener('pointerleave', () => { ovHover = null; });
+  ov.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    const q = lp(e), M = ovMap(), u = M.u(q.x), v = M.v(q.y);
+    if (!inWindowHit(q, M)) centreOn(u, v);                  // G19: a press beside the window centres at once
+    const uc = (Math.log(V.fLo) + Math.log(V.fHi)) / 2, vc = (V.dbLo + V.dbHi) / 2;
+    OG = { du: u - uc, dv: v - vc };                         // G18: keep the pointer's offset inside the window
+    ov.setPointerCapture(e.pointerId); ov.style.cursor = CURSOR.grab;
+  });
+  const endOv = e => { if (!OG) return; OG = null; const q = lp(e); ov.style.cursor = ovMap() && inWindowHit(q, ovMap()) ? CURSOR.hand : 'pointer'; };
+  ov.addEventListener('pointerup', endOv);
+  ov.addEventListener('pointercancel', endOv);
+  $('zFit').addEventListener('click', e => { e.stopPropagation(); fitView(); });   // G17
+  attachTip($('zFit'), 'Show the full range set by the Frequency and Level chips. Double-clicking the spectrum does the same.', false);
+  const rangeTip = 'Visible range. Scroll to zoom frequency; Ctrl+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan.';
+  attachTip($('zFreq'), rangeTip, false); attachTip($('zDb'), rangeTip, false);
+  attachTip($('zBin'), 'Fewer than 16 FFT bins are in view, so the curve is drawn straight between bins. Raise Block for finer detail.', false);
+  attachTip(ov, 'Overview of the full range. Drag the window to pan, or click beside it to jump there.', false);
 }
 function legacyCopy(s) { const ta = document.createElement('textarea'); ta.value = s; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (err) { /* preview only */ } ta.remove(); }
 
@@ -1369,7 +1840,7 @@ function bindGrip() {
 function bindDevbar() {
   document.querySelectorAll('#devbar [data-size]').forEach(b => b.addEventListener('click', () => { const [w, h] = b.dataset.size.split('x').map(Number); setSize(w, h); }));
   $('dvVision').addEventListener('change', e => { editor.style.filter = e.target.value ? `url(#${e.target.value})` : ''; });
-  $('dvSr').addEventListener('change', e => { SRATE = +e.target.value; $('srText').textContent = (Number((SRATE / 1000).toFixed(1))) + ' kHz'; buildPoints(); S.init = false; S.initB = false; S.initSC = false; resetCurves(false); gridDirty = true; refreshClampViews(); });
+  $('dvSr').addEventListener('change', e => { SRATE = +e.target.value; $('srText').textContent = (Number((SRATE / 1000).toFixed(1))) + ' kHz'; buildPoints(); S.init = false; S.initB = false; S.initSC = false; resetCurves(false); gridDirty = true; refreshClampViews(); syncHome(); });
   $('dvPlay').addEventListener('change', e => { playing = e.target.checked; });
   $('dvSc').addEventListener('change', e => { scConnected = e.target.checked; updateScButton(); updateLegend(); });
   $('dvMono').addEventListener('change', e => { monoInput = e.target.checked; updateNumbers(); });
@@ -1394,11 +1865,13 @@ buildFooter();
 buildStrip();
 buildPopover();
 bindPlot();
+bindZoomPanel();
 bindGrip();
 bindDevbar();
 updateScButton();
 updateLegend();
 resetCurves(false);
+syncHome();      // the view starts at Fit (it is never saved)
 layout();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { gridDirty = true; });
 requestAnimationFrame(frame);
