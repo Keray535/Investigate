@@ -30,7 +30,9 @@ enum class SmoothingMode
 
     `numPoints` is not an APVTS parameter (the roadmap parameter table has
     no such entry); it is the number of display points `SpectrumMapper`
-    should produce this frame, up to `SpectrumFrame::maxPoints`. T-009/the
+    should produce for the visible view this frame, up to
+    `SpectrumFrame::maxVisiblePoints` (larger values are clamped; a zoomed
+    frame adds the pan margin on top, see `SpectrumFrame`). T-009/the
     editor decide how many points to request (for example, matched to the
     plot's pixel width); changing it between frames must not reset any
     analyser or mapper state (T-005 acceptance criteria).

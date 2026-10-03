@@ -98,6 +98,14 @@ public:
          - Every frame carries `SpectrumSettings::freezeEpoch` (live frames
            the current one, frozen frames the epoch of the freeze).
 
+        Pan margin and bin spacing (T-039): a zoomed frame carries extra
+        points beyond the visible view (25 % of the visible span in octaves
+        per side, clipped to the home range, on the same grid), located by
+        `firstVisiblePoint` and `numVisiblePoints`; `numPoints` counts all of
+        them. `SpectrumSettings::numPoints` is the visible count. Every frame
+        carries `binHz`, the bin spacing of the data it was mapped from (the
+        snapshot's value while frozen).
+
         Returns true if a frame was published. */
     bool processPending (const SpectrumSettings& settings) noexcept;
 

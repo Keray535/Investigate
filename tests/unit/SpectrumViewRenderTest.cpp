@@ -23,7 +23,7 @@ namespace
 SpectrumFrame makeRichFrame (const ValueFormat::EffectiveRange& range, bool dual, bool secondary, bool sidechain)
 {
     SpectrumFrame f;
-    f.numPoints = SpectrumFrame::maxPoints;
+    f.numPoints = SpectrumFrame::maxVisiblePoints; // T-039: maxPoints grew to 3072 (margin capacity); a Fit frame has at most 2048 points
     f.isDual = dual;
     f.hasSecondary = secondary;
     f.hasSidechain = sidechain;

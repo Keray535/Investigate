@@ -243,9 +243,13 @@ void SpectrumEngine::publishFrame (const SpectrumSettings& settings, const BinSo
 {
     SpectrumFrame& frame = exchange.getWriteFrame();
 
-    const int numPoints = juce::jlimit (1, SpectrumFrame::maxPoints, settings.numPoints);
-    frame.numPoints = numPoints;
-    mapper.computeFrequencies (settings, frame.freqHz.data(), numPoints);
+    // `settings.numPoints` is the visible point count; a zoomed frame adds the
+    // pan margin on top of it (up to `SpectrumFrame::maxPoints` in total).
+    const int numVisible = juce::jlimit (1, SpectrumFrame::maxVisiblePoints, settings.numPoints);
+    const SpectrumMapper::FrameLayout layout = mapper.computeFrameFrequencies (settings, frame.freqHz.data(), numVisible);
+    frame.numPoints = layout.numPoints;
+    frame.firstVisiblePoint = layout.firstVisible;
+    frame.numVisiblePoints = layout.numVisible;
 
     const SpectrumMapper::Ranges ranges = SpectrumMapper::computeRanges (settings);
     frame.viewFreqLow = ranges.viewLow;
@@ -253,24 +257,25 @@ void SpectrumEngine::publishFrame (const SpectrumSettings& settings, const BinSo
 
     const int numBins = src.numBins;
     const double binHz = src.binHz;
+    frame.binHz = binHz;
 
-    mapper.mapCurve (src.primary, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryDb.data());
+    mapper.mapCurveFrame (src.primary, numBins, binHz, settings, frame.primaryDb.data());
 
     frame.isDual = src.isDual;
     if (frame.isDual)
-        mapper.mapCurve (src.primaryB, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryBDb.data());
+        mapper.mapCurveFrame (src.primaryB, numBins, binHz, settings, frame.primaryBDb.data());
 
     frame.hasSecondary = src.hasSecondary;
     if (frame.hasSecondary)
     {
-        mapper.mapCurve (src.secondary, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryDb.data());
+        mapper.mapCurveFrame (src.secondary, numBins, binHz, settings, frame.secondaryDb.data());
         if (frame.isDual)
-            mapper.mapCurve (src.secondaryB, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryBDb.data());
+            mapper.mapCurveFrame (src.secondaryB, numBins, binHz, settings, frame.secondaryBDb.data());
     }
 
     frame.hasSidechain = src.hasSidechain;
     if (frame.hasSidechain)
-        mapper.mapCurve (src.sidechain, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.sidechainDb.data());
+        mapper.mapCurveFrame (src.sidechain, numBins, binHz, settings, frame.sidechainDb.data());
 
     frame.overviewNumPoints = mapper.mapOverview (src.primary, numBins, binHz, settings,
                                                    frame.overviewFreqHz.data(), frame.overviewDb.data());

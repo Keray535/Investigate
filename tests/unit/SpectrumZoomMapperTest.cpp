@@ -333,8 +333,11 @@ TEST_CASE ("View mapping through the engine: frame carries the clamped view", "[
         INFO ("view " << v.lo << ".." << v.hi);
         CHECK (f->viewFreqLow == expected.low);
         CHECK (f->viewFreqHigh == expected.high);
-        CHECK (std::abs (f->freqHz[0] / expected.low - 1.0) < 1e-4);
-        CHECK (std::abs (f->freqHz[static_cast<size_t> (f->numPoints - 1)] / expected.high - 1.0) < 1e-4);
+        // T-039: the frame carries a pan margin; the view ends are the first and last visible points.
+        const auto firstV = static_cast<size_t> (f->firstVisiblePoint);
+        const auto lastV = static_cast<size_t> (f->firstVisiblePoint + f->numVisiblePoints - 1);
+        CHECK (std::abs (f->freqHz[firstV] / expected.low - 1.0) < 1e-4);
+        CHECK (std::abs (f->freqHz[lastV] / expected.high - 1.0) < 1e-4);
         for (int i = 1; i < f->numPoints; ++i)
             REQUIRE (f->freqHz[static_cast<size_t> (i)] > f->freqHz[static_cast<size_t> (i - 1)]);
     }

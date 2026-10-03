@@ -37,13 +37,25 @@ namespace investigate
 class SpectrumMapper
 {
 public:
-    static constexpr int maxPoints = SpectrumFrame::maxPoints;
+    /** Largest visible point count (`SpectrumFrame::maxVisiblePoints`). */
+    static constexpr int maxPoints = SpectrumFrame::maxVisiblePoints;
     static constexpr int maxOverviewPoints = SpectrumFrame::overviewPoints;
 
-    /** Worst case of visible plus padding points: the minimum view span
-        (1/6 octave) with 1/3-octave smoothing pads by a full `numPoints` per
-        side minus one. */
-    static constexpr int maxPaddedPoints = 3 * maxPoints;
+    /** Worst case of visible, margin and padding points: the minimum view
+        span (1/6 octave) with 1/3-octave smoothing pads by a full
+        `numPoints - 1` per side beyond the margin, so 3 x 2048 + 2 x 512. */
+    static constexpr int maxPaddedPoints = 3 * maxPoints + 2 * SpectrumFrame::maxMarginPoints;
+
+    /** Largest padded count of the visible points alone (no margin). */
+    static constexpr int maxVisiblePaddedPoints = 3 * maxPoints;
+
+    /** The point layout of one published frame. */
+    struct FrameLayout
+    {
+        int numPoints = 0;         ///< Published points, margin included.
+        int firstVisible = 0;      ///< Margin points before the view.
+        int numVisible = 0;        ///< Visible points.
+    };
 
     /** The effective frequency ranges a set of settings maps over. */
     struct Ranges
@@ -121,6 +133,28 @@ public:
                     const float* freqHz, int numPoints,
                     float* outDb) noexcept;
 
+    /** Frame variant of `computeFrequencies()`: also extends the grid by the
+        pan margin. For `numVisible` visible points over the clamped view it
+        adds `SpectrumFrame::marginPointsFor (numVisible)` points on each side
+        (25 % of the visible span in octaves), each side clipped to the
+        effective home range, on the same grid (same step, the visible points
+        are computed exactly as in `computeFrequencies()`). Writes all
+        `layout.numPoints` frequencies to `outFreqHz` (at most
+        `SpectrumFrame::maxPoints`) and returns the layout. Pair with
+        `mapCurveFrame()`. Never allocates. */
+    FrameLayout computeFrameFrequencies (const SpectrumSettings& settings, float* outFreqHz, int numVisible) noexcept;
+
+    /** Maps one bin-domain power curve onto every point of the layout set up
+        by the last `computeFrameFrequencies()` call, margin included, into
+        `outDb[0 .. layout.numPoints)`. The visible points are bit-identical
+        to what `mapCurve()` writes for the same view. The margin points use
+        the same smoothing and slope; their smoothing window is padded beyond
+        the margin and clipped to the home range, so they equal a frame
+        mapped for a shifted view in which they are visible. Real-time-safe:
+        no allocation. */
+    void mapCurveFrame (const float* binPower, int numBins, double binHz,
+                         const SpectrumSettings& settings, float* outDb) noexcept;
+
     /** Maps primary curve A over the whole effective home range onto
         `settings.overviewPoints` (clamped to `maxOverviewPoints`) log-spaced
         points, with the same smoothing and slope as `mapCurve()`, for the
@@ -132,44 +166,58 @@ public:
                       float* outFreqHz, float* outDb) noexcept;
 
 private:
-    /** One log-spaced point grid: the visible points plus the smoothing
-        padding around them, with the bin-domain edge table and the slope
-        term for the visible points. Two exist: the view grid and the
-        overview grid. */
+    /** One log-spaced point grid: the published points (visible plus margin)
+        and the smoothing padding around them, with the bin-domain edge table
+        and the slope term for the published points. Two exist: the view grid
+        and the overview grid.
+
+        Index spaces. The "array" runs over `total` points, `padLow` of them
+        before view point 0. View point `v` (0 .. visible - 1) sits at array
+        index `padLow + v`; the published points are the array range
+        `[padLow - marginLow, padLow + visible + marginHigh)`. The smoothing
+        of the visible points runs over its own sub-range (the T-035 padded
+        range) so it stays bit-identical to the grid without margin. */
     struct Grid
     {
-        std::vector<float> freqHz;       ///< Padded points (total entries).
+        std::vector<float> freqHz;       ///< Array points (total entries).
         std::vector<double> edgesHz;     ///< total + 1 edges.
-        std::vector<double> slopeLog2;   ///< log2 (f / 1 kHz), visible points only.
+        std::vector<double> slopeLog2;   ///< log2 (f / 1 kHz), published points only.
 
         int visible = 0;                 ///< Number of visible points.
-        int padLow = 0;                  ///< Padding points below the view.
-        int total = 0;                   ///< padLow + visible + padHigh.
+        int padLow = 0;                  ///< Array points before view point 0 (margin plus padding).
+        int total = 0;                   ///< Array size.
         int halfWidth = 0;               ///< Smoothing half width, in points.
+        int marginLow = 0;               ///< Margin points before the view.
+        int marginHigh = 0;              ///< Margin points after the view.
+        int visPadLow = 0;               ///< Smoothing padding of the visible points, low side.
+        int visPadHigh = 0;              ///< ... and high side.
 
         // Cache key: the grid is rebuilt only when one of these changes.
         bool valid = false;
         double keyViewLow = 0.0, keyViewHigh = 0.0, keyHomeLow = 0.0, keyHomeHigh = 0.0;
         int keyNumPoints = 0;
+        bool keyWithMargin = false;
         SmoothingMode keySmoothing = SmoothingMode::off;
 
-        void allocate (int maxTotal, int maxVisible);
+        int numPublished() const noexcept { return marginLow + visible + marginHigh; }
+        void allocate (int maxTotal, int maxPublished);
     };
 
     static double smoothingOctaves (SmoothingMode mode) noexcept;
     static int smoothingHalfWidthPoints (SmoothingMode mode, double stepOctaves, int numPoints) noexcept;
 
     static void buildGrid (Grid& grid, double viewLow, double viewHigh, double homeLow, double homeHigh,
-                            int numPoints, SmoothingMode smoothing) noexcept;
+                            int numPoints, SmoothingMode smoothing, bool withMargin) noexcept;
 
     void mapOnGrid (const Grid& grid, const float* binPower, int numBins, double binHz,
                      const SpectrumSettings& settings, float* outDb) noexcept;
 
-    // Scratch, sized to maxPaddedPoints (+1 for the prefix-sum table) in
+    // Scratch, sized to maxPaddedPoints (+1 for the prefix-sum tables) in
     // prepare(); reused across every mapCurve() call, never resized.
     std::vector<float> rawPower;      ///< Bin->point mapped power, linear.
     std::vector<float> smoothedPower; ///< Boxcar-smoothed power, linear.
-    std::vector<double> cumSum;       ///< Prefix sum of rawPower, size maxPaddedPoints + 1.
+    std::vector<double> cumSum;       ///< Prefix sum of rawPower over the whole array, size maxPaddedPoints + 1.
+    std::vector<double> cumSumVisible; ///< Prefix sum over the visible points' padded range.
 
     Grid viewGrid;
     Grid overviewGrid;
