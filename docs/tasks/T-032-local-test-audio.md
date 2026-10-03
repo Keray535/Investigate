@@ -1,7 +1,7 @@
 # T-032: Local-only test audio: keep it out of git and make it available to the testers
 - Owner: build-engineer
 - Milestone: M3
-- Status: TODO
+- Status: DONE
 - Depends on: none (git and CMake only; run it when no other C++ build is in flight)
 
 ## Goal
@@ -29,3 +29,8 @@ The user added `test_audio.wav`, their own produced track (a raw mix and master)
 ## Log
 - 2026-10-03 vst-architect: Created from the user's decision. The track is the user's own work, but they do not want it in the repository, so it stays local-only. Testers use it for real-program checks (whole-editor CPU with music, loudness and true peak against libebur128, and a bit-exact null test on real material) and skip those checks when it is absent.
 - 2026-10-03 vst-architect: This task was written in a parallel architect session. It is reconciled with the main session, which had planned `tests/fixtures/audio/` and an item in T-014. This task's `third_party/_fixtures/` location is kept, for consistency with the EBU fixture hook. The hook is now a folder variable, `INVESTIGATE_TEST_AUDIO_DIR`. The T-014 item 3b was removed, and T-015 and T-016 now point here. Properties of the file are in `docs/research/test-audio-inspection.md`: one file, 48 kHz, 32-bit float, stereo, 200.8 s, 77 MB.
+- 2026-10-03 build-engineer: Done. Moved `test_audio.wav` to `third_party/_fixtures/audio/test_audio.wav` with `mv`. Size 77103712 bytes and SHA-256 `178af29967da5e326f4c320d4a566aaeb376f6754f542dd82d2ff65b5f0d434b` are identical before and after (and again after the rename test below).
+  - `.gitignore`: added `/*.wav`, `/*.flac`, `/*.aif`, `/*.aiff`, `/*.mp3`. `git check-ignore -v` output: `.gitignore:8:third_party/	third_party/_fixtures/audio/test_audio.wav` and `.gitignore:52:/*.wav	test.wav` (a temporary root `test.wav`, since removed). `git status --porcelain --ignored | grep -i wav` printed nothing, so no root `test_audio.wav` remains.
+  - CMake: root `CMakeLists.txt` defines the cache PATH `INVESTIGATE_TEST_AUDIO_DIR` and prints it at configure. `tests/CMakeLists.txt` passes it to `InvestigateUnitTests`, and `tools/render-harness/CMakeLists.txt` passes it to all four harness executables, as a compile definition. No existence check, so configure cannot fail on a missing folder.
+  - `cmake --preset windows-msvc` with the file present: `-- INVESTIGATE_TEST_AUDIO_DIR = C:/Users/Keray/Desktop/Plugin_dev/third_party/_fixtures/audio`, `Configuring done`, `Generating done`. With the file temporarily renamed: same line printed, `Generating done`, no error. File restored afterwards.
+  - `docs/dependencies.md`: new section "Local test audio (user-provided, never committed)", including the `_fixtures/` do-not-delete rule. No source files changed. No build or ctest run (compile definitions only).

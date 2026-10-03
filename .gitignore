@@ -46,3 +46,11 @@ juce_binarydata_*/
 vst3_helpers/
 x64/
 *.dir/
+
+# Audio dropped at the repository root must never be committed (T-032).
+# User test audio lives in third_party/_fixtures/audio/ (gitignored).
+/*.wav
+/*.flac
+/*.aif
+/*.aiff
+/*.mp3

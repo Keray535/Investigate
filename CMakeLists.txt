@@ -34,6 +34,16 @@ option(PLUGIN_BUILD_HARNESS "Build the render harness tool" ON)
 set(INVESTIGATE_EBU_TEST_SET_DIR "${CMAKE_SOURCE_DIR}/third_party/_fixtures/ebu" CACHE PATH
     "Local folder containing the manually downloaded EBU loudness test set (v5.0), or a missing/empty folder to skip the tests that need it")
 
+# Local-only folder with the user's own program material (T-032), currently
+# test_audio.wav. Never committed (third_party/ is gitignored, and root audio
+# files are ignored too). Tests and the render harness read the path from the
+# INVESTIGATE_TEST_AUDIO_DIR compile definition, check that the file exists and
+# skip cleanly when it does not (for example in CI). A missing folder never
+# fails configuration.
+set(INVESTIGATE_TEST_AUDIO_DIR "${CMAKE_SOURCE_DIR}/third_party/_fixtures/audio" CACHE PATH
+    "Local folder with user-provided test audio (test_audio.wav); never committed, tests skip when it is missing")
+message(STATUS "INVESTIGATE_TEST_AUDIO_DIR = ${INVESTIGATE_TEST_AUDIO_DIR}")
+
 # ---------------------------------------------------------------------------
 # Dependencies. Pinned versions live here; see docs/dependencies.md for the
 # rationale, licenses and update procedure. All fetched sources are placed

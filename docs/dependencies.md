@@ -93,6 +93,13 @@ What was still done, since it costs nothing and needs no acceptance of the EBU t
 
 **Open question for the user:** does downloading the EBU test set as part of this project's own (non-commercial, internal) DSP conformance testing during development count as "internal Research and Development operations" under the EBU's terms, and are you comfortable with a human (not a script) doing that download once, locally, per the terms above? If yes, a developer can populate `INVESTIGATE_EBU_TEST_SET_DIR` manually; the true-peak/LRA test cases in T-006 should otherwise rely on the synthesizable Tech 3341 cases only (see `docs/research/T-002-dsp-references.md` section 3's table).
 
+## Local test audio (user-provided, never committed)
+
+- Location: `third_party/_fixtures/audio/test_audio.wav` (48 kHz, 32-bit float, stereo, 200.8 s, 77 MB; see `docs/research/test-audio-inspection.md`). SHA-256 `178af29967da5e326f4c320d4a566aaeb376f6754f542dd82d2ff65b5f0d434b`.
+- Owner: the user. It is their own unreleased track. It is **local only and never committed**, by explicit user decision. `third_party/` is gitignored, and `.gitignore` also ignores audio files at the repository root (`/*.wav`, `/*.flac`, `/*.aif`, `/*.aiff`, `/*.mp3`).
+- Hook: the CMake cache path `INVESTIGATE_TEST_AUDIO_DIR` (default `third_party/_fixtures/audio`) is passed to `InvestigateUnitTests` and to the render-harness executables as the compile definition `INVESTIGATE_TEST_AUDIO_DIR`. Configure never fails when the folder or file is missing. Tests that use real program material check for the file and skip when it is absent (for example in CI). Override with `-DINVESTIGATE_TEST_AUDIO_DIR=<path>`.
+- `third_party/_fixtures/` holds user-provided files (this audio and the optional EBU set). A dependency refresh must not delete it. If `third_party/` is ever cleared, keep `_fixtures/`.
+
 ## Fonts and their license texts
 
 Approved by `docs/research/T-022-font-licenses.md` and the roadmap decision dated 2026-09-28 (both under **SIL Open Font License 1.1**, no Reserved Font Name declared by either project, embedding and subsetting in a closed-source, freely distributed binary explicitly permitted). Downloaded with SHA-256 checksum verification by `cmake/DownloadFonts.cmake` (same pattern as `cmake/DownloadPluginval.cmake`) into `third_party/fonts/`, and compiled into the existing `InvestigateAssets` binary-data target alongside the SVGs in `assets/ui/` — one target, because a second `juce_add_binary_data` target would default to the same `BinaryData` namespace and clash. Fonts are **not** added to `assets/ui/` (owned by ui-ux-designer); this directory is build-engineer's, per the roadmap decision.

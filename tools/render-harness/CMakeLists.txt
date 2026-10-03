@@ -90,3 +90,11 @@ target_link_libraries(InvestigateMeterCheck
 target_compile_options(InvestigateMeterCheck PRIVATE
     $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<COMPILE_LANGUAGE:CXX>>:/W4>
 )
+
+# T-032: path to the local-only user test audio folder; the checks skip when
+# the folder or test_audio.wav is absent.
+foreach (_harness_target InvestigateRenderHarness InvestigateEditorCheck
+         InvestigateSpectrumCheck InvestigateMeterCheck)
+    target_compile_definitions(${_harness_target} PRIVATE
+        INVESTIGATE_TEST_AUDIO_DIR="${INVESTIGATE_TEST_AUDIO_DIR}")
+endforeach ()

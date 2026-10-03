@@ -55,6 +55,7 @@ target_link_libraries(InvestigateUnitTests
 
 target_compile_definitions(InvestigateUnitTests PRIVATE
     INVESTIGATE_EBU_TEST_SET_DIR="${INVESTIGATE_EBU_TEST_SET_DIR}"
+    INVESTIGATE_TEST_AUDIO_DIR="${INVESTIGATE_TEST_AUDIO_DIR}"
 )
 
 target_compile_options(InvestigateUnitTests PRIVATE
