@@ -185,9 +185,10 @@ Order:
 
 | Task | Owner | Status |
 |---|---|---|
-| T-034 | ui-ux-designer | IN_REVIEW (delivered; waiting for the user's approval of the mockup) |
+| T-034 | ui-ux-designer | DONE (mockup approved by the user without changes) |
 | T-035 | dsp-engineer | DONE (`docs/qa/T-035-unit.md` PASS) |
-| T-036 | plugin-engineer | TODO (next C++ task) |
+| T-036 | plugin-engineer | DONE (both QA reports PASS) |
+| T-040 | unit-tester | DONE (test-only follow-up of T-036; `docs/qa/T-040-unit.md` PASS) |
 | T-039 | dsp-engineer | TODO |
 | T-037 | gui-engineer | TODO |
 | T-038 | gui-engineer | TODO |

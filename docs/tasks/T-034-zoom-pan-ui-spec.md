@@ -1,7 +1,7 @@
 # T-034: Zoom and pan: UI spec addendum and mockup
 - Owner: ui-ux-designer
 - Milestone: M3b
-- Status: IN_REVIEW
+- Status: DONE
 - Depends on: none
 
 ## Goal
@@ -48,8 +48,9 @@ Specify spectrum zoom and pan exactly enough for gui-engineer to implement it wi
 - [x] Every new element is drawable under the T-029 rendering rules. §12 says how: for example, the rectangle list per colour, the cached label images, and the repaint regions.
 - [x] The mockup implements every gesture and runs from the file system. The spec's change log names T-034.
 - [x] Open questions, if any, are listed in §15 with a recommended answer.
-- [ ] The user approves the updated mockup. The architect records the approval in this log. T-037 does not start before it.
+- [x] The user approves the updated mockup. The architect records the approval in this log. T-037 does not start before it.
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/spectrum-zoom-pan.md`. Documentation only, so it may run in parallel with a C++ task. Not yet dispatched: the user asked for documentation changes only for now.
 - 2026-10-03 ui-ux-designer: Delivered. `docs/design/ui-spec.md`: new §5.9 (view model; view arithmetic; gestures G1 to G21 with exact numbers; cursors; hover behaviour during gestures; zoom panel = indicator + Fit button + bin-spacing row + overview strip, geometry at 1200×700, 920×540, collapsed and 2560×1600; collision rules and z-order; deep-zoom grid rules with a 6-row worked table; Fit and no-op cases; changes from the plan; mockup simplifications). Updated §4.1, §5.3, §5.5 (hint texts fit 544 px at 920×540; 4-figure hover precision below 1 octave), §5.6 (table replaced), §5.7 (freeze plus zoom, epoch), §6, §7.2, §10 (new §10.2a ratios), §11, §12.1, §13.3, §15 (questions 5 and 6), §16 change log. Folded in the T-011 corrections (fonts in `third_party/fonts/` and `InvestigateAssets`; old §15 questions 1 to 3 closed). `tokens.json` 1.1.0: groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid`, `cursor`; font paths corrected. New assets: `assets/ui/cursor-hand-open.svg`, `cursor-hand-grab.svg`, `cursor-zoom-box.svg`. `mockup.html`: every gesture implemented with the synthetic spectrum (now 4096 log-spaced points so zoom shows detail); the Google Fonts link was removed, so it opens from the file system with no network. Plan numbers kept (0.8/1.25, 0.95 fine, 1/6 octave, 6 dB, 4 px, 250 ms, 4 px box cancel); refinements with reasons in §5.9.10 (per-notch-equivalent factors with 1/0.95 fine out, 10 % horizontal pan, per-axis home-range rule, press-to-centre in the overview, one combined zoom panel, view repaints follow T-029 pacing). Status IN_REVIEW: the last criterion is the user's approval of the mockup, recorded by the architect.
+- 2026-10-03 vst-architect: Before the user's review, build-engineer loaded the mockup in headless Edge: no console errors, no network requests, and it renders. On 2026-10-03 the user tried the mockup and **approved it without changes**. Spec §5.9 and the mockup are frozen for T-037 and T-038. Open questions 5 and 6 were accepted and became T-039. The possible legend and FROZEN badge overlap at 920×540 goes to T-037 as a measurement. Status DONE.

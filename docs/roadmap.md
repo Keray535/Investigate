@@ -238,12 +238,12 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 Status:
 - M0 to M2 are closed. In M3 every task is DONE, including T-013 (`3f2d956`) and T-032 (`5e54716`). The previous session's planning documents are pushed as `7130542`.
 - M3 stays open only for the user's hands-on review (`docs/plans/m3-user-review.md`), which the user deferred. Triage its findings into tasks when they arrive, including the frame-pacing look as a decision point.
-- M3b started with the user's go-ahead. T-035 is DONE. T-034 is IN_REVIEW: the mockup waits for the user's approval. T-039 was added from T-034's open questions.
+- M3b started with the user's go-ahead. T-034 (mockup approved by the user), T-035, T-036 and T-040 are DONE.
 
 Next steps:
-1. Record the user's verdict on the T-034 mockup in the T-034 log. Requested changes go back to ui-ux-designer. T-037 does not start before the approval.
-2. C++ order, one at a time: T-036 (plugin-engineer), then T-039 (dsp-engineer), then T-037 and T-038 (gui-engineer). Each is committed by build-engineer after its QA passes.
-3. Then M4 (T-033, T-014 to T-017, with the real-material checks in T-015 and T-016 and the zoom checks in T-015 to T-017) and M5 (T-018 and T-019).
+1. build-engineer commits T-036 together with T-040 (they share one test file), then the documents.
+2. C++ order, one at a time: T-039 (dsp-engineer), then T-037 and T-038 (gui-engineer). Each is committed by build-engineer after its QA passes.
+2. Then M4 (T-033, T-014 to T-017, with the real-material checks in T-015 and T-016 and the zoom checks in T-015 to T-017) and M5 (T-018 and T-019).
 
 Rules learned in this session. Include them in every dispatch prompt:
 - CMake refuses in-source builds (T-030). Always build in `build/` through the presets.
@@ -377,6 +377,8 @@ Open user decisions:
 | 2026-10-03 | The user gave the go-ahead for M3b. T-034 (documentation) and T-035 (the only C++ task) run in parallel. The user's M3 hands-on review is deferred; M3 stays open until it is done and triaged, and M3b proceeds in the meantime. | User decision. |
 | 2026-10-03 | T-035 accepted (unit QA PASS in round 1, 0 defects; ctest 367/367 in Debug and Release). The worst-case re-map takes a median of 0.31 ms against 1.0 ms. With no view and no freeze the output is bit-identical to before. Follow-up decisions: the freeze epoch increments only on a real state change; a resize or a smoothing or slope change alone does not re-publish (it shows on the next hop, as before M3b; accepted for v1); when Freeze is pressed before any frame exists, the editor keeps what it showed. The T-036 freeze-epoch criterion was amended, because a poll that started before the call can legitimately publish one more live frame with the old epoch, which the editor drops. | Routes the tester's open points to T-036 and T-037. |
 | 2026-10-03 | T-034 delivered (spec §5.9, tokens 1.1.0, three cursor SVGs, the working mockup). It keeps every plan number and refines a few with reasons (spec §5.9.10): the zoom factors apply per notch-equivalent, so touchpads zoom at a sane speed; a horizontal pan moves 10 % of the span per notch; a chip change affects only its own axis; the indicator and the overview strip are combined into one zoom panel at the top right of the data rect; the hover card shows 4 significant figures below a 1-octave span. Its open questions 5 (a curve margin for panning) and 6 (`binHz` in the frame) are accepted as recommended and become T-039 (dsp-engineer), which runs after T-036 and before T-037. A possible overlap between the legend and the FROZEN badge at 920×540 in the busiest legend state goes to T-037 as a measurement; a fix, if needed, becomes a small ui-ux-designer task. | Accepting the margin removes an empty strip at the leading edge during a fast pan or zoom-out, at about 1.5× the re-map cost, which stays well inside the budget. A per-frame `binHz` is the only correct source while frozen. |
+| 2026-10-03 | T-036 accepted (unit and validation QA PASS in round 1; ctest 378/378; pluginval strictness 10; null tests bit-exact). View change to published frame at 65536 points with 1x overlap: p95 5.7 to 6.1 ms and max 7.2 to 7.4 ms, against 10 and 20 ms. 0 torn pairs in 10^6; worst analysis-thread stop 3.5 ms. The last `setAnalysisActive (false)` resets view and freeze, and an active freeze then counts as a real change (the epoch increments). The editor detects frozen frames by epoch only; `SpectrumFrame` has no frozen flag. One frozen-frame latency of 32 ms in 23 runs under load (budget 20 ms) came from a timing assertion in the default test run: T-040 moves that bound to `[.perf]`, per the 2026-09-29 rule. Debug-build, Steinberg-validator and sanitizer coverage stays with M4 (T-014, T-017). | Keeps the default run and CI deterministic without weakening the budget, which `[.perf]` still enforces. |
+| 2026-10-03 | The user approved the T-034 mockup without changes. Spec §5.9 and the mockup are frozen for T-037 and T-038. | User decision. It removes the last precondition of T-037 other than T-036 and T-039. |
 | 2026-10-03 | Zoom smoothing padding is clipped to the effective home range. At Fit there is no padding, so the curves stay bit-identical to today; a zoomed curve matches the Fit curve at the same frequencies, and only the home range edges keep the truncated window. The T-035 edge-smoothing criterion was amended. | The current mapper truncates the smoothing window at the range ends. Padding past the home range would change the Fit curves and break the no-regression criterion. |
 
 ## Status
@@ -406,10 +408,11 @@ Open user decisions:
 | T-031 | Make the on-screen GUI tests deterministic (pacing test failure, test hang) | unit-tester | M3 | T-030 | DONE (`docs/qa/T-031-unit.md` PASS; no production defect) |
 | T-032 | Local-only test audio: keep it out of git, `INVESTIGATE_TEST_AUDIO_DIR` hook | build-engineer | M3 | none | DONE (commit `5e54716`; the WAV is in `third_party/_fixtures/audio/`, never committed) |
 | T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029, T-030, T-031 | DONE (`docs/qa/T-013-unit.md` PASS; `docs/qa/T-013-validation.md` round 2 PASS at the 60 Hz reference; the 144 Hz findings were decided in the log) |
-| T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | M3b | none | IN_REVIEW (spec §5.9 and mockup delivered; waiting for the user's approval of the mockup) |
+| T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | M3b | none | DONE (mockup approved by the user without changes, 2026-10-03) |
 | T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | M3b | T-005, T-009 | DONE (`docs/qa/T-035-unit.md` PASS in round 1; re-map 0.31 ms against 1.0 ms) |
-| T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | TODO (next C++ task) |
-| T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | TODO |
+| T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | DONE (`docs/qa/T-036-unit.md` and `docs/qa/T-036-validation.md` PASS in round 1) |
+| T-040 | Move the 20 ms frozen-frame bound out of the default test run | unit-tester | M3b | T-036 | DONE (`docs/qa/T-040-unit.md` PASS; `[.perf]` p95 6.6 ms, max 6.8 ms; ctest 3 of 3 green) |
+| T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | TODO (next C++ task, after the commit) |
 | T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039 | TODO |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037 | TODO |
 | T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
