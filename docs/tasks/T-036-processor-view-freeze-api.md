@@ -25,7 +25,11 @@ Give the editor a lock-free way to tell the analysis thread which frequency rang
 ## Acceptance criteria
 - [ ] **Latency.** At `fftSize` 65536 with 1x overlap at 48 kHz, analysis active, over 200 view changes made through the processor API with no editor: the time from `setSpectrumView` to a published frame that carries the new view has p95 ≤ 10 ms and max ≤ 20 ms.
 - [ ] **No torn pair.** A stress test writes 10^6 view pairs from one thread while the analysis thread runs. Every published frame's view equals the clamped form of one of the written pairs.
-- [ ] **Freeze epoch.** Every frame published after `setSpectrumFrozen (true)` returns carries the new epoch or a later one, and no live frame carries a frozen epoch.
+- [ ] **Freeze epoch** (amended by the architect on 2026-10-03, see the log):
+  - every frame published after `setSpectrumFrozen (true)` returns either carries an older epoch (a live frame from a poll that started before the call; the editor drops it) or carries the new epoch and holds the frozen snapshot;
+  - no live frame ever carries a frozen epoch;
+  - if the analyser had already produced a frame, a frame carrying the new epoch is published within 20 ms of the call, without new audio;
+  - calling `setSpectrumFrozen` with the current state leaves the epoch unchanged.
 - [ ] **Audio thread unchanged:**
   - the existing null tests stay bit-exact;
   - the allocation-hook test shows 0 allocations in `processBlock` while another thread toggles the view and the freeze at 60 Hz;
@@ -36,3 +40,9 @@ Give the editor a lock-free way to tell the analysis thread which frequency rang
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/spectrum-zoom-pan.md`.
+- 2026-10-03 vst-architect: Notes from T-035 (DONE, `docs/qa/T-035-unit.md` PASS) before dispatch:
+  - No `source/dsp/` change is needed. The new `SpectrumSettings` fields default to the old behaviour (`viewFreqLow = viewFreqHigh = 0`, `frozen = false`, `freezeEpoch = 0`, `overviewPoints = 256`). `AnalysisThread::run` fills `viewFreqLow`, `viewFreqHigh`, `frozen` and `freezeEpoch` from the two atomics on every poll. Leave `overviewPoints` at its default.
+  - The engine publishes a frame stamped with the new epoch on the first poll that sees a new frozen epoch, even without new audio, but only if the analyser has produced a frame since its last reset. While frozen with no valid snapshot it publishes nothing. Unfreezing publishes the live state on the next poll.
+  - **The epoch increments only on a real state change.** `setSpectrumFrozen (true)` while already frozen, or `(false)` while not frozen, is a no-op. A quick unfreeze and re-freeze between two polls leaves the flag set with a new epoch; the engine then retakes the snapshot from the latest analyser state, which is the intended behaviour (the user asked for a new freeze).
+  - The original freeze-epoch criterion ("every frame published after the call carries the new epoch") cannot hold: a poll that read the atomics just before the call can still publish a live frame with the old epoch afterwards. That race is exactly why the editor drops stale epochs. The criterion was amended to test what matters: no live frame ever carries a frozen epoch, and the frozen frame arrives within 20 ms.
+  - Shared clamps for any processor-side check: `DisplayRange::clampViewFrequency` and `SpectrumMapper::computeRanges (settings)`. The frame's `viewFreqLow` and `viewFreqHigh` hold the clamped view, so the torn-pair test compares against the clamped form of each written pair.

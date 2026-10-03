@@ -1,6 +1,6 @@
 # Investigate: Roadmap
 
-Last updated: 2026-10-03 by vst-architect.
+Last updated: 2026-10-03 by vst-architect (second session: T-032 closed, M3b started).
 
 ## Vision
 
@@ -224,7 +224,7 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | M1 DSP core | DSP dependencies, then the spectrum pipeline and meters in `source/dsp/` with unit tests | T-021, T-004, T-005, T-006, T-007, T-024 | Unit QA reports PASS, including the EBU conformance cases |
 | M2 Parameters and state | APVTS, buses, state, and DSP wiring with the analysis thread | T-008, T-025, T-026, T-009 | Unit and validation QA PASS: bit-exact null test, state round trip, and real-time safety |
 | M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met |
-| M3b Zoom and pan | A view-layer spectrum zoom and pan (`docs/plans/spectrum-zoom-pan.md`): the spec and mockup, engine re-mapping and the freeze snapshot, the processor API, the editor gestures, the overview strip and box zoom | T-034, T-035, T-036, T-037, T-038 | The user approves the T-034 mockup before T-037 starts. Every QA report is PASS, and the zoom budgets are met during a continuous pan. The user completes the hands-on checklist in the plan. |
+| M3b Zoom and pan | A view-layer spectrum zoom and pan (`docs/plans/spectrum-zoom-pan.md`): the spec and mockup, engine re-mapping and the freeze snapshot, the processor API, the pan margin and bin spacing, the editor gestures, the overview strip and box zoom | T-034, T-035, T-036, T-039, T-037, T-038 | The user approves the T-034 mockup before T-037 starts. Every QA report is PASS, and the zoom budgets are met during a continuous pan. The user completes the hands-on checklist in the plan. |
 | M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met. T-015 to T-017 also cover zoom and pan. |
 | M5 Packaging | Windows CI, then a signed installer and release docs | T-018, T-019 | CI is green; a signed installer installs, uninstalls and passes pluginval on the installed binary |
 
@@ -233,24 +233,17 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 - Source directories are picked up by CMake globbing with `CONFIGURE_DEPENDS` (set up in T-003). Coders therefore add files without editing CMake.
 - Every coder task ends with a unit QA report. Tasks that touch the plugin binary also end with a validation QA report.
 
-## Handoff (architect session ended 2026-10-03)
+## Handoff (architect session of 2026-10-03, second session, in progress)
 
-Status at handoff:
-- M0 to M2 are closed.
-- In M3, T-010, T-011, T-012, T-029, T-030 and T-031 are DONE with passing QA reports. The last pushed commit is `2828d7a` (T-031).
-- T-013 (MeterPanel) is DONE, with both QA reports PASS after round 2. It is committed and pushed as `3f2d956` (95 files; `test_audio.wav` left out and still untracked at the root). This handoff edit was made after that commit; include it in the next commit.
+Status:
+- M0 to M2 are closed. In M3 every task is DONE, including T-013 (`3f2d956`) and T-032 (`5e54716`). The previous session's planning documents are pushed as `7130542`.
+- M3 stays open only for the user's hands-on review (`docs/plans/m3-user-review.md`), which the user deferred. Triage its findings into tasks when they arrive, including the frame-pacing look as a decision point.
+- M3b started with the user's go-ahead. T-035 is DONE. T-034 is IN_REVIEW: the mockup waits for the user's approval. T-039 was added from T-034's open questions.
 
-The next session continues with:
-1. Nothing is left over from T-013.
-2. **T-032** (build-engineer): move the user's `test_audio.wav` from the repository root to `third_party/_fixtures/audio/`, add the root audio ignore patterns and the `INVESTIGATE_TEST_AUDIO_DIR` hook. It needs a configure run, so wait until no C++ build is in flight. **Until T-032 runs, every commit must leave out `test_audio.wav`.**
-3. T-032 commits its own files: `.gitignore`, the CMake hook, `docs/dependencies.md` and its task file. Never the WAV.
-4. **The user's M3 hands-on review** with `docs/plans/m3-user-review.md`. Triage the findings into tasks, including the frame-pacing look as a decision point. M3 closes after that.
-5. **M3b Zoom and pan** (planned 2026-10-03 with the user, `docs/plans/spectrum-zoom-pan.md`; tasks T-034 to T-038 are written). **Nothing is dispatched yet:** the user asked for documentation changes only. When the user gives the go-ahead:
-   - T-034 (ui-ux-designer) may start at once, in parallel with T-032;
-   - T-035 starts after T-032 has finished its configure run;
-   - T-036, T-037 and T-038 follow one at a time;
-   - T-037 waits for the user's approval of the T-034 mockup.
-6. Then M4 (T-014 to T-017, with the real-material checks added to T-015 and T-016, and the zoom checks added to T-015 to T-017) and M5 (T-018 and T-019).
+Next steps:
+1. Record the user's verdict on the T-034 mockup in the T-034 log. Requested changes go back to ui-ux-designer. T-037 does not start before the approval.
+2. C++ order, one at a time: T-036 (plugin-engineer), then T-039 (dsp-engineer), then T-037 and T-038 (gui-engineer). Each is committed by build-engineer after its QA passes.
+3. Then M4 (T-033, T-014 to T-017, with the real-material checks in T-015 and T-016 and the zoom checks in T-015 to T-017) and M5 (T-018 and T-019).
 
 Rules learned in this session. Include them in every dispatch prompt:
 - CMake refuses in-source builds (T-030). Always build in `build/` through the presets.
@@ -380,6 +373,11 @@ Open user decisions:
 | 2026-10-03 | The engine re-maps the latest bin-domain spectra on a view change without a new FFT, and holds a preallocated bin-domain snapshot (about 0.7 MB) while frozen. Frames carry a freeze epoch. This partly supersedes "Freezing the display is editor-only" (Processor API). | At 65536 points with 1x overlap a new frame arrives only every 1.37 s. Zooming a frozen spectrum must show real detail. |
 | 2026-10-03 | The minimum view span is 1/6 octave and 6 dB, defined in `DisplayRange.h` and shared by the mapper and the editor. The home range keeps its 1-octave and 12 dB rules. One wheel notch scales the span by 0.8 or 1.25. | Architect defaults. ui-ux-designer may refine them in T-034 with a reason. |
 | 2026-10-03 | Accepted limitation: on Windows precision touchpads, pinch arrives as Ctrl+wheel and zooms level. | The platform translates pinch into Ctrl+wheel for ordinary windows. A horizontal swipe still pans frequency. |
+| 2026-10-03 | T-032 done (commit `5e54716`). `test_audio.wav` moved unchanged to `third_party/_fixtures/audio/` (SHA-256 `178af299…0d434b`, 77,103,712 bytes). Root audio files are gitignored. `INVESTIGATE_TEST_AUDIO_DIR` is a compile definition on `InvestigateUnitTests` and the four render-harness executables; each test checks for the file and skips when it is absent. The previous session's planning documents were committed separately (`7130542`). The "leave out the WAV" commit rule is lifted, because git now ignores it. | Closes the T-032 handoff item. |
+| 2026-10-03 | The user gave the go-ahead for M3b. T-034 (documentation) and T-035 (the only C++ task) run in parallel. The user's M3 hands-on review is deferred; M3 stays open until it is done and triaged, and M3b proceeds in the meantime. | User decision. |
+| 2026-10-03 | T-035 accepted (unit QA PASS in round 1, 0 defects; ctest 367/367 in Debug and Release). The worst-case re-map takes a median of 0.31 ms against 1.0 ms. With no view and no freeze the output is bit-identical to before. Follow-up decisions: the freeze epoch increments only on a real state change; a resize or a smoothing or slope change alone does not re-publish (it shows on the next hop, as before M3b; accepted for v1); when Freeze is pressed before any frame exists, the editor keeps what it showed. The T-036 freeze-epoch criterion was amended, because a poll that started before the call can legitimately publish one more live frame with the old epoch, which the editor drops. | Routes the tester's open points to T-036 and T-037. |
+| 2026-10-03 | T-034 delivered (spec §5.9, tokens 1.1.0, three cursor SVGs, the working mockup). It keeps every plan number and refines a few with reasons (spec §5.9.10): the zoom factors apply per notch-equivalent, so touchpads zoom at a sane speed; a horizontal pan moves 10 % of the span per notch; a chip change affects only its own axis; the indicator and the overview strip are combined into one zoom panel at the top right of the data rect; the hover card shows 4 significant figures below a 1-octave span. Its open questions 5 (a curve margin for panning) and 6 (`binHz` in the frame) are accepted as recommended and become T-039 (dsp-engineer), which runs after T-036 and before T-037. A possible overlap between the legend and the FROZEN badge at 920×540 in the busiest legend state goes to T-037 as a measurement; a fix, if needed, becomes a small ui-ux-designer task. | Accepting the margin removes an empty strip at the leading edge during a fast pan or zoom-out, at about 1.5× the re-map cost, which stays well inside the budget. A per-frame `binHz` is the only correct source while frozen. |
+| 2026-10-03 | Zoom smoothing padding is clipped to the effective home range. At Fit there is no padding, so the curves stay bit-identical to today; a zoomed curve matches the Fit curve at the same frequencies, and only the home range edges keep the truncated window. The T-035 edge-smoothing criterion was amended. | The current mapper truncates the smoothing window at the range ends. Padding past the home range would change the Fit curves and break the no-regression criterion. |
 
 ## Status
 
@@ -406,12 +404,13 @@ Open user decisions:
 | T-029 | Editor rendering CPU: profile and reduce Direct2D message-thread load | gui-engineer | M3 | T-012 | DONE (`docs/qa/T-029-unit.md` and `docs/qa/T-029-validation.md` PASS; frame pacing used) |
 | T-030 | Remove the in-source build at the root; in-source guard | build-engineer | M3 | T-029 | DONE (commit `da48a81`; the unrelated test failure moves to T-031) |
 | T-031 | Make the on-screen GUI tests deterministic (pacing test failure, test hang) | unit-tester | M3 | T-030 | DONE (`docs/qa/T-031-unit.md` PASS; no production defect) |
-| T-032 | Local-only test audio: keep it out of git, `INVESTIGATE_TEST_AUDIO_DIR` hook | build-engineer | M3 | none | TODO (runs after the T-013 validation build finishes; never commit the `.wav`) |
+| T-032 | Local-only test audio: keep it out of git, `INVESTIGATE_TEST_AUDIO_DIR` hook | build-engineer | M3 | none | DONE (commit `5e54716`; the WAV is in `third_party/_fixtures/audio/`, never committed) |
 | T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029, T-030, T-031 | DONE (`docs/qa/T-013-unit.md` PASS; `docs/qa/T-013-validation.md` round 2 PASS at the 60 Hz reference; the 144 Hz findings were decided in the log) |
-| T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | M3b | none | TODO (not dispatched; waiting for the user's go-ahead) |
-| T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | M3b | T-005, T-009 | TODO (after T-032's configure run) |
-| T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | TODO |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036 | TODO |
+| T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | M3b | none | IN_REVIEW (spec §5.9 and mockup delivered; waiting for the user's approval of the mockup) |
+| T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | M3b | T-005, T-009 | DONE (`docs/qa/T-035-unit.md` PASS in round 1; re-map 0.31 ms against 1.0 ms) |
+| T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | TODO (next C++ task) |
+| T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | TODO |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039 | TODO |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037 | TODO |
 | T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |

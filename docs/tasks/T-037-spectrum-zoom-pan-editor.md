@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3b
 - Status: TODO
-- Depends on: T-034 (mockup approved by the user), T-036
+- Depends on: T-034 (mockup approved by the user), T-036, T-039
 
 ## Goal
 Implement the zoom and pan interactions of ui-spec §5.9 in `SpectrumView`:
@@ -77,3 +77,12 @@ The editor stays inside the message-thread and paint budgets during a continuous
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/spectrum-zoom-pan.md`. Must not start before the user approves the T-034 mockup.
+- 2026-10-03 vst-architect: Decisions from the T-035 findings (`docs/tasks/T-035-engine-view-range-freeze.md` log, `docs/qa/T-035-unit.md`). They are part of this task's scope:
+  - **Frozen with no frame.** If Freeze is pressed before the analyser has produced a frame, or in the same poll as an `fftSize`, window or layout reset, the engine publishes nothing while frozen. The editor then keeps the frame it was showing when Freeze was pressed and draws it through the current view mapping (no re-mapped detail). If it had no frame, the plot stays empty with the FROZEN badge shown. Test both cases.
+  - **Resize and smoothing.** A change of the point count (editor resize) or of smoothing or slope alone does not trigger a re-publish; it appears on the next FFT hop, as before M3b. The editor draws the current frame through its own mapping (each point carries `freqHz`), so a resize must never show a stretched or misplaced curve while waiting. This is accepted for v1.
+  - **Frame fields.** `viewFreqLow` and `viewFreqHigh` (double, the clamped view the frame was mapped for), `overviewNumPoints` with `overviewFreqHz[256]` and `overviewDb[256]` (used by T-038), and `freezeEpoch`. Live frames carry the current epoch; frozen frames carry the epoch of their freeze.
+  - **Test note.** The bin-to-point mapping is discontinuous where a point edge crosses a half-bin boundary, so a single-bin spike can move by more than 0.05 dB between grids that differ by float rounding. Any test that compares an editor-side transformed curve with a re-mapped frame uses an aligned grid and signals several bins wide, as in the T-035 edge-smoothing test.
+- 2026-10-03 vst-architect: T-034 delivered (spec §5.9 and the mockup; the user's approval is pending and is recorded in the T-034 log). Its open questions 5 and 6 were accepted and became T-039, so this task also depends on T-039:
+  - **Margin points.** Zoomed frames carry extra points beyond the view (up to 25 % of the visible span per side, clipped to the home range), with `firstVisiblePoint` and `numVisiblePoints`. While a pan or zoom-out waits for the re-mapped frame, draw the margin points that the new view exposes. Points outside the data rect must never be drawn or written into the per-column arrays of the T-029 curve path: clamp or skip them, and test it (no out-of-range column index at any view).
+  - **Bin spacing.** The bin-spacing row uses the frame's `binHz`, not sample rate / block size from the current settings.
+  - **Legend and FROZEN badge at 920×540** (found by ui-ux-designer, outside T-034's scope). In dual mode with the All-time max secondary curve, Sidechain on and Freeze on, the legend may overlap the FROZEN badge by about 19 px (estimated from font metrics). Measure it in the real editor at 920×540 and 1200×700 with the real fonts and report the numbers in your log. If they overlap, do not invent a layout: record the measurement as an open question, and the architect routes a collision rule to ui-ux-designer as a separate small task. This item does not block the rest of this task.

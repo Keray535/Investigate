@@ -108,7 +108,7 @@ Editor: drops frames whose epoch is not the current one; until the re-mapped fra
 |---|---|---|
 | `source/dsp/DisplayRange.h` | dsp-engineer | `minViewSpanOctaves`, `minViewSpanDb`, `clampViewFrequency (lo, hi, homeLo, homeHi)` and `clampViewDb (lo, hi, homeLo, homeHi)`. All are pure, shared by the mapper and the editor. |
 | `SpectrumSettings` | dsp-engineer | `viewFreqLow` and `viewFreqHigh` (0 means the home range); `frozen`; `freezeEpoch`; `overviewPoints` (256). |
-| `SpectrumMapper` | dsp-engineer | Maps onto the clamped view. Smoothing is computed over a range padded by half a smoothing window on each side, and only the visible points are published. The scratch is preallocated for the worst case: the minimum span with 1/3-octave smoothing, about 3 × `maxPoints`. Overview mapping. |
+| `SpectrumMapper` | dsp-engineer | Maps onto the clamped view. Smoothing is computed over a range padded by half a smoothing window on each side, clipped to the effective home range (so the curves at Fit stay bit-identical to today), and only the visible points are published. The scratch is preallocated for the worst case: the minimum span with 1/3-octave smoothing, about 3 × `maxPoints`. Overview mapping. |
 | `SpectrumEngine` | dsp-engineer | Re-publishes on a view or home-range change without a new FFT. A re-publish must leave the analyser state untouched. Freeze snapshot, preallocated in `prepare` for the largest bin count (65536 / 2 + 1 bins × 5 curves, about 0.66 MB), together with `binHz`, `numBins`, `isDual`, `hasSecondary`, `hasSidechain`, smoothing and slope at freeze time. |
 | `SpectrumFrame` | dsp-engineer | `viewFreqLow` and `viewFreqHigh` (the range this frame was mapped for); `overviewFreqHz[256]` and `overviewDb[256]`; `freezeEpoch`. |
 | `InvestigateProcessor` | plugin-engineer | `setSpectrumView (float fLo, float fHi) noexcept` and `setSpectrumFrozen (bool) noexcept` (message thread); `getFreezeEpoch() const noexcept`; the AnalysisThread fills the new settings fields. `setAnalysisActive (false)` resets the view to the home range and the freeze to off. |
@@ -144,12 +144,13 @@ Measured as in the roadmap: Release build on the development machine, 48 kHz.
 | T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | none |
 | T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | T-005, T-009 |
 | T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | T-035 |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036 |
+| T-039 | Spectrum engine: pan margin and bin spacing in the frame (from T-034 open questions 5 and 6) | dsp-engineer | T-035, T-036 (build order) |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036, T-039 |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | T-037 |
 
 Order:
 - T-034 is documentation only. It may run in parallel with any C++ task.
-- T-035 to T-038 build C++, so they run one at a time (the one-C++-task rule).
+- T-035, T-036, T-039, T-037 and T-038 build C++, so they run one at a time, in that order (the one-C++-task rule).
 - T-035 starts after T-032 has finished its configure run.
 - The M4 tasks T-015, T-016 and T-017 depend on T-038, so the validation suite covers the final UI.
 
@@ -184,9 +185,10 @@ Order:
 
 | Task | Owner | Status |
 |---|---|---|
-| T-034 | ui-ux-designer | TODO (not dispatched; waiting for the user's go-ahead) |
-| T-035 | dsp-engineer | TODO |
-| T-036 | plugin-engineer | TODO |
+| T-034 | ui-ux-designer | IN_REVIEW (delivered; waiting for the user's approval of the mockup) |
+| T-035 | dsp-engineer | DONE (`docs/qa/T-035-unit.md` PASS) |
+| T-036 | plugin-engineer | TODO (next C++ task) |
+| T-039 | dsp-engineer | TODO |
 | T-037 | gui-engineer | TODO |
 | T-038 | gui-engineer | TODO |
 
