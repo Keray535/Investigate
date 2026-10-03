@@ -54,3 +54,7 @@ x64/
 /*.aif
 /*.aiff
 /*.mp3
+
+# Raw tool logs saved by testers (for example pluginval output) are not committed;
+# the QA reports summarise them (architect decision 2026-10-03).
+docs/qa/*-logs/
