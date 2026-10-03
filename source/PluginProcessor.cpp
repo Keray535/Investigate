@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#include <bit>
+#include <utility>
+
 namespace investigate
 {
 
@@ -17,6 +20,21 @@ namespace
     constexpr int  kDefaultEditorWidth  = 1200;
     constexpr int  kDefaultEditorHeight = 700;
     constexpr bool kDefaultMetersCollapsed = false;
+
+    constexpr uint64_t freezeFlagBit = uint64_t { 1 } << 32;
+
+    // Both floats in one 64-bit word: low half fLo, high half fHi.
+    uint64_t packView (float lo, float hi) noexcept
+    {
+        return static_cast<uint64_t> (std::bit_cast<uint32_t> (lo))
+             | (static_cast<uint64_t> (std::bit_cast<uint32_t> (hi)) << 32);
+    }
+
+    std::pair<float, float> unpackView (uint64_t bits) noexcept
+    {
+        return { std::bit_cast<float> (static_cast<uint32_t> (bits & 0xffffffffu)),
+                 std::bit_cast<float> (static_cast<uint32_t> (bits >> 32)) };
+    }
 }
 
 // ============================================================================
@@ -43,14 +61,18 @@ public:
                      const double& sampleRateIn,
                      const int& numMainChannelsIn,
                      const int& numSidechainChannelsIn,
-                     std::atomic<bool>& spectrumResetRequestedIn)
+                     std::atomic<bool>& spectrumResetRequestedIn,
+                     const std::atomic<uint64_t>& viewBitsIn,
+                     const std::atomic<uint64_t>& freezeBitsIn)
         : juce::Thread ("Investigate Analysis"),
           engine (engineIn),
           params (paramsIn),
           sampleRate (sampleRateIn),
           numMainChannels (numMainChannelsIn),
           numSidechainChannels (numSidechainChannelsIn),
-          spectrumResetRequested (spectrumResetRequestedIn)
+          spectrumResetRequested (spectrumResetRequestedIn),
+          viewBits (viewBitsIn),
+          freezeBits (freezeBitsIn)
     {
     }
 
@@ -83,6 +105,14 @@ public:
             settings.numPoints             = SpectrumFrame::maxPoints;
             settings.showSidechain         = params.getShowSidechain();
 
+            // One atomic load each: the packed pair can never be torn.
+            const auto view = unpackView (viewBits.load (std::memory_order_acquire));
+            const auto freeze = freezeBits.load (std::memory_order_acquire);
+            settings.viewFreqLow  = view.first;
+            settings.viewFreqHigh = view.second;
+            settings.frozen       = (freeze & freezeFlagBit) != 0;
+            settings.freezeEpoch  = static_cast<uint32_t> (freeze & 0xffffffffu);
+
             engine.processPending (settings);
 
             // Polls rather than being signalled (roadmap: "The audio thread
@@ -100,7 +130,37 @@ private:
     const int& numMainChannels;
     const int& numSidechainChannels;
     std::atomic<bool>& spectrumResetRequested;
+    const std::atomic<uint64_t>& viewBits;
+    const std::atomic<uint64_t>& freezeBits;
 };
+
+void InvestigateProcessor::setSpectrumView (float fLo, float fHi) noexcept
+{
+    viewBits.store (packView (fLo, fHi), std::memory_order_release);
+}
+
+void InvestigateProcessor::setSpectrumFrozen (bool shouldBeFrozen) noexcept
+{
+    auto current = freezeBits.load (std::memory_order_acquire);
+
+    for (;;)
+    {
+        // Epoch only moves on a real state change.
+        if (((current & freezeFlagBit) != 0) == shouldBeFrozen)
+            return;
+
+        const auto epoch = static_cast<uint32_t> (current & 0xffffffffu) + 1u;
+        const auto next = static_cast<uint64_t> (epoch) | (shouldBeFrozen ? freezeFlagBit : 0u);
+
+        if (freezeBits.compare_exchange_weak (current, next, std::memory_order_acq_rel, std::memory_order_acquire))
+            return;
+    }
+}
+
+uint32_t InvestigateProcessor::getFreezeEpoch() const noexcept
+{
+    return static_cast<uint32_t> (freezeBits.load (std::memory_order_acquire) & 0xffffffffu);
+}
 
 InvestigateProcessor::InvestigateProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -121,7 +181,9 @@ InvestigateProcessor::InvestigateProcessor()
                                                          preparedSampleRate,
                                                          preparedNumMainChannels,
                                                          preparedNumSidechainChannels,
-                                                         spectrumResetRequested);
+                                                         spectrumResetRequested,
+                                                         viewBits,
+                                                         freezeBits);
 
     // Investigate never adds latency or a tail (roadmap Budgets); stated
     // explicitly here so a host that queries it before the first
@@ -299,6 +361,12 @@ void InvestigateProcessor::setAnalysisActive (bool shouldBeActive)
         {
             analysisActive.store (false, std::memory_order_release);
             analysisThread->stopThread (50);
+
+            // The zoom and freeze are not persisted: the next editor starts
+            // at Fit and unfrozen (T-036). Done after the join so no poll can
+            // observe a half-reset pair.
+            setSpectrumView (0.0f, 0.0f);
+            setSpectrumFrozen (false);
         }
     }
 }

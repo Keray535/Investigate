@@ -9,6 +9,7 @@
 #include "dsp/SpectrumEngine.h"
 
 #include <atomic>
+#include <cstdint>
 #include <memory>
 
 namespace investigate
@@ -76,6 +77,27 @@ public:
         analysis is active (setAnalysisActive(true)); harmless to call
         otherwise (simply returns false). */
     bool getLatestSpectrumFrame (SpectrumFrame& dest) noexcept { return spectrumEngine.readLatest (dest); }
+
+    /** Message thread (any thread is safe). Tells the analysis thread which
+        frequency range the spectrum view shows, in Hz; (0, 0) is the home
+        range. Both floats travel in one atomic 64-bit word, so the analysis
+        thread never reads a mixed pair. The next published frame carries the
+        clamped view in `viewFreqLow/High`. Reset to (0, 0) by the last
+        `setAnalysisActive (false)`; never persisted in the state. */
+    void setSpectrumView (float fLo, float fHi) noexcept;
+
+    /** Message thread. Freezes or unfreezes the published spectrum. The
+        freeze flag and a 32-bit epoch share one atomic; the epoch increments
+        only when the state really changes, so repeating the current state is
+        a no-op. A frame from a poll that began before the call may still
+        carry the older epoch (the editor drops those); live frames never
+        carry a frozen epoch. Reset to unfrozen by the last
+        `setAnalysisActive (false)`. */
+    void setSpectrumFrozen (bool shouldBeFrozen) noexcept;
+
+    /** Current freeze epoch (any thread). Compare with
+        `SpectrumFrame::freezeEpoch` to discard stale frames. */
+    uint32_t getFreezeEpoch() const noexcept;
 
     /** Lock-free and callable from any thread (roadmap): forwards to
         MeterBank's seqlock-protected getSnapshot(). Meters run on every
@@ -152,6 +174,12 @@ private:
     // rule is about code reachable from processBlock/the audio thread).
     juce::CriticalSection analysisLock;
     int analysisRefCount = 0;
+
+    // Packed view (fLo low 32 bits, fHi high 32 bits) and freeze state
+    // (epoch in the low 32 bits, frozen flag in bit 32). One word each, so
+    // the analysis thread reads a consistent pair with a single load.
+    std::atomic<uint64_t> viewBits { 0 };
+    std::atomic<uint64_t> freezeBits { 0 };
 
     // The audio thread's only view into analysis activity: a plain atomic
     // flag, read once per processBlock(), never a lock.
