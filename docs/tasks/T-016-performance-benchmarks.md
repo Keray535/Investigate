@@ -2,7 +2,7 @@
 - Owner: plugin-validator
 - Milestone: M4
 - Status: TODO
-- Depends on: T-012, T-013, T-014
+- Depends on: T-012, T-013, T-014, T-038
 
 ## Goal
 Measure Investigate against every budget in the roadmap. The measurements cover the audio thread, the analysis thread, editor painting, the message thread and memory. Report the numbers so the M4 gate can be decided on data.
@@ -21,6 +21,11 @@ Measure Investigate against every budget in the roadmap. The measurements cover 
   - *Added 2026-10-03 (T-013 F-2):* also measure through the **real editor path**: frames and snapshots pulled by `InvestigateEditor::pollProcessor` with its 60/s `UpdateRateLimiter`, not fed by the harness on every vblank. Measure at the display's **native refresh rate** (144 Hz on the development machine) as well as with the display forced to 60 Hz. Use the T-029 case matrix at 1280×720, 2560×1440 and 1920×1080 at 110 %, median of 3 runs. This real-path number is the one that gates the ≤ 25 % budget. Also report the effective spectrum frame rate in the paced cases (T-013 F-3).
 - **Memory.** Measure the resident memory increase per instance at the default and maximum settings, with the editor open.
 - **Real program material** (added 2026-10-03). If `third_party/_fixtures/audio/test_audio.wav` is present (local only; located through `INVESTIGATE_TEST_AUDIO_DIR`, see T-032), repeat the audio-thread measurement at 48 kHz, 128 samples, and the message-thread measurement at both window sizes, with the track driving the processor in place of synthetic signals. The track goes on both main and sidechain, looped for the 60 s and 12 s windows. Report these numbers next to the synthetic ones. Real music changes the meters' repaint pattern (T-013 quantised repaints), so this is the realistic editor load. The same budgets apply. If the file is absent, say so and skip.
+- **Zoom and pan** (added 2026-10-03, M3b, `docs/plans/spectrum-zoom-pan.md`, Budgets). Measure:
+  - the view-change-to-frame latency at `fftSize` 65536 with 1x overlap;
+  - the analysis-thread CPU during a continuous 60 fps pan at the default settings;
+  - the whole-editor message-thread CPU and the paint p95 during a continuous pan and zoom, with the overview strip visible, through the real editor path at 1280×720 and 2560×1440, at the native refresh rate and at 60 Hz;
+  - the memory, which now includes the freeze snapshot.
 - Record the machine's CPU, clock, RAM, OS build and power plan in the report.
 
 ## Acceptance criteria
@@ -29,6 +34,11 @@ Measure Investigate against every budget in the roadmap. The measurements cover 
 - [ ] Editor paint: p95 ≤ 4 ms at 1280×720 and ≤ 8 ms at 2560×1440.
 - [ ] Message thread: ≤ 25 % of one core at 60 fps.
 - [ ] Memory: ≤ 64 MB resident increase per instance at the maximum settings.
+- [ ] Zoom and pan:
+  - view change to re-mapped frame p95 ≤ 10 ms and max ≤ 20 ms;
+  - analysis thread ≤ 4 % of one core during a continuous pan at the default settings;
+  - message thread ≤ 25 % and paint p95 ≤ 4 ms and ≤ 8 ms during a continuous pan with the overview visible.
 - [ ] The report `docs/qa/T-016-validation.md` gives every number, the pass or fail against its budget, the machine specification, and the commands to reproduce. Any failure names the likely hotspot, from profiling if available, so the architect can route the fix.
 
 ## Log
+- 2026-10-03 vst-architect: Added the zoom-and-pan measurements and a dependency on T-038 (milestone M3b).

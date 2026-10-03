@@ -2,7 +2,7 @@
 - Owner: unit-tester
 - Milestone: M4
 - Status: TODO
-- Depends on: T-009, T-012, T-013, T-014
+- Depends on: T-009, T-012, T-013, T-014, T-038
 
 ## Goal
 Run a whole-codebase white-box audit before release:
@@ -26,6 +26,10 @@ Run a whole-codebase white-box audit before release:
 - Run MSVC `/analyze` (or clang-tidy, if available) on `source/`, and triage the findings.
 - If a coverage tool exists: measure line coverage of `source/dsp/`.
 - Check that every timing test added since T-026 carries the hidden `[.perf]` tag (T-026 set up the convention).
+- **Zoom and pan** (added 2026-10-03, M3b):
+  - include the view and freeze atomics (`setSpectrumView`, `setSpectrumFrozen`, the packed 64-bit view pair and the freeze epoch) in the memory-ordering review;
+  - confirm that `processBlock` does not reach any zoom code;
+  - run an allocation hook around `SpectrumEngine::processPending` during freeze, unfreeze and continuous view changes; the expected result is 0 allocations without an `fftSize`, window or layout change.
 - **Watch item (added 2026-10-03 from T-013):** test #315 in `ProcessorAnalysisLifecycleTest` (`setAnalysisActive` 100 times under concurrent audio) timed out once in Debug while a build ran in parallel; six isolated reruns passed. Run it 20 times in Debug and Release under CPU contention (for example, a parallel build or a busy-loop load on every core). If it times out, measure the analysis-thread stop latency under load against the 50 ms budget, and file a defect for plugin-engineer with the numbers.
 
 ## Acceptance criteria
@@ -38,3 +42,4 @@ Run a whole-codebase white-box audit before release:
 - [ ] Every defect found is listed with its owner agent, so the architect can route the fixes.
 
 ## Log
+- 2026-10-03 vst-architect: Added the zoom-and-pan audit items and a dependency on T-038 (milestone M3b).

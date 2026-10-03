@@ -30,6 +30,15 @@ Investigate reproduces SPAN's features and workflow, not its identity. It uses i
 - A stereo correlation meter, and an L/R balance readout.
 - A statistics reset, state save and restore, and a resizable editor.
 - Interactions: freeze turns off automatically when `channelMode` changes; clicking the spectrum resets its accumulated curves; right-clicking copies the frequency under the pointer to the clipboard; a toggle collapses the meter panel, and its state is saved in `ViewState`.
+- **Spectrum zoom and pan** (milestone M3b; feature plan in `docs/plans/spectrum-zoom-pan.md`). It is a view layer inside the home range set by the Frequency and Level chips, and it never writes parameters:
+  - the wheel zooms frequency and Ctrl+wheel zooms level, both around the pointer;
+  - left-drag and middle-drag pan;
+  - a double-click returns to the full view (Fit);
+  - Ctrl+drag zooms into a box;
+  - an overview strip and a zoom indicator appear while zoomed;
+  - zooming a frozen spectrum shows full detail.
+
+  The zoom is not saved.
 - Windows 11 x64: VST3 and Standalone.
 - A signed Windows installer for a free public release.
 
@@ -41,6 +50,7 @@ Investigate reproduces SPAN's features and workflow, not its identity. It uses i
 - Match EQ, exporting a spectrum to a file, a preset browser, A/B comparison and undo.
 - Loudness targets, platform presets (streaming targets) and automatic reset on transport start.
 - Capturing system audio (WASAPI loopback) in the Standalone app.
+- Saving the spectrum zoom with the session, keyboard shortcuts for zoom and pan, a zoom history, and zoom presets.
 
 ## Architecture
 
@@ -62,14 +72,21 @@ Main in (L, R) ─────────────────────�
                                   │
 Sidechain in (L, R) ──────────────┘   (analysed only, never mixed into the output)
 
+Editor (message thread) ── visible frequency range and freeze state + epoch, through atomics (M3b) ──┐
+                                                                                                      ▼
 Analysis thread (juce::Thread owned by the processor; runs only while the editor is open; polls every ~5 ms)
    SpectrumEngine consumer side:
      SampleFifo ─► channel mode combine ─► window ─► real FFT ─► power spectrum (bin domain)
        ─► exponential averaging (power domain, τ = avgTime / ln 100) ─► secondary accumulators (RT max, all-time max, all-time avg)
-       ─► SpectrumMapper: bins → log-spaced display points (interpolate low, peak-preserve high)
-          ─► fractional-octave smoothing ─► slope (1 kHz pivot) ─► dB
+       ─► [while frozen: bin-domain snapshot taken at freeze time] (M3b)
+       ─► SpectrumMapper: bins → log-spaced display points over the visible range (interpolate low, peak-preserve high)
+          ─► fractional-octave smoothing (padded past the view edges) ─► slope (1 kHz pivot) ─► dB
+          + 256-point overview of primary A over the home range (M3b)
        ─► FrameExchange (lock-free triple buffer) ──────────────────► Editor SpectrumView (VBlank, ≤ 60 fps)
+     A view change re-maps the latest bin-domain spectra (or the frozen snapshot) and publishes at once, without a new FFT (M3b).
 ```
+
+Zoom and pan (M3b) work as a view layer. The range parameters define the **home range**. The editor keeps a view window inside it, and tells the analysis thread only the visible frequency range; level zoom is editor-only. The full design is in `docs/plans/spectrum-zoom-pan.md`.
 
 ### Modules
 
@@ -78,9 +95,10 @@ Analysis thread (juce::Thread owned by the processor; runs only while the editor
 | `SampleFifo` | `source/dsp/` | dsp-engineer | audio (push), analysis (pop) | Lock-free SPSC multichannel ring buffer. The producer never blocks or allocates; on overflow it drops the incoming samples and increments an atomic counter. |
 | `WindowFunctions` | `source/dsp/` | dsp-engineer | analysis | Hann, Blackman, Hi-Res (Nuttall squared) and flat-top windows with coherent-gain correction. |
 | `SpectrumAnalyser` | `source/dsp/` | dsp-engineer | analysis | Framing with overlap, channel-mode combination, FFT, power spectrum, averaging and secondary accumulators, all in the bin domain. |
-| `SpectrumMapper` | `source/dsp/` | dsp-engineer | analysis | Maps bins to log-spaced display points, then applies smoothing, slope and dB conversion. |
+| `SpectrumMapper` | `source/dsp/` | dsp-engineer | analysis | Maps bins to log-spaced display points over the visible range, then applies smoothing (padded past the view edges), slope and dB conversion. It also maps the overview curve (M3b). |
 | `SpectrumFrame`, `FrameExchange` | `source/dsp/` | dsp-engineer | analysis → message | The fixed-size frame struct and a lock-free triple buffer. |
-| `SpectrumEngine` | `source/dsp/` | dsp-engineer | both | A facade: a real-time-safe producer API plus a consumer `processPending(settings)` call. |
+| `SpectrumEngine` | `source/dsp/` | dsp-engineer | both | A facade: a real-time-safe producer API plus a consumer `processPending(settings)` call. From M3b it also re-publishes on a view change without a new FFT, and holds the freeze snapshot. |
+| `DisplayRange` | `source/dsp/` | dsp-engineer | any | The effective-range formulas, plus (M3b) the minimum view spans and the view clamps shared by the mapper and the editor. |
 | `LoudnessMeter` | `source/dsp/` | dsp-engineer | audio | BS.1770-4/-5 and EBU R128: M, S, I and LRA, using fixed-size histograms. |
 | `TruePeakDetector` | `source/dsp/` | dsp-engineer | audio | BS.1770 Annex 2 polyphase FIR; the oversampling factor depends on the sample rate. |
 | `LevelMeter` | `source/dsp/` | dsp-engineer | audio | Sample peak, RMS window and clip counting. |
@@ -88,7 +106,7 @@ Analysis thread (juce::Thread owned by the processor; runs only while the editor
 | `MeterBank`, `MeterSnapshot` | `source/dsp/` | dsp-engineer | audio → any | Aggregates the meters, publishes snapshots through atomics, and handles reset requests. |
 | Parameter layout and IDs | `source/params/` | plugin-engineer | message | The single source of parameter definitions. |
 | `InvestigateProcessor` | `source/PluginProcessor.*` | plugin-engineer | all | Buses, state, `processBlock`, the analysis thread (a private class) and the editor-facing API. |
-| `InvestigateEditor` and components | `source/PluginEditor.*`, `source/gui/` | gui-engineer | message | LookAndFeel, SpectrumView, MeterPanel, settings controls and resizing. |
+| `InvestigateEditor` and components | `source/PluginEditor.*`, `source/gui/` | gui-engineer | message | LookAndFeel, SpectrumView, MeterPanel, settings controls and resizing. From M3b: zoom and pan (`ZoomMath`), the zoom indicator, the overview strip and box zoom. |
 
 All C++ code lives in namespace `investigate`.
 
@@ -100,13 +118,22 @@ All C++ code lives in namespace `investigate`.
 - `void requestSpectrumReset()`: clears the all-time max and all-time average curves.
 - `bool isSidechainActive() const noexcept`.
 - `juce::AudioProcessorValueTreeState& getApvts() noexcept`.
-- Freezing the display is editor-only: the editor stops pulling frames.
+- Freezing the display was editor-only until M3b: the editor stops pulling frames.
+- Added in M3b (T-036), message thread, lock-free:
+  - `void setSpectrumView (float fLo, float fHi) noexcept`: sets the visible frequency range; `(0, 0)` means the home range.
+  - `void setSpectrumFrozen (bool) noexcept`: the engine keeps a bin-domain snapshot while frozen, and every change increments a freeze epoch carried by each frame.
+  - `uint32_t getFreezeEpoch() const noexcept`.
+  - `setAnalysisActive (false)` resets both, so the editor always opens at Fit and unfrozen.
 
 ### SpectrumFrame contents (finalised in T-005)
 - Up to 2048 display points, log-spaced between `freqLow` and `min(freqHigh, Nyquist)`, with the frequency of each point.
 - A primary curve in dB, a second primary curve for the dual modes (R or S), a secondary curve for each primary curve (so two secondary curves in the dual modes), and the sidechain curve.
 - Flags: `isDual`, `hasSecondary`, `hasSidechain`. Also the sample rate and a sequence number.
 - In dual modes the sidechain curve shows the power mean of the sidechain channels.
+- Added in M3b (T-035):
+  - the view range the frame was mapped for (`viewFreqLow`, `viewFreqHigh`);
+  - a 256-point overview of primary A over the effective home range (`overviewFreqHz`, `overviewDb`);
+  - the `freezeEpoch` it was produced under.
 
 ### MeterSnapshot contents (finalised in T-007)
 - Per channel: sample peak and true peak, each the maximum over the last 50 ms, so a 30 to 60 Hz reader cannot miss block peaks; peak max and true-peak max since reset; RMS; sample clip count; and true-peak clip count.
@@ -154,13 +181,13 @@ Constraints:
 |---|---|---|
 | Audio | `processBlock`: `ScopedNoDenormals`, MeterBank process, and FIFO push while analysis is active. The output buffer is never written. | Publishes the MeterSnapshot through atomics. Reads reset requests from atomic flags. Pushes samples into the SPSC FIFO. Reads parameters through raw APVTS atomics. |
 | Analysis | A `juce::Thread` owned by the processor. It starts on `setAnalysisActive(true)`, polls with `wait(5)`, runs `SpectrumEngine::processPending`, and stops within 50 ms. It may reallocate when `fftSize`, the window or the sample rate changes. | Pops samples from the FIFO. Publishes frames into the triple buffer. Reads parameters through raw APVTS atomics. |
-| Message | Editor painting via `juce::VBlankAttachment`, parameter attachments, and state save and restore. | Reads the latest frame and the MeterSnapshot. Sets reset flags. |
+| Message | Editor painting via `juce::VBlankAttachment`, parameter attachments, and state save and restore. | Reads the latest frame and the MeterSnapshot. Sets reset flags. From M3b it also writes the visible frequency range (two floats packed into one 64-bit atomic) and the freeze flag with its epoch (one atomic), and drops frames whose epoch is stale. |
 
 The audio thread never signals the analysis thread, because an OS event signal is not real-time safe. The analysis thread polls instead.
 
 ### State format
 - APVTS `ValueTree` of type `InvestigateState`, with property `stateVersion = 1`.
-- A child `ViewState` holds editor-only persistent properties: `editorWidth`, `editorHeight` and `metersCollapsed`, plus later UI preferences. The editor reads and writes it on the message thread.
+- A child `ViewState` holds editor-only persistent properties: `editorWidth`, `editorHeight` and `metersCollapsed`, plus later UI preferences. The editor reads and writes it on the message thread. The spectrum zoom and the freeze state are not persisted (M3b decision).
 - The tree is serialised with `copyXmlToBinary`. Loading tolerates missing properties (they keep their defaults), unknown properties (ignored) and corrupt data (defaults remain, no crash).
 
 ### Identity (placeholders, change before the first public release)
@@ -184,6 +211,10 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | Message thread at 60 fps | ≤ 25 % of one core |
 | Memory | ≤ 64 MB resident increase per instance at maximum settings |
 | Analysis thread stop | ≤ 50 ms after `setAnalysisActive(false)` |
+| Zoom: view change to re-mapped frame published (M3b) | p95 ≤ 10 ms and max ≤ 20 ms, at any `fftSize` and overlap |
+| Zoom: one re-map, every curve plus the overview, worst case (M3b) | ≤ 1.0 ms on the analysis thread |
+| Analysis thread during a continuous 60 fps pan, default settings (M3b) | ≤ 4 % of one core |
+| Whole editor during a continuous pan or zoom (M3b) | message thread ≤ 25 % of one core; paint p95 ≤ 4 ms (1280×720) and ≤ 8 ms (2560×1440) |
 
 ## Milestones
 
@@ -193,7 +224,8 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | M1 DSP core | DSP dependencies, then the spectrum pipeline and meters in `source/dsp/` with unit tests | T-021, T-004, T-005, T-006, T-007, T-024 | Unit QA reports PASS, including the EBU conformance cases |
 | M2 Parameters and state | APVTS, buses, state, and DSP wiring with the analysis thread | T-008, T-025, T-026, T-009 | Unit and validation QA PASS: bit-exact null test, state round trip, and real-time safety |
 | M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met |
-| M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met |
+| M3b Zoom and pan | A view-layer spectrum zoom and pan (`docs/plans/spectrum-zoom-pan.md`): the spec and mockup, engine re-mapping and the freeze snapshot, the processor API, the editor gestures, the overview strip and box zoom | T-034, T-035, T-036, T-037, T-038 | The user approves the T-034 mockup before T-037 starts. Every QA report is PASS, and the zoom budgets are met during a continuous pan. The user completes the hands-on checklist in the plan. |
+| M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met. T-015 to T-017 also cover zoom and pan. |
 | M5 Packaging | Windows CI, then a signed installer and release docs | T-018, T-019 | CI is green; a signed installer installs, uninstalls and passes pluginval on the installed binary |
 
 ## Working rules for this project
@@ -206,14 +238,19 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 Status at handoff:
 - M0 to M2 are closed.
 - In M3, T-010, T-011, T-012, T-029, T-030 and T-031 are DONE with passing QA reports. The last pushed commit is `2828d7a` (T-031).
-- T-013 (MeterPanel) is DONE, with both QA reports PASS after round 2. Its commit was dispatched to build-engineer at the end of the session. If `git log` does not show a "T-013" commit, commit it first, with an explicit list of files to stage and without `test_audio.wav`.
+- T-013 (MeterPanel) is DONE, with both QA reports PASS after round 2. It is committed and pushed as `3f2d956` (95 files; `test_audio.wav` left out and still untracked at the root). This handoff edit was made after that commit; include it in the next commit.
 
 The next session continues with:
-1. **Check the T-013 commit**, as described above.
+1. Nothing is left over from T-013.
 2. **T-032** (build-engineer): move the user's `test_audio.wav` from the repository root to `third_party/_fixtures/audio/`, add the root audio ignore patterns and the `INVESTIGATE_TEST_AUDIO_DIR` hook. It needs a configure run, so wait until no C++ build is in flight. **Until T-032 runs, every commit must leave out `test_audio.wav`.**
 3. T-032 commits its own files: `.gitignore`, the CMake hook, `docs/dependencies.md` and its task file. Never the WAV.
 4. **The user's M3 hands-on review** with `docs/plans/m3-user-review.md`. Triage the findings into tasks, including the frame-pacing look as a decision point. M3 closes after that.
-5. Then M4 (T-014 to T-017, with the real-material checks added to T-015 and T-016) and M5 (T-018 and T-019).
+5. **M3b Zoom and pan** (planned 2026-10-03 with the user, `docs/plans/spectrum-zoom-pan.md`; tasks T-034 to T-038 are written). **Nothing is dispatched yet:** the user asked for documentation changes only. When the user gives the go-ahead:
+   - T-034 (ui-ux-designer) may start at once, in parallel with T-032;
+   - T-035 starts after T-032 has finished its configure run;
+   - T-036, T-037 and T-038 follow one at a time;
+   - T-037 waits for the user's approval of the T-034 mockup.
+6. Then M4 (T-014 to T-017, with the real-material checks added to T-015 and T-016, and the zoom checks added to T-015 to T-017) and M5 (T-018 and T-019).
 
 Rules learned in this session. Include them in every dispatch prompt:
 - CMake refuses in-source builds (T-030). Always build in `build/` through the presets.
@@ -250,6 +287,10 @@ Open user decisions:
 | 8 | An unsigned installer triggers SmartScreen warnings | Poor user trust | Choose a signing method (for example Azure Trusted Signing or an OV certificate) before M5. |
 | 9 | JUCE license choice for a free closed-source release | Cannot ship legally | The user chooses before M5: JUCE Starter licence (closed source, with a revenue cap) or AGPLv3 (the source must be published). T-002 reports the Starter cap as $20,000 per year of gross revenue, not the $50k assumed earlier. The user must read the current JUCE 8 EULA before deciding. |
 | 10 | Parallel agents collide in the same working tree | Broken builds, lost work | Apply the one-C++-task-at-a-time rule; revisit worktree isolation after M1 if throughput matters. |
+| 11 | Rebuilding the grid and labels on every frame during a pan or zoom exceeds the message-thread budget (M3b) | Laggy pan; a sluggish host UI | Grid lines as one rectangle list per colour during an interaction, label images reused while their text is unchanged, and the T-029 rules. T-037 and T-038 gate CPU during a continuous pan at both sizes. |
+| 12 | A live frame published just before a freeze, or a torn view pair, shows the wrong data (M3b) | Flicker, or a wrong curve after a freeze or zoom | A freeze epoch in every frame (the editor drops stale epochs), and the view pair packed into one 64-bit atomic. T-036 stress-tests both. |
+| 13 | Zooming past the FFT resolution shows straight interpolated segments, which may look like a bug (M3b) | User confusion | The zoom indicator shows the bin spacing when fewer than 16 bins are in view. |
+| 14 | Windows precision touchpads deliver pinch as Ctrl+wheel, so pinch zooms level, not frequency (M3b) | Unexpected on laptops | Accepted v1 limitation, documented in the hands-on checklist. A horizontal swipe still pans frequency. Revisit after user feedback. |
 
 ## Decisions
 
@@ -332,6 +373,13 @@ Open user decisions:
 | 2026-10-03 | T-013 validation round 1 was FAIL with 3 small defects, and everything else passed (whole-editor CPU worst median 20.0 %, at 110 % scaling, against 25 %). Round 2 fixes:<br>• the lag of the reset text: a reset forces an immediate text refresh, as an exception to the 10 Hz text rule;<br>• the truncated "MONO" label;<br>• a cap of 60 Hz on editor updates for displays faster than 60 Hz (spec §8.1; the development display runs at 144 Hz);<br>• "M max" and "S max" below −99.9 LUFS display in the silent form.<br>The meter paint limit at 2560×1440 is amended from 1 ms to 1.5 ms. Cold-start loudness (I is −23.1/−23.2 and LRA about 1 LU after 3 s of a steady sine) becomes T-033 (dsp-engineer, M4), checked against libebur128. | The fixes are small and user-visible. The 1 ms meter share was the architect's own allocation, and the governing budgets pass with a wide margin. The cold-start bias is a DSP correctness question, not a GUI one. |
 | 2026-10-03 | T-013 accepted after round 2. Reset clears within one update interval, "MONO" shows in full, editor updates are capped at 60/s on faster displays, and M max and S max read "−inf" in silence. Whole-editor CPU worst medians (60 Hz): 9.9 % (1280×720), 12.9 % (2560×1440) and 20.1 % (1920×1080 at 110 %). Meter paint p95: 0.99 and 1.27 ms. "One UI frame" now means one editor update interval (≤ 21 ms on a 144 Hz display under the 60/s cap). T-016 gates message-thread CPU through the real editor path at the native refresh rate, because the T-013 harness bypassed the limiter. The paced spectrum runs at about 24 fps at 144 Hz with 2560×1440, which is part of the user's pacing review. The flaky lifecycle test #315 is a T-017 watch item. | Every functional and budget criterion passes at the reference rate. The remaining items are measurement-method or polish questions, routed to the tasks that own them. |
 | 2026-10-03 | Editor rendering rules for every editor component: no polygons drawn per frame; one `fillRectList` per colour; cache the static parts as images; repaint only when a physical-pixel value changes; build only what lies under the clip. CPU is gated with the T-012/T-029 harness method, as the median of 3 runs. | Learned in T-029 (rules in its log); Direct2D costs are invisible to `paint()` timing. |
+| 2026-10-03 | Spectrum zoom and pan go into v1 as milestone M3b, between M3 and M4. The plan is `docs/plans/spectrum-zoom-pan.md`, and the tasks are T-034 to T-038. T-015, T-016 and T-017 now depend on T-038. | User request. M4 must validate the final UI. |
+| 2026-10-03 | Zoom is a view layer inside the home range set by `freqLow`, `freqHigh`, `dbLow` and `dbHigh`. It never writes parameters, and the parameters, their ranges and the chips do not change. | User choice. It keeps host automation and undo clean, and the parameter bounds (`freqLow` ≤ 1 kHz, `dbLow` ≤ −30 dB) would block close zooms. |
+| 2026-10-03 | Gestures:<br>• the wheel zooms frequency and Ctrl+wheel zooms level, both around the pointer;<br>• a wheel over an axis gutter zooms that axis;<br>• a horizontal wheel pans frequency;<br>• left-drag and middle-drag pan;<br>• a double-click fits, so the click reset now waits 250 ms (the chip rule);<br>• Ctrl+drag zooms into a box;<br>• an overview strip and a zoom indicator appear while zoomed.<br>There is no Space shortcut. This supersedes ui-spec §5.6 "Left drag: nothing" and "Mouse wheel: nothing", once T-034 lands. | User choices. Space is the host's transport key. |
+| 2026-10-03 | The zoom is not persisted. The editor opens at Fit, and `ViewState` gains no properties. | User choice: persistence was offered and not selected. |
+| 2026-10-03 | The engine re-maps the latest bin-domain spectra on a view change without a new FFT, and holds a preallocated bin-domain snapshot (about 0.7 MB) while frozen. Frames carry a freeze epoch. This partly supersedes "Freezing the display is editor-only" (Processor API). | At 65536 points with 1x overlap a new frame arrives only every 1.37 s. Zooming a frozen spectrum must show real detail. |
+| 2026-10-03 | The minimum view span is 1/6 octave and 6 dB, defined in `DisplayRange.h` and shared by the mapper and the editor. The home range keeps its 1-octave and 12 dB rules. One wheel notch scales the span by 0.8 or 1.25. | Architect defaults. ui-ux-designer may refine them in T-034 with a reason. |
+| 2026-10-03 | Accepted limitation: on Windows precision touchpads, pinch arrives as Ctrl+wheel and zooms level. | The platform translates pinch into Ctrl+wheel for ordinary windows. A horizontal swipe still pans frequency. |
 
 ## Status
 
@@ -360,11 +408,16 @@ Open user decisions:
 | T-031 | Make the on-screen GUI tests deterministic (pacing test failure, test hang) | unit-tester | M3 | T-030 | DONE (`docs/qa/T-031-unit.md` PASS; no production defect) |
 | T-032 | Local-only test audio: keep it out of git, `INVESTIGATE_TEST_AUDIO_DIR` hook | build-engineer | M3 | none | TODO (runs after the T-013 validation build finishes; never commit the `.wav`) |
 | T-013 | Meter panel | gui-engineer | M3 | T-009, T-011, T-029, T-030, T-031 | DONE (`docs/qa/T-013-unit.md` PASS; `docs/qa/T-013-validation.md` round 2 PASS at the 60 Hz reference; the 144 Hz findings were decided in the log) |
+| T-034 | Zoom and pan: UI spec addendum and mockup | ui-ux-designer | M3b | none | TODO (not dispatched; waiting for the user's go-ahead) |
+| T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | M3b | T-005, T-009 | TODO (after T-032's configure run) |
+| T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | TODO |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036 | TODO |
+| T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037 | TODO |
 | T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |
-| T-015 | Black-box validation suite | plugin-validator | M4 | T-009, T-013, T-014 | TODO |
-| T-016 | Performance benchmarks | plugin-validator | M4 | T-012, T-013, T-014 | TODO |
-| T-017 | Real-time safety, sanitizer and static analysis audit | unit-tester | M4 | T-009, T-012, T-013, T-014 | TODO |
+| T-015 | Black-box validation suite | plugin-validator | M4 | T-009, T-013, T-014, T-038 | TODO |
+| T-016 | Performance benchmarks | plugin-validator | M4 | T-012, T-013, T-014, T-038 | TODO |
+| T-017 | Real-time safety, sanitizer and static analysis audit | unit-tester | M4 | T-009, T-012, T-013, T-014, T-038 | TODO |
 | T-018 | GitHub Actions Windows CI | build-engineer | M5 | T-014 | TODO |
 | T-019 | Windows installer, code signing and release docs | build-engineer | M5 | T-018, user decisions | TODO |
 | T-020 | SPAN user guide visual extraction | researcher | M0 | T-001 | DONE |
