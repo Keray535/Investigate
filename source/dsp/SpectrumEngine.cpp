@@ -1,6 +1,7 @@
 #include "SpectrumEngine.h"
 
 #include <algorithm>
+#include <cstring>
 
 namespace investigate
 {
@@ -46,6 +47,14 @@ void SpectrumEngine::prepare (double sampleRate, int maxBlockSize, int numMainCh
     mapper.prepare();
     exchange.prepare();
 
+    // The freeze snapshot is sized for the largest FFT (32769 bins x 5
+    // curves, about 0.66 MB) so freezing never allocates.
+    snapshot.data.assign (static_cast<size_t> (5) * SpectrumAnalyser::maxNumBins, 0.0f);
+    snapshot.valid = false;
+    snapshot.epoch = 0;
+    frozenActive = false;
+    published = PublishedState {};
+
     frameSequence = 0;
 }
 
@@ -62,6 +71,25 @@ void SpectrumEngine::pushSidechain (const float* const* channels, int numChannel
 bool SpectrumEngine::processPending (const SpectrumSettings& settings) noexcept
 {
     analyser.setSettings (settings.toAnalyserSettings());
+
+    // Freeze entry happens before the drain below: the analyser then still
+    // holds exactly the state the last published frame was mapped from, so
+    // the snapshot is what the user was looking at when they froze. (A full
+    // analyser reset in setSettings() just above leaves no valid state, and
+    // takeSnapshot() records that.)
+    if (settings.frozen)
+    {
+        if (! frozenActive || settings.freezeEpoch != snapshot.epoch)
+        {
+            takeSnapshot (settings);
+            frozenActive = true;
+        }
+    }
+    else
+    {
+        frozenActive = false;
+        snapshot.valid = false;
+    }
 
     const bool sidechainActive = settings.numSidechainChannels > 0 && preparedNumSidechainChannels > 0;
     bool producedAny = false;
@@ -104,14 +132,114 @@ bool SpectrumEngine::processPending (const SpectrumSettings& settings) noexcept
             producedAny = true;
     }
 
-    if (! producedAny)
-        return false;
+    if (settings.frozen)
+    {
+        // Live frames are not published while frozen; only a snapshot
+        // re-map after a view or home-range change (or at freeze entry).
+        if (! snapshot.valid || ! differsFromPublished (settings, true, snapshot.epoch))
+            return false;
 
-    publishFrame (settings);
+        SpectrumSettings frozenSettings = settings;
+        frozenSettings.smoothing = snapshot.smoothing;
+        frozenSettings.slopeDbPerOct = snapshot.slopeDbPerOct;
+
+        publishFrame (frozenSettings, snapshotSource(), true, snapshot.epoch);
+        return true;
+    }
+
+    // Live. A new hop always publishes; without one, publish only when the
+    // view, the home range or the freeze state changed and the analyser holds
+    // a valid frame to re-map.
+    if (! producedAny)
+    {
+        if (analyser.getFramesProduced() <= 0 || ! differsFromPublished (settings, false, settings.freezeEpoch))
+            return false;
+    }
+
+    publishFrame (settings, liveSource(), false, settings.freezeEpoch);
     return true;
 }
 
-void SpectrumEngine::publishFrame (const SpectrumSettings& settings) noexcept
+SpectrumEngine::BinSource SpectrumEngine::liveSource() const noexcept
+{
+    BinSource src;
+    src.numBins = analyser.getNumBins();
+    src.binHz = analyser.getSettings().sampleRate / static_cast<double> (analyser.getSettings().fftSize);
+    src.primary = analyser.getPrimaryPower();
+    src.isDual = analyser.isDual();
+    src.primaryB = src.isDual ? analyser.getPrimaryBPower() : nullptr;
+    src.secondary = analyser.getSecondaryPower (false);
+    src.hasSecondary = src.secondary != nullptr;
+    src.secondaryB = (src.isDual && src.hasSecondary) ? analyser.getSecondaryPower (true) : nullptr;
+    src.hasSidechain = analyser.hasSidechain();
+    src.sidechain = src.hasSidechain ? analyser.getSidechainPower() : nullptr;
+    return src;
+}
+
+SpectrumEngine::BinSource SpectrumEngine::snapshotSource() const noexcept
+{
+    BinSource src;
+    src.numBins = snapshot.numBins;
+    src.binHz = snapshot.binHz;
+    src.isDual = snapshot.isDual;
+    src.hasSecondary = snapshot.hasSecondary;
+    src.hasSidechain = snapshot.hasSidechain;
+    src.primary = snapshot.curve (0);
+    src.primaryB = snapshot.curve (1);
+    src.secondary = snapshot.curve (2);
+    src.secondaryB = snapshot.curve (3);
+    src.sidechain = snapshot.curve (4);
+    return src;
+}
+
+void SpectrumEngine::takeSnapshot (const SpectrumSettings& settings) noexcept
+{
+    snapshot.epoch = settings.freezeEpoch;
+
+    // Nothing to freeze before the first frame, or right after a full
+    // analyser reset (the averaged arrays are stale until the next hop).
+    if (analyser.getFramesProduced() <= 0)
+    {
+        snapshot.valid = false;
+        return;
+    }
+
+    const BinSource live = liveSource();
+    const size_t bytes = static_cast<size_t> (live.numBins) * sizeof (float);
+
+    std::memcpy (snapshot.curve (0), live.primary, bytes);
+    if (live.isDual)
+        std::memcpy (snapshot.curve (1), live.primaryB, bytes);
+    if (live.hasSecondary)
+    {
+        std::memcpy (snapshot.curve (2), live.secondary, bytes);
+        if (live.isDual)
+            std::memcpy (snapshot.curve (3), live.secondaryB, bytes);
+    }
+    if (live.hasSidechain)
+        std::memcpy (snapshot.curve (4), live.sidechain, bytes);
+
+    snapshot.numBins = live.numBins;
+    snapshot.binHz = live.binHz;
+    snapshot.isDual = live.isDual;
+    snapshot.hasSecondary = live.hasSecondary;
+    snapshot.hasSidechain = live.hasSidechain;
+    snapshot.smoothing = settings.smoothing;
+    snapshot.slopeDbPerOct = settings.slopeDbPerOct;
+    snapshot.valid = true;
+}
+
+bool SpectrumEngine::differsFromPublished (const SpectrumSettings& settings, bool frozen, uint32_t epoch) const noexcept
+{
+    if (! published.valid || published.frozen != frozen || published.epoch != epoch)
+        return true;
+
+    const SpectrumMapper::Ranges r = SpectrumMapper::computeRanges (settings);
+    return r.viewLow != published.ranges.viewLow || r.viewHigh != published.ranges.viewHigh
+        || r.homeLow != published.ranges.homeLow || r.homeHigh != published.ranges.homeHigh;
+}
+
+void SpectrumEngine::publishFrame (const SpectrumSettings& settings, const BinSource& src, bool frozen, uint32_t epoch) noexcept
 {
     SpectrumFrame& frame = exchange.getWriteFrame();
 
@@ -119,31 +247,44 @@ void SpectrumEngine::publishFrame (const SpectrumSettings& settings) noexcept
     frame.numPoints = numPoints;
     mapper.computeFrequencies (settings, frame.freqHz.data(), numPoints);
 
-    const int numBins = analyser.getNumBins();
-    const double binHz = settings.sampleRate / static_cast<double> (settings.fftSize);
+    const SpectrumMapper::Ranges ranges = SpectrumMapper::computeRanges (settings);
+    frame.viewFreqLow = ranges.viewLow;
+    frame.viewFreqHigh = ranges.viewHigh;
 
-    mapper.mapCurve (analyser.getPrimaryPower(), numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryDb.data());
+    const int numBins = src.numBins;
+    const double binHz = src.binHz;
 
-    frame.isDual = analyser.isDual();
+    mapper.mapCurve (src.primary, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryDb.data());
+
+    frame.isDual = src.isDual;
     if (frame.isDual)
-        mapper.mapCurve (analyser.getPrimaryBPower(), numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryBDb.data());
+        mapper.mapCurve (src.primaryB, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.primaryBDb.data());
 
-    frame.hasSecondary = settings.secondary != SecondaryMode::off;
+    frame.hasSecondary = src.hasSecondary;
     if (frame.hasSecondary)
     {
-        mapper.mapCurve (analyser.getSecondaryPower (false), numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryDb.data());
+        mapper.mapCurve (src.secondary, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryDb.data());
         if (frame.isDual)
-            mapper.mapCurve (analyser.getSecondaryPower (true), numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryBDb.data());
+            mapper.mapCurve (src.secondaryB, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.secondaryBDb.data());
     }
 
-    frame.hasSidechain = analyser.hasSidechain();
+    frame.hasSidechain = src.hasSidechain;
     if (frame.hasSidechain)
-        mapper.mapCurve (analyser.getSidechainPower(), numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.sidechainDb.data());
+        mapper.mapCurve (src.sidechain, numBins, binHz, settings, frame.freqHz.data(), numPoints, frame.sidechainDb.data());
+
+    frame.overviewNumPoints = mapper.mapOverview (src.primary, numBins, binHz, settings,
+                                                   frame.overviewFreqHz.data(), frame.overviewDb.data());
 
     frame.sampleRate = settings.sampleRate;
     frame.sequence = ++frameSequence;
+    frame.freezeEpoch = epoch;
 
     exchange.publish();
+
+    published.valid = true;
+    published.ranges = ranges;
+    published.frozen = frozen;
+    published.epoch = epoch;
 }
 
 } // namespace investigate

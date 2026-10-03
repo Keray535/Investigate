@@ -71,7 +71,34 @@ public:
         published, i.e. at least one new analysis frame was produced this
         call. May allocate only when `settings` changes `fftSize`, `window`,
         `sampleRate` or the channel counts (via
-        `SpectrumAnalyser::setSettings()`); never allocates otherwise. */
+        `SpectrumAnalyser::setSettings()`); never allocates otherwise.
+
+        Zoom and freeze (M3b, docs/plans/spectrum-zoom-pan.md):
+
+         - Live (`frozen == false`): a new hop maps the newest bin-domain
+           state onto the clamped view range and publishes it. With no new
+           hop, a change of the clamped view range, of the effective home
+           range, or of the freeze state (an unfreeze) re-maps the latest
+           bin-domain state and publishes at once. A re-publish reads the
+           analyser and changes none of its state. If the analyser has no
+           valid frame (nothing produced since its last full reset) there is
+           nothing to re-map and nothing is published.
+         - Freeze: the first call with `frozen == true` for a new
+           `freezeEpoch` copies the bin-domain state, as the last published
+           frame was made from it (before this call drains new samples),
+           into a preallocated snapshot together with `binHz`, the curve
+           flags, the smoothing and the slope, and publishes it as a frame
+           stamped with the new epoch. Analysis continues internally (so
+           `resetSecondary()` still works) but no live frame is published.
+           A view or home-range change re-maps the snapshot and publishes.
+           The call's `smoothing` and `slopeDbPerOct` are ignored for the
+           snapshot; the home range is honoured. A change of `fftSize`,
+           `window`, `channelMode` or the layout resets the live analyser
+           and leaves the snapshot untouched.
+         - Every frame carries `SpectrumSettings::freezeEpoch` (live frames
+           the current one, frozen frames the epoch of the freeze).
+
+        Returns true if a frame was published. */
     bool processPending (const SpectrumSettings& settings) noexcept;
 
     // ---- Consumer API (message thread) ---------------------------------
@@ -99,7 +126,56 @@ public:
     }
 
 private:
-    void publishFrame (const SpectrumSettings& settings) noexcept;
+    /** Pointers to one set of bin-domain curves plus what describes them:
+        either the live analyser or the freeze snapshot. */
+    struct BinSource
+    {
+        const float* primary = nullptr;
+        const float* primaryB = nullptr;
+        const float* secondary = nullptr;
+        const float* secondaryB = nullptr;
+        const float* sidechain = nullptr;
+        int numBins = 0;
+        double binHz = 1.0;
+        bool isDual = false;
+        bool hasSecondary = false;
+        bool hasSidechain = false;
+    };
+
+    /** The bin-domain freeze snapshot. `data` holds five curves
+        (primary, primary B, secondary, secondary B, sidechain) of
+        `SpectrumAnalyser::maxNumBins` floats each, sized in prepare(). */
+    struct Snapshot
+    {
+        std::vector<float> data;
+        bool valid = false;
+        uint32_t epoch = 0;
+        int numBins = 0;
+        double binHz = 1.0;
+        bool isDual = false;
+        bool hasSecondary = false;
+        bool hasSidechain = false;
+        SmoothingMode smoothing = SmoothingMode::off;
+        float slopeDbPerOct = 0.0f;
+
+        float* curve (int index) noexcept { return data.data() + static_cast<size_t> (index) * SpectrumAnalyser::maxNumBins; }
+        const float* curve (int index) const noexcept { return data.data() + static_cast<size_t> (index) * SpectrumAnalyser::maxNumBins; }
+    };
+
+    /** What the most recently published frame was mapped for. */
+    struct PublishedState
+    {
+        bool valid = false;
+        SpectrumMapper::Ranges ranges;
+        bool frozen = false;
+        uint32_t epoch = 0;
+    };
+
+    BinSource liveSource() const noexcept;
+    BinSource snapshotSource() const noexcept;
+    void takeSnapshot (const SpectrumSettings& settings) noexcept;
+    bool differsFromPublished (const SpectrumSettings& settings, bool frozen, uint32_t epoch) const noexcept;
+    void publishFrame (const SpectrumSettings& settings, const BinSource& source, bool frozen, uint32_t epoch) noexcept;
 
     static constexpr int kFifoCapacityFrames = 1 << 17; ///< Roadmap risk 5 mitigation.
     static constexpr int kDrainChunkFrames = 8192;       ///< Bounded per-iteration drain size.
@@ -119,6 +195,10 @@ private:
 
     int preparedNumSidechainChannels = 0;
     uint64_t frameSequence = 0;
+
+    Snapshot snapshot;
+    bool frozenActive = false;
+    PublishedState published;
 };
 
 } // namespace investigate

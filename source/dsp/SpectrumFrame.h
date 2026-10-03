@@ -11,7 +11,8 @@ namespace investigate
     roadmap's "SpectrumFrame contents" section. Fixed-size (no heap
     pointers, no dynamic containers) so it is trivially copyable and safe to
     hold in `FrameExchange`'s three preallocated slots - a whole frame is
-    about 49 KB (6 arrays x 2048 floats), which is cheap next to the
+    about 51 KB (6 arrays x 2048 floats + 2 x 256 overview floats), which is
+    cheap next to the
     project's 64 MB per-instance budget.
 
     Only the first `numPoints` entries of every array are valid for a given
@@ -22,12 +23,22 @@ struct SpectrumFrame
     /// Fixed maximum point count (roadmap: "up to 2048 display points").
     static constexpr int maxPoints = 2048;
 
+    /// Fixed point count of the overview curve (zoom-and-pan mini-map).
+    static constexpr int overviewPoints = 256;
+
     /// Number of valid entries in every array below, 1 .. maxPoints.
     int numPoints = 0;
 
     /// Frequency of each display point in Hz, log-spaced from fLoEff to
     /// fHiEff (DisplayRange.h). Strictly increasing across [0, numPoints).
     std::array<float, maxPoints> freqHz {};
+
+    /// The frequency view the display points were mapped onto, in Hz: the
+    /// requested view after `DisplayRange::clampViewFrequency`. Equals
+    /// `freqHz[0]` and `freqHz[numPoints - 1]` (up to float rounding). At no
+    /// zoom this is the effective home range.
+    double viewFreqLow = 0.0;
+    double viewFreqHigh = 0.0;
 
     /// The primary curve in dB: single-mode curve, or L/Mid in dual modes.
     /// -200 dB floor, smoothing and slope already applied, not clamped to
@@ -52,6 +63,13 @@ struct SpectrumFrame
     /// channel combination as the main curve.
     std::array<float, maxPoints> sidechainDb {};
 
+    /// Overview of the primary curve (A) over the whole effective home range,
+    /// log-spaced, with the same smoothing and slope as `primaryDb`. Only the
+    /// first `overviewNumPoints` entries are valid.
+    int overviewNumPoints = 0;
+    std::array<float, overviewPoints> overviewFreqHz {};
+    std::array<float, overviewPoints> overviewDb {};
+
     /// True when `primaryBDb`/`secondaryBDb` carry a second curve (L/R dual
     /// or M/S dual channel mode with a stereo main input).
     bool isDual = false;
@@ -71,6 +89,12 @@ struct SpectrumFrame
     /// `SpectrumEngine` instance; never decreases. Used by `FrameExchange`
     /// and its tests to confirm no frame is ever delivered out of order.
     uint64_t sequence = 0;
+
+    /// The freeze epoch of the settings this frame was published under
+    /// (`SpectrumSettings::freezeEpoch`). While frozen it is the epoch of the
+    /// freeze whose snapshot the frame was mapped from; the editor drops
+    /// frames whose epoch is not the current one.
+    uint32_t freezeEpoch = 0;
 };
 
 } // namespace investigate

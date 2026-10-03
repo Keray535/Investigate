@@ -3,6 +3,8 @@
 #include "SpectrumAnalyser.h"
 #include "WindowFunctions.h"
 
+#include <cstdint>
+
 namespace investigate
 {
 
@@ -66,6 +68,30 @@ struct SpectrumSettings
     /// to draw it. Kept here only so this struct holds every roadmap
     /// spectrum parameter, as the task requires.
     bool showSidechain = true;
+
+    // Zoom, pan and freeze (milestone M3b, docs/plans/spectrum-zoom-pan.md).
+    // All defaults reproduce the pre-M3b behaviour exactly.
+
+    /// The visible frequency range the display points are spread over, in
+    /// Hz. `0` (both) means the effective home range, i.e. no zoom. A view is
+    /// clamped into the home range with `DisplayRange::clampViewFrequency`
+    /// before use, so the editor and the mapper agree on the result.
+    float viewFreqLow = 0.0f;
+    float viewFreqHigh = 0.0f;
+
+    /// True while the display is frozen. The engine then publishes snapshot
+    /// re-maps only (never live frames), and ignores `smoothing` and
+    /// `slopeDbPerOct` for them (ui-spec 5.7); the home range is honoured.
+    bool frozen = false;
+
+    /// Identifies one freeze/unfreeze transition. The editor increments it on
+    /// every freeze change; the engine takes a new snapshot the first time it
+    /// sees `frozen == true` with a new epoch, and stamps it on every frame.
+    uint32_t freezeEpoch = 0;
+
+    /// Number of points of the overview curve (primary A over the home
+    /// range), 1 .. `SpectrumFrame::overviewPoints`.
+    int overviewPoints = 256;
 
     /** The subset of these settings that `SpectrumAnalyser::setSettings()`
         needs. Keeping the conversion in one place means the bin-domain
