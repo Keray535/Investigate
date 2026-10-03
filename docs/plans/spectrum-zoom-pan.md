@@ -145,12 +145,13 @@ Measured as in the roadmap: Release build on the development machine, 48 kHz.
 | T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | T-005, T-009 |
 | T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | T-035 |
 | T-039 | Spectrum engine: pan margin and bin spacing in the frame (from T-034 open questions 5 and 6) | dsp-engineer | T-035, T-036 (build order) |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036, T-039 |
+| T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | T-039 |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036, T-039, T-041 |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | T-037 |
 
 Order:
 - T-034 is documentation only. It may run in parallel with any C++ task.
-- T-035, T-036, T-039, T-037 and T-038 build C++, so they run one at a time, in that order (the one-C++-task rule).
+- T-035, T-036, T-040, T-039, T-041, T-037 and T-038 build C++, so they run one at a time, in that order (the one-C++-task rule).
 - T-035 starts after T-032 has finished its configure run.
 - The M4 tasks T-015, T-016 and T-017 depend on T-038, so the validation suite covers the final UI.
 
@@ -189,7 +190,8 @@ Order:
 | T-035 | dsp-engineer | DONE (`docs/qa/T-035-unit.md` PASS) |
 | T-036 | plugin-engineer | DONE (both QA reports PASS) |
 | T-040 | unit-tester | DONE (test-only follow-up of T-036; `docs/qa/T-040-unit.md` PASS) |
-| T-039 | dsp-engineer | TODO |
+| T-039 | dsp-engineer | DONE (`docs/qa/T-039-unit.md` PASS) |
+| T-041 | plugin-engineer | TODO (one-line constant change; runs before T-037) |
 | T-037 | gui-engineer | TODO |
 | T-038 | gui-engineer | TODO |
 

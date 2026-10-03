@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3b
 - Status: TODO
-- Depends on: T-034 (mockup approved by the user), T-036, T-039
+- Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041
 
 ## Goal
 Implement the zoom and pan interactions of ui-spec §5.9 in `SpectrumView`:
@@ -87,3 +87,9 @@ The editor stays inside the message-thread and paint budgets during a continuous
   - **Bin spacing.** The bin-spacing row uses the frame's `binHz`, not sample rate / block size from the current settings.
   - **Legend and FROZEN badge at 920×540** (found by ui-ux-designer, outside T-034's scope). In dual mode with the All-time max secondary curve, Sidechain on and Freeze on, the legend may overlap the FROZEN badge by about 19 px (estimated from font metrics). Measure it in the real editor at 920×540 and 1200×700 with the real fonts and report the numbers in your log. If they overlap, do not invent a layout: record the measurement as an open question, and the architect routes a collision rule to ui-ux-designer as a separate small task. This item does not block the rest of this task.
 - 2026-10-03 vst-architect: The user approved the T-034 mockup without changes. That precondition is met. This task starts when T-036 and T-039 are DONE.
+- 2026-10-03 vst-architect: T-036 and T-039 are DONE (`docs/qa/T-036-*.md`, `docs/qa/T-039-unit.md`). What this task needs from them (details in their logs):
+  - **API (T-036):** `setSpectrumView (fLo, fHi)` in Hz, `(0, 0)` = Fit; the engine clamps, and frames carry the clamped view. `setSpectrumFrozen (bool)` on a state change only. Drop every frame whose `freezeEpoch` differs from `getFreezeEpoch()`; zero to two stale frames after a freeze call are normal. `SpectrumFrame` has no frozen flag. The last editor closing resets view and freeze.
+  - **Frame layout (T-039):** `SpectrumFrame::maxVisiblePoints = 2048`, `maxMarginPoints = 512`, `maxPoints = 3072` (capacity). `numPoints` counts the margin points too; the visible part is `firstVisiblePoint` to `firstVisiblePoint + numVisiblePoints − 1`. The margin ends are `freqHz[0]` and `freqHz[numPoints − 1]`. `binHz` feeds the bin-spacing row. `sizeof (SpectrumFrame)` is 75,848 bytes.
+  - **Code to update:** `source/gui/SpectrumView.cpp` (around lines 431 and 987) uses `numPoints` as the visible count. With a view set, that would draw the margin points outside the data rect; fix it as part of the margin-point item above.
+  - **Render tests:** the software renderer's exact-match check is sensitive to the vertex count. unit-tester moved the `SpectrumViewRenderTest` fixture to `maxVisiblePoints` in T-039. Re-check the clip-limited paint exactness with margin frames.
+  - T-041 (plugin-engineer, a one-line constant change in `PluginProcessor.cpp`) runs before this task.

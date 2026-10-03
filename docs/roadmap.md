@@ -1,6 +1,6 @@
 # Investigate: Roadmap
 
-Last updated: 2026-10-03 by vst-architect (second session: T-032 closed, M3b started).
+Last updated: 2026-10-03 by vst-architect (second session: T-032 closed; M3b T-034, T-035, T-036, T-039 and T-040 done).
 
 ## Vision
 
@@ -233,19 +233,26 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 - Source directories are picked up by CMake globbing with `CONFIGURE_DEPENDS` (set up in T-003). Coders therefore add files without editing CMake.
 - Every coder task ends with a unit QA report. Tasks that touch the plugin binary also end with a validation QA report.
 
-## Handoff (architect session of 2026-10-03, second session, in progress)
+## Handoff (architect session ended 2026-10-03, second session of the day)
 
-Status:
-- M0 to M2 are closed. In M3 every task is DONE, including T-013 (`3f2d956`) and T-032 (`5e54716`). The previous session's planning documents are pushed as `7130542`.
+Status at handoff:
+- M0 to M2 are closed. In M3 every task is DONE, including T-013 and T-032.
 - M3 stays open only for the user's hands-on review (`docs/plans/m3-user-review.md`), which the user deferred. Triage its findings into tasks when they arrive, including the frame-pacing look as a decision point.
-- M3b started with the user's go-ahead. T-034 (mockup approved by the user), T-035, T-036 and T-040 are DONE.
+- M3b: T-034 (mockup approved by the user without changes), T-035, T-036, T-040 and T-039 are DONE with passing QA reports. All of them and this session's documents are committed and pushed; the last commit is the T-039 commit made at the end of this session. No agent is running.
+- Raw QA log folders (`docs/qa/*-logs/`) are gitignored and not committed.
 
-Next steps:
-1. build-engineer commits T-036 together with T-040 (they share one test file), then the documents.
-2. C++ order, one at a time: T-039 (dsp-engineer), then T-037 and T-038 (gui-engineer). Each is committed by build-engineer after its QA passes.
-2. Then M4 (T-033, T-014 to T-017, with the real-material checks in T-015 and T-016 and the zoom checks in T-015 to T-017) and M5 (T-018 and T-019).
+The next session continues with:
+1. **T-041** (plugin-engineer): a one-line constant change in `source/PluginProcessor.cpp`, with a short unit QA report. It builds C++, so it runs alone.
+2. **T-037** (gui-engineer): the editor zoom, pan, Fit, zoom panel indicator and deep-zoom grid. Every precondition is met once T-041 is DONE. Its task log carries everything it needs from T-034, T-035, T-036 and T-039, including the legend and FROZEN badge measurement at 920×540. It needs unit and validation QA reports, including the continuous-pan CPU gate.
+3. **T-038** (gui-engineer): the overview strip and box zoom. After T-038, the user runs the M3b hands-on checklist in `docs/plans/spectrum-zoom-pan.md`.
+4. Then M4 (T-033, T-014 to T-017, with the real-material checks in T-015 and T-016 and the zoom checks in T-015 to T-017) and M5 (T-018 and T-019).
 
 Rules learned in this session. Include them in every dispatch prompt:
+- Keep timing assertions out of the default test run. Functional tests may use only loose, bounded waits (for example 500 ms); budgets go in `[.perf]` cases (T-040).
+- After a coder or tester session returns, a background process of theirs may still be running. Before committing or starting the next C++ task, have build-engineer check for running `cmake`, `MSBuild`, `cl`, `link`, `ctest` and `InvestigateUnitTests` processes and wait for them.
+- Commits stage explicit path lists only, never `git add -A`.
+
+Rules from the first session of 2026-10-03:
 - CMake refuses in-source builds (T-030). Always build in `build/` through the presets.
 - Run `ctest` with `--timeout 300` until T-014 adds a default timeout.
 - New on-screen GUI tests use `tests/unit/GuiTestEnvironment.h`: gate on the environment, SKIP with a reason, and give every wait a deadline (T-031).
@@ -377,6 +384,8 @@ Open user decisions:
 | 2026-10-03 | The user gave the go-ahead for M3b. T-034 (documentation) and T-035 (the only C++ task) run in parallel. The user's M3 hands-on review is deferred; M3 stays open until it is done and triaged, and M3b proceeds in the meantime. | User decision. |
 | 2026-10-03 | T-035 accepted (unit QA PASS in round 1, 0 defects; ctest 367/367 in Debug and Release). The worst-case re-map takes a median of 0.31 ms against 1.0 ms. With no view and no freeze the output is bit-identical to before. Follow-up decisions: the freeze epoch increments only on a real state change; a resize or a smoothing or slope change alone does not re-publish (it shows on the next hop, as before M3b; accepted for v1); when Freeze is pressed before any frame exists, the editor keeps what it showed. The T-036 freeze-epoch criterion was amended, because a poll that started before the call can legitimately publish one more live frame with the old epoch, which the editor drops. | Routes the tester's open points to T-036 and T-037. |
 | 2026-10-03 | T-034 delivered (spec §5.9, tokens 1.1.0, three cursor SVGs, the working mockup). It keeps every plan number and refines a few with reasons (spec §5.9.10): the zoom factors apply per notch-equivalent, so touchpads zoom at a sane speed; a horizontal pan moves 10 % of the span per notch; a chip change affects only its own axis; the indicator and the overview strip are combined into one zoom panel at the top right of the data rect; the hover card shows 4 significant figures below a 1-octave span. Its open questions 5 (a curve margin for panning) and 6 (`binHz` in the frame) are accepted as recommended and become T-039 (dsp-engineer), which runs after T-036 and before T-037. A possible overlap between the legend and the FROZEN badge at 920×540 in the busiest legend state goes to T-037 as a measurement; a fix, if needed, becomes a small ui-ux-designer task. | Accepting the margin removes an empty strip at the leading edge during a fast pan or zoom-out, at about 1.5× the re-map cost, which stays well inside the budget. A per-frame `binHz` is the only correct source while frozen. |
+| 2026-10-03 | T-039 accepted (unit QA PASS in round 1; ctest 395/395 in Debug and Release; the T-009, T-036 and editor tests and pluginval pass). Zoomed frames carry a 25 % margin per side on the same grid. At Fit, and for the visible points of every zoomed view, the output is bit-identical to T-035. The margin values match a shifted-view reference within 0.0003 dB. The frame capacity is 3072 points (`maxVisiblePoints` 2048 plus 2 × 512); `sizeof (SpectrumFrame)` grew from about 51 KB to 75.8 KB. The worst-case re-map takes a median of 0.33 ms against 1.0 ms. The processor still requests `maxPoints`, which the engine clamps; T-041 corrects the constant. No tie-breaking rule is added for the 18 reference-tie combinations the margin test skips. | The skipped ties are an artefact of a float-rounded reference view, not a margin defect. A one-line ownership-respecting fix is cheaper than relying on a clamp. |
+| 2026-10-03 | Raw tool logs that testers save under `docs/qa/` (for example `docs/qa/T-036-logs/`, pluginval output) are not committed. The QA report summarises them. build-engineer adds the ignore pattern `docs/qa/*-logs/`. | They are bulky, machine-specific and reproducible. The verdict and the numbers live in the reports. |
 | 2026-10-03 | T-036 accepted (unit and validation QA PASS in round 1; ctest 378/378; pluginval strictness 10; null tests bit-exact). View change to published frame at 65536 points with 1x overlap: p95 5.7 to 6.1 ms and max 7.2 to 7.4 ms, against 10 and 20 ms. 0 torn pairs in 10^6; worst analysis-thread stop 3.5 ms. The last `setAnalysisActive (false)` resets view and freeze, and an active freeze then counts as a real change (the epoch increments). The editor detects frozen frames by epoch only; `SpectrumFrame` has no frozen flag. One frozen-frame latency of 32 ms in 23 runs under load (budget 20 ms) came from a timing assertion in the default test run: T-040 moves that bound to `[.perf]`, per the 2026-09-29 rule. Debug-build, Steinberg-validator and sanitizer coverage stays with M4 (T-014, T-017). | Keeps the default run and CI deterministic without weakening the budget, which `[.perf]` still enforces. |
 | 2026-10-03 | The user approved the T-034 mockup without changes. Spec §5.9 and the mockup are frozen for T-037 and T-038. | User decision. It removes the last precondition of T-037 other than T-036 and T-039. |
 | 2026-10-03 | Zoom smoothing padding is clipped to the effective home range. At Fit there is no padding, so the curves stay bit-identical to today; a zoomed curve matches the Fit curve at the same frequencies, and only the home range edges keep the truncated window. The T-035 edge-smoothing criterion was amended. | The current mapper truncates the smoothing window at the range ends. Padding past the home range would change the Fit curves and break the no-regression criterion. |
@@ -412,8 +421,9 @@ Open user decisions:
 | T-035 | Spectrum engine: view-range mapping, re-publish and freeze snapshot | dsp-engineer | M3b | T-005, T-009 | DONE (`docs/qa/T-035-unit.md` PASS in round 1; re-map 0.31 ms against 1.0 ms) |
 | T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | DONE (`docs/qa/T-036-unit.md` and `docs/qa/T-036-validation.md` PASS in round 1) |
 | T-040 | Move the 20 ms frozen-frame bound out of the default test run | unit-tester | M3b | T-036 | DONE (`docs/qa/T-040-unit.md` PASS; `[.perf]` p95 6.6 ms, max 6.8 ms; ctest 3 of 3 green) |
-| T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | TODO (next C++ task, after the commit) |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039 | TODO |
+| T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | DONE (`docs/qa/T-039-unit.md` PASS in round 1; re-map 0.33 ms with the margin) |
+| T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | M3b | T-039 | TODO (next C++ task; one-line change) |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041 | TODO |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037 | TODO |
 | T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |
