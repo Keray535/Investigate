@@ -166,10 +166,13 @@ InvestigateProcessor::InvestigateProcessor()
     : juce::AudioProcessor (BusesProperties()
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                                 // Disabled by default: most hosts do not connect a sidechain
+                                 // Inactive by default: most hosts do not connect a sidechain
                                  // unless the user asks for one (roadmap: buses and channel
-                                 // layouts; risk #6).
-                                 .withInput ("Sidechain", juce::AudioChannelSet::disabled(), true)),
+                                 // layouts; risk #6). JUCE requires a real (non-disabled)
+                                 // default layout, and the VST3 wrapper reports the channel
+                                 // count from the last enabled layout, so the bus is declared
+                                 // stereo with isActivatedByDefault = false (T-044, T-060).
+                                 .withInput ("Sidechain", juce::AudioChannelSet::stereo(), false)),
       apvts (*this, nullptr, kStateType, createParameterLayout()),
       paramRefs (apvts)
 {
