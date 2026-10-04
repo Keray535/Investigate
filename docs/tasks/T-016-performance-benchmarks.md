@@ -2,7 +2,7 @@
 - Owner: plugin-validator
 - Milestone: M4
 - Status: TODO
-- Depends on: T-012, T-013, T-014, T-038
+- Depends on: T-012, T-013, T-014, T-059
 
 ## Goal
 Measure Investigate against every budget in the roadmap. The measurements cover the audio thread, the analysis thread, editor painting, the message thread and memory. Report the numbers so the M4 gate can be decided on data.
@@ -26,6 +26,11 @@ Measure Investigate against every budget in the roadmap. The measurements cover 
   - the analysis-thread CPU during a continuous 60 fps pan at the default settings;
   - the whole-editor message-thread CPU and the paint p95 during a continuous pan and zoom, with the overview strip visible, through the real editor path at 1280×720 and 2560×1440, at the native refresh rate and at 60 Hz;
   - the memory, which now includes the freeze snapshot.
+- **M3c** (added 2026-10-03, `docs/plans/m3c-feature-expansion.md`, Budgets).
+  - Repeat the audio-thread measurement with stereo main plus two stereo sidechains, with the band solo idle and engaged and sweeping.
+  - Repeat the analysis-thread worst case with an underlay, both secondary curves and two stereo sidechains.
+  - Measure the editor with every M3c layer visible (underlay, two sidechains, four references, solo tint, Density meters) at a 60 fps cap with Adaptive on, and report the 144 fps cap numbers for information.
+  - Measure the capture latency.
 - Record the machine's CPU, clock, RAM, OS build and power plan in the report.
 
 ## Acceptance criteria
@@ -42,3 +47,4 @@ Measure Investigate against every budget in the roadmap. The measurements cover 
 
 ## Log
 - 2026-10-03 vst-architect: Added the zoom-and-pan measurements and a dependency on T-038 (milestone M3b).
+- 2026-10-03 vst-architect: Milestone M3c inserted before M4. The dependency moves to T-059. Added the M3c measurements; the gating budgets are unchanged and still measured at 60 fps.

@@ -2,7 +2,7 @@
 - Owner: plugin-validator
 - Milestone: M4
 - Status: TODO
-- Depends on: T-009, T-013, T-014, T-038
+- Depends on: T-009, T-013, T-014, T-059
 
 ## Goal
 Validate Investigate the way hosts and users will use it:
@@ -59,7 +59,13 @@ This task gates M4 together with T-016 and T-017.
   - with analysis active, a thread drives `setSpectrumView` with random views and toggles `setSpectrumFrozen` at 60 Hz throughout one null-test configuration at 48 kHz, 128 samples, stereo plus sidechain; the output stays bit-exact;
   - the automation-stress run is repeated with the same view and freeze driving; no NaN or Inf appears in any `SpectrumFrame`, including the overview arrays;
   - the state round trip shows that no zoom or freeze value is saved, and that `ViewState` has the same properties as before M3b.
+- [ ] **M3c additions** (added 2026-10-03, `docs/plans/m3c-feature-expansion.md`). Every null-test, layout, automation and state check above also covers:
+  - the third input bus (Sidechain 2: disabled, mono or stereo, carrying a distinct signal);
+  - every M3c parameter, randomised in the automation stress;
+  - the band solo idle (bit-exact), with one run where a thread engages and releases the solo at random through `setBandSolo` plus the heartbeat: output bit-exact whenever idle, no NaN or infinity;
+  - a state round trip including reference slots, input labels and meter sections.
 - [ ] The results are written to `docs/qa/T-015-validation.md`, with the command lines to reproduce every check.
 
 ## Log
 - 2026-10-03 vst-architect: Added the zoom-and-pan checks and a dependency on T-038 (milestone M3b), so the suite validates the final UI.
+- 2026-10-03 vst-architect: Milestone M3c inserted before M4. The dependency moves from T-038 to T-059 (the M3c gate). Added the M3c checks. The bit-exact rule now reads "bit-exact whenever the band solo is not engaged".

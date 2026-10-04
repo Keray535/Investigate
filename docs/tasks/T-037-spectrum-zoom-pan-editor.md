@@ -2,11 +2,11 @@
 - Owner: gui-engineer
 - Milestone: M3b
 - Status: TODO
-- Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041
+- Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041, T-042
 
 ## Goal
 Implement the zoom and pan interactions of ui-spec §5.9 in `SpectrumView`:
-- the wheel and Ctrl+wheel zoom around the pointer, and the gutter wheel;
+- the wheel and Alt+wheel zoom around the pointer, and the gutter wheel (Alt+wheel replaced Ctrl+wheel on 2026-10-03, T-042);
 - horizontal pan, plus left-drag and middle-drag pan;
 - double-click Fit, with the click reset deferred;
 - the zoom indicator;
@@ -35,7 +35,8 @@ The editor stays inside the message-thread and paint budgets during a continuous
    - Make `currentMapping()` use the view window.
    - Track the home range from `DisplayContext`, and apply the home-change rule.
 3. **Gestures** per §5.9:
-   - add `mouseWheelMove`: vertical wheel, Ctrl, Shift fine steps, gutter wheel, horizontal pan; the event is consumed over the data rect and the gutters;
+   - add `mouseWheelMove`: vertical wheel, Alt (level zoom), Shift fine steps, gutter wheel, horizontal pan; the event is consumed over the data rect and the gutters;
+   - Ctrl+wheel, and a Ctrl+left press or drag, over the data rect are reserved for the M3c band solo: they do nothing (the wheel event is consumed), and never pan, zoom or trigger the deferred reset (T-042);
    - left-drag and middle-drag pan, with the cursors;
    - the click-reset defer and double-click Fit;
    - right-click copy, unchanged but following the view.
@@ -93,3 +94,10 @@ The editor stays inside the message-thread and paint budgets during a continuous
   - **Code to update:** `source/gui/SpectrumView.cpp` (around lines 431 and 987) uses `numPoints` as the visible count. With a view set, that would draw the margin points outside the data rect; fix it as part of the margin-point item above.
   - **Render tests:** the software renderer's exact-match check is sensitive to the vertex count. unit-tester moved the `SpectrumViewRenderTest` fixture to `maxVisiblePoints` in T-039. Re-check the clip-limited paint exactness with margin frames.
   - T-041 (plugin-engineer, a one-line constant change in `PluginProcessor.cpp`) runs before this task.
+- 2026-10-03 vst-architect: **Modifier change by user decision (M3c planning, `docs/plans/m3c-feature-expansion.md`).**
+  - Level zoom is **Alt+wheel**, not Ctrl+wheel. Box zoom (T-038) is Alt+left-drag.
+  - Ctrl+wheel and Ctrl+left press or drag over the data rect are reserved for the M3c band solo. Here they do nothing: no pan, no zoom, no deferred reset; the wheel event is consumed.
+  - A touchpad pinch arrives as Ctrl+wheel, so it now does nothing on the spectrum. Roadmap Risk 14 is replaced by Risk 18.
+  - T-042 (ui-ux-designer) updates the spec and the mockup first. This task depends on it, and follows the updated §5.6 and §5.9.
+  - In the gesture tests, cover Alt+wheel level zoom, and that Ctrl+wheel and Ctrl+drag are inert.
+  - Validation: in the Standalone and in a host (FL Studio if available), check that releasing Alt after Alt+wheel does not activate a host menu (Risk 17). Record what happens; it does not fail this task, but the architect needs the finding.

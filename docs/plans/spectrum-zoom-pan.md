@@ -4,14 +4,14 @@ Created: 2026-10-03 by vst-architect. Linked from `docs/roadmap.md` (Scope, Mile
 
 ## Vision
 
-Users can look closely at any part of the spectrum. The mouse wheel zooms in and out around the pointer, a left-drag pans like a hand tool, Ctrl+drag zooms into a box, a double-click returns to the full view, and a small overview strip shows where the visible window sits. Zooming in shows real detail: the analysis maps its display points onto the visible range instead of stretching the full-range picture. This serves mixing and mastering engineers who want to inspect a resonance, a hum harmonic, or the fine level structure of one band without changing their range settings.
+Users can look closely at any part of the spectrum. The mouse wheel zooms in and out around the pointer, a left-drag pans like a hand tool, Alt+drag zooms into a box, a double-click returns to the full view, and a small overview strip shows where the visible window sits. Zooming in shows real detail: the analysis maps its display points onto the visible range instead of stretching the full-range picture. This serves mixing and mastering engineers who want to inspect a resonance, a hum harmonic, or the fine level structure of one band without changing their range settings.
 
 ## Scope
 
 ### In scope (v1, milestone M3b)
 - **Frequency and level zoom, anchored on the pointer**:
   - the wheel zooms frequency;
-  - Ctrl+wheel zooms level (dB);
+  - Alt+wheel zooms level (dB); this was Ctrl+wheel until 2026-10-03 (see Decisions);
   - a wheel over an axis label gutter zooms that axis.
 - **Pan:**
   - a left-drag or middle-drag pans both axes (the hand tool);
@@ -19,7 +19,7 @@ Users can look closely at any part of the spectrum. The mouse wheel zooms in and
 - **Fit:**
   - a double-click returns to the home range;
   - so does the Fit button in the zoom indicator.
-- **Box zoom:** Ctrl+left-drag draws a rectangle and zooms both axes to it.
+- **Box zoom:** Alt+left-drag draws a rectangle and zooms both axes to it. This was Ctrl+left-drag until 2026-10-03.
 - **Overview strip** (mini-map), shown only while zoomed. It shows the primary curve over the home range and the visible window as a rectangle. Dragging the rectangle pans; clicking outside it centres the view there.
 - **Zoom indicator**, shown only while zoomed. It shows the visible range and a Fit button. When fewer than 16 FFT bins lie inside the visible span, it also shows the bin spacing, so the user knows to raise the block size.
 - **Zoom while frozen** keeps full detail. The engine keeps a snapshot of the bin-domain spectra.
@@ -56,7 +56,8 @@ Rules:
 | Input | Action |
 |---|---|
 | Wheel, vertical | Zooms frequency around the pointer. One notch scales the span by 0.8 (in) or 1.25 (out). The frequency under the pointer stays fixed. Shift gives fine steps (0.95 and 1.05). The event is consumed. |
-| Ctrl+wheel | Zooms level around the pointer, with the same factors. The level under the pointer stays fixed. |
+| Alt+wheel | Zooms level around the pointer, with the same factors. The level under the pointer stays fixed. (Was Ctrl+wheel until 2026-10-03.) |
+| Ctrl+wheel, Ctrl+left press or drag | Reserved for the M3c band solo (`docs/plans/m3c-feature-expansion.md`). Until M3c they do nothing: the wheel event is consumed, and nothing pans, zooms or resets. |
 | Wheel over the frequency label gutter | Zooms frequency, anchored at the pointer's x. |
 | Wheel over the dB label gutter | Zooms level, with no modifier needed, anchored at the pointer's y. |
 | Horizontal wheel or two-finger swipe | Pans frequency. |
@@ -64,7 +65,7 @@ Rules:
 | Middle-drag | The same as a left-drag. |
 | Left click (≤ 4 px) with no second click within 250 ms | `requestSpectrumReset()`, as today but after the 250 ms double-click window (the same defer rule as the chips, ui-spec §7.1). |
 | Double-click | Fit (the home range). No spectrum reset. |
-| Ctrl+left-drag | Box zoom: a rubber-band rectangle; on release both axes zoom to it. An axis narrower than its minimum span is widened to the minimum, centred on the box. A box under 4 px in either dimension cancels. Esc also cancels when the host gives the editor keyboard focus. |
+| Alt+left-drag (was Ctrl+left-drag until 2026-10-03) | Box zoom: a rubber-band rectangle; on release both axes zoom to it. An axis narrower than its minimum span is widened to the minimum, centred on the box. A box under 4 px in either dimension cancels. Esc also cancels when the host gives the editor keyboard focus. |
 | Right-click | Copies the frequency under the pointer, unchanged. It follows the zoomed mapping. |
 | Overview strip: drag the window rectangle | Pans, keeping the pointer's offset inside the rectangle. |
 | Overview strip: click outside the rectangle | Centres the view on that point, keeping the span. |
@@ -146,14 +147,15 @@ Measured as in the roadmap: Release build on the development machine, 48 kHz.
 | T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | T-035 |
 | T-039 | Spectrum engine: pan margin and bin spacing in the frame (from T-034 open questions 5 and 6) | dsp-engineer | T-035, T-036 (build order) |
 | T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | T-039 |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036, T-039, T-041 |
-| T-038 | SpectrumView: overview strip and box zoom | gui-engineer | T-037 |
+| T-042 | Zoom modifiers: Alt+wheel level zoom, Alt+drag box zoom, Ctrl reserved for band solo (spec and mockup) | ui-ux-designer | none |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | T-034 (mockup approved by the user), T-036, T-039, T-041, T-042 |
+| T-038 | SpectrumView: overview strip and box zoom | gui-engineer | T-037, T-042 |
 
 Order:
-- T-034 is documentation only. It may run in parallel with any C++ task.
+- T-034 and T-042 are documentation only. They may run in parallel with any C++ task.
 - T-035, T-036, T-040, T-039, T-041, T-037 and T-038 build C++, so they run one at a time, in that order (the one-C++-task rule).
 - T-035 starts after T-032 has finished its configure run.
-- The M4 tasks T-015, T-016 and T-017 depend on T-038, so the validation suite covers the final UI.
+- Milestone M3c (`docs/plans/m3c-feature-expansion.md`) follows M3b. The M4 tasks T-015, T-016 and T-017 now depend on its gate task T-059, so the validation suite covers the final UI.
 
 **M3b gate:**
 - The user approves the T-034 mockup before T-037 starts.
@@ -167,7 +169,8 @@ Order:
 | Z1 | Rebuilding the grid and labels on every frame during a pan exceeds the message-thread budget | Laggy pan; a sluggish host UI | Grid lines as one rectangle list per colour during an interaction, label images reused while their text is unchanged, and the T-029 rules. T-037 gates CPU during a continuous pan at both sizes. |
 | Z2 | A live frame published just before a freeze, or a torn view pair, shows the wrong data | Flicker, or a wrong curve after a freeze or zoom | A freeze epoch in every frame (the editor drops stale epochs), and the view pair packed into one 64-bit atomic. T-036 stress-tests both. |
 | Z3 | Zooming past the FFT resolution shows straight interpolated segments, which may look like a bug | User confusion | The indicator shows the bin spacing below 16 bins in view. The checklist explains it. |
-| Z4 | Windows precision touchpads deliver pinch as Ctrl+wheel, so pinch zooms level, not frequency | Unexpected on laptops | Accepted v1 limitation, documented. A horizontal swipe still pans frequency. Revisit after user feedback. |
+| Z4 | Windows precision touchpads deliver pinch as Ctrl+wheel. Since 2026-10-03 Ctrl+wheel is reserved for the band solo, so a pinch does nothing on the spectrum until M3c, and then changes the solo width. | Unexpected on laptops | Accepted v1 limitation, documented (roadmap Risk 18). A horizontal swipe still pans frequency. |
+| Z7 | On Windows, releasing Alt after Alt+wheel or Alt+drag may activate the host's menu bar | Zoom gestures feel broken in some hosts | T-044 researches it; T-037 and T-038 record the behaviour in the Standalone and FL Studio (roadmap Risk 17). |
 | Z5 | The 250 ms click defer makes the curve reset feel slower | Minor | It is the same rule as the chips, and the toast confirms the reset. |
 | Z6 | Smoothing at the view edges differs from the unzoomed curve | Curves "bend" at the edges while panning | Padded smoothing in the mapper. T-035 tests the edges against a wider view within 0.05 dB. |
 
@@ -181,6 +184,7 @@ Order:
 | 2026-10-03 | The zoom is not persisted. The editor opens at Fit, and `ViewState` gains no properties. | User choice (persistence was offered and not selected). |
 | 2026-10-03 | The engine re-maps the latest bin-domain spectra on a view change without a new FFT, and holds a bin-domain snapshot while frozen. Frames carry a freeze epoch. | At 65536 points with 1x overlap a new frame arrives only every 1.37 s. Zooming a frozen spectrum must show detail. This partly supersedes "Freezing the display is editor-only". |
 | 2026-10-03 | The minimum view span is 1/6 octave and 6 dB, defined in `DisplayRange.h`. The home range keeps its 1-octave and 12 dB rules. | Architect default. ui-ux-designer may refine it in T-034. |
+| 2026-10-03 | Level zoom moves to Alt+wheel and box zoom to Alt+left-drag. Ctrl+wheel and Ctrl+left press or drag are reserved for the M3c band solo. T-042 updates the spec and mockup before T-037 starts. | User decision while planning M3c (`docs/plans/m3c-feature-expansion.md`). The gestures were not implemented yet, so only the spec changes. |
 
 ## Status
 
@@ -192,6 +196,7 @@ Order:
 | T-040 | unit-tester | DONE (test-only follow-up of T-036; `docs/qa/T-040-unit.md` PASS) |
 | T-039 | dsp-engineer | DONE (`docs/qa/T-039-unit.md` PASS) |
 | T-041 | plugin-engineer | TODO (one-line constant change; runs before T-037) |
+| T-042 | ui-ux-designer | TODO (Alt modifiers in the spec and mockup; runs before T-037) |
 | T-037 | gui-engineer | TODO |
 | T-038 | gui-engineer | TODO |
 
@@ -200,14 +205,14 @@ Order:
 Use the Release build, in a DAW and in the Standalone, with music playing.
 
 - [ ] The wheel over the spectrum zooms frequency, and the point under the mouse stays put. Zooming out stops at the chips' range.
-- [ ] Ctrl+wheel zooms the level axis. A wheel over the dB labels does the same without Ctrl.
+- [ ] Alt+wheel zooms the level axis. A wheel over the dB labels does the same without Alt. Releasing Alt does not open a DAW menu.
 - [ ] Left-drag (and middle-drag) pans. It cannot go past the chips' range.
 - [ ] A double-click returns to the full view, with no curve reset. A single click still resets the max/avg curves, shortly after the click.
-- [ ] Ctrl+drag draws a box and zooms into it. A tiny box does nothing.
+- [ ] Alt+drag draws a box and zooms into it. A tiny box does nothing. Ctrl+wheel and Ctrl+drag do nothing yet (reserved for the band solo).
 - [ ] While zoomed, the overview strip shows where you are. Dragging its window pans, and clicking beside it jumps there.
 - [ ] Zooming into a narrow band shows more detail, not a blurry stretch. With a small block size, the indicator shows "bin … Hz".
 - [ ] Freeze, then zoom and pan: the frozen curve shows detail and does not move with the music.
 - [ ] Changing the Frequency or Level chips while zoomed keeps the view sensible, or returns to Fit.
 - [ ] Close and reopen the editor: it opens at the full view.
 - [ ] The DAW stays responsive while you pan continuously in a large window.
-- [ ] Note: on a laptop touchpad, pinch zooms the level axis (a known limitation). A two-finger sideways swipe pans frequency.
+- [ ] Note: on a laptop touchpad, a pinch does nothing on the spectrum (it arrives as Ctrl+wheel, which is reserved for the band solo). A two-finger sideways swipe pans frequency.

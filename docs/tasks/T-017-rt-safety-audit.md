@@ -2,7 +2,7 @@
 - Owner: unit-tester
 - Milestone: M4
 - Status: TODO
-- Depends on: T-009, T-012, T-013, T-014, T-038
+- Depends on: T-009, T-012, T-013, T-014, T-059
 
 ## Goal
 Run a whole-codebase white-box audit before release:
@@ -30,6 +30,10 @@ Run a whole-codebase white-box audit before release:
   - include the view and freeze atomics (`setSpectrumView`, `setSpectrumFrozen`, the packed 64-bit view pair and the freeze epoch) in the memory-ordering review;
   - confirm that `processBlock` does not reach any zoom code;
   - run an allocation hook around `SpectrumEngine::processPending` during freeze, unfreeze and continuous view changes; the expected result is 0 allocations without an `fftSize`, window or layout change.
+- **M3c** (added 2026-10-03, `docs/plans/m3c-feature-expansion.md`):
+  - extend the call graph to `pushSidechain2`, `BandSoloFilter`, the band-solo atomics and the heartbeat failsafe, and the new MeterBank work (integration, release, density);
+  - review the memory ordering of the band-solo word and the heartbeat counter, and of the capture exchange;
+  - run the allocation hook around `processBlock` with the solo toggling and sweeping, and around `processPending` with captures requested at 60 Hz.
 - **Watch item (added 2026-10-03 from T-013):** test #315 in `ProcessorAnalysisLifecycleTest` (`setAnalysisActive` 100 times under concurrent audio) timed out once in Debug while a build ran in parallel; six isolated reruns passed. Run it 20 times in Debug and Release under CPU contention (for example, a parallel build or a busy-loop load on every core). If it times out, measure the analysis-thread stop latency under load against the 50 ms budget, and file a defect for plugin-engineer with the numbers.
 
 ## Acceptance criteria
@@ -43,3 +47,4 @@ Run a whole-codebase white-box audit before release:
 
 ## Log
 - 2026-10-03 vst-architect: Added the zoom-and-pan audit items and a dependency on T-038 (milestone M3b).
+- 2026-10-03 vst-architect: Milestone M3c inserted before M4. The dependency moves to T-059. Added the M3c audit items.
