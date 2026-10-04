@@ -43,3 +43,10 @@ Provide the real-time-safe band-pass filter behind the M3c band solo. While the 
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. The processor wiring (the heartbeat failsafe, filtering after the meters and the FIFO push, writing the buffer only while active) is in T-052.
+- 2026-10-04 vst-architect: Filter design decided from `docs/research/T-044-host-platform-constraints.md` (question 6):
+  - Use two cascaded 2nd-order TPT state-variable band-passes (Zavalishin, "The Art of VA Filter Design"; Simper/Cytomic SVF papers), with a unity-peak output.
+  - The band edges are fc·2^(±W/2), with the width W in octaves. Q per stage = 0.6436 / (2^(W/2) − 2^(−W/2)), from 11.1 at 1/12 octave to 0.17 at 4 octaves. The expected gain is 0 dB at the centre and −3 dB at the edges for every width, with 12 dB/oct skirts. Verify those numbers in the tests.
+  - Smooth log2(fc) and W with a one-pole of 10 to 20 ms, and recompute the coefficients every 16 to 32 samples.
+  - Engage and release with a 10 ms crossfade, and reset the filter state after release.
+  - A Linkwitz-Riley high-pass and low-pass pair is rejected: it loses 11 dB at 1/12 octave and 8.5 dB at 1/3 octave.
+  - Licences: the Cytomic papers are usable. Use the Zavalishin PDF as an equations reference only; do not copy its text or figures. Write the code yourself.

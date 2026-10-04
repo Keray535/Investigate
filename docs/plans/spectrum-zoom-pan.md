@@ -211,6 +211,7 @@ Use the Release build, in a DAW and in the Standalone, with music playing.
 - [ ] Left-drag (and middle-drag) pans. It cannot go past the chips' range.
 - [ ] A double-click returns to the full view, with no curve reset. A single click still resets the max/avg curves, shortly after the click.
 - [ ] Alt+drag draws a box and zooms into it. A tiny box does nothing. Ctrl+wheel and Ctrl+drag do nothing yet (reserved for the band solo).
+- [ ] In FL Studio: hold Alt, scroll 5 notches over the spectrum, then release Alt. The FL Studio menu bar must not highlight or take the keyboard. Do the same after an Alt+drag box zoom. If the menu bar activates, tell the architect: a fallback modifier is then chosen (roadmap Decision of 2026-10-04).
 - [ ] While zoomed, the overview strip shows where you are. Dragging its window pans, and clicking beside it jumps there.
 - [ ] Zooming into a narrow band shows more detail, not a blurry stretch. With a small block size, the indicator shows "bin … Hz".
 - [ ] Freeze, then zoom and pan: the frozen curve shows detail and does not move with the music.

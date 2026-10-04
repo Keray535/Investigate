@@ -55,3 +55,9 @@ Add SPAN-style level-meter ballistics and the data the new metering modes and th
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. The editor applies release and hold to the peak part and the hold tick (T-057). This task covers the level part and the density data. The processor wiring is in T-052.
+- 2026-10-04 vst-architect: User decisions after T-043 (`docs/research/T-043-span-m3c-reference.md`), also recorded in the plan's Decisions table:
+  - dBFS.30 spans −24 to +6 dBFS and dBFS.15 spans −9 to +6 dBFS.
+  - The integration default is 1.00 ms, confirmed by the user, with release 750 ms and peak hold 1000 ms. At 1.00 ms the level part reacts like a peak meter; that is intended. Make sure that a 1 ms integration on a 20 Hz sine is stable and bounded (no NaN or denormal), and test it.
+  - The LUFS and LU bars show one programme loudness value (BS.1770). No per-channel K-weighted windows.
+  - Confirmed by T-043: dBFS+3 adds 3.01 dB to the level and the statistics RMS, and peaks are unchanged. Only the K-xx C modes fix integration and release at 600 ms. In the LUFS and LU modes the "Integr" statistic shows the integrated loudness.
+  - Follow the report's recommendations for T-049, and record any you do not adopt.

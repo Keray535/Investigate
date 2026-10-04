@@ -80,3 +80,7 @@ The output must stay bit-exact whenever the band solo is not engaged.
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. From this task on, the roadmap's bit-exact rule reads "bit-exact whenever the band solo is not engaged".
+- 2026-10-04 vst-architect: T-060 fixes the existing sidechain declaration first: a stereo default layout that is inactive by default, because JUCE asserts on a disabled default layout. Declare the second sidechain the same way, `stereo()` with `isActivatedByDefault = false`, following `docs/research/T-044-host-platform-constraints.md` question 1.
+  - Renaming the existing bus from "Sidechain" to "Sidechain 1" may change how hosts show or restore the routing. Decide it with evidence and record the decision in the log.
+  - How pluginval and the Steinberg validator handle three input buses is not documented. Run pluginval at strictness 10 on this build, and test every combination of disabled, mono and stereo on each sidechain.
+  - The user checks by hand whether FL Studio lists inputs 1 to 6; that check goes in the M3c hands-on checklist.

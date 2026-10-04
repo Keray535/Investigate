@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3b
 - Status: TODO
-- Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041, T-042
+- Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041, T-042, T-060 (build order)
 
 ## Goal
 Implement the zoom and pan interactions of ui-spec §5.9 in `SpectrumView`:
@@ -101,3 +101,13 @@ The editor stays inside the message-thread and paint budgets during a continuous
   - T-042 (ui-ux-designer) updates the spec and the mockup first. This task depends on it, and follows the updated §5.6 and §5.9.
   - In the gesture tests, cover Alt+wheel level zoom, and that Ctrl+wheel and Ctrl+drag are inert.
   - Validation: in the Standalone and in a host (FL Studio if available), check that releasing Alt after Alt+wheel does not activate a host menu (Risk 17). Record what happens; it does not fail this task, but the architect needs the finding.
+- 2026-10-04 vst-architect: T-041, T-042, T-043 and T-044 are DONE. T-060 (sidechain bus declaration, plugin-engineer) runs before this task. What this task takes from them:
+  - **Spec after T-042:** follow ui-spec §5.5, §5.6 and §5.9.3 as updated. Two new rows, G22 (Ctrl+wheel: consumed, does nothing) and G23 (any Ctrl+left press, click, double-click or drag: no pan, zoom, box zoom, Fit or deferred reset, while the crosshair and hover readout keep working). G14: Alt+click and Alt+double-click on the data rect do nothing; the Alt+click reset applies to the chips only (§7.1). The modifier order in the data rect is Ctrl, then Alt, then none. The gutters ignore Ctrl and Alt (G4, G5). The box-zoom cursor shows with Alt and without Ctrl (T-038).
+  - **Alt key-up guard (user decision of 2026-10-04, Risk 17).** T-044 found that JUCE re-posts an unconsumed `WM_SYSKEYUP` to the host's window (`juce_Windowing_windows.cpp`, about line 3889), and Windows may then activate the host's menu bar. Build the guard in this task:
+    - When an Alt gesture (Alt+wheel now; Alt+drag in T-038) has happened since Alt went down, consume the Alt key-up, for example by returning true from `keyStateChanged (false)` only in that case. Every other key event must pass through to the host unchanged. In particular, never swallow Space (the host transport) or keys pressed without an Alt gesture.
+    - The guard can only work while the editor holds keyboard focus. Do not grab keyboard focus permanently. If you take focus at the start of an Alt gesture, record why and how focus returns to the host.
+    - Unit-test the guard's decision logic with simulated key states.
+  - **Modifiers.** `juce::ModifierKeys::getCurrentModifiersRealtime()` reads `GetAsyncKeyState`, so it is reliable without keyboard focus. T-044 notes that `e.mods` can be stale during drags in some hosts, so use the real-time state when a gesture starts or a modifier is checked mid-drag.
+  - **Manual checks for the validation report (they do not fail the task, but record the results):**
+    - Standalone, and FL Studio if available: hold Alt, scroll 5 notches over the spectrum, release Alt. Does the menu bar highlight, with the guard on? If possible, also compare with the guard disabled.
+    - On a laptop touchpad, if available: does a pinch over the data rect do nothing (it arrives as Ctrl+wheel), or does it zoom frequency (JUCE does not see the Ctrl flag)? T-044 infers the second outcome. Record which one happens. Over the gutters, a pinch zooms that axis.

@@ -1,7 +1,7 @@
 # T-044: Host and platform constraints for M3c, plus band-solo filter references
 - Owner: researcher
 - Milestone: M3c
-- Status: TODO
+- Status: DONE
 - Depends on: none
 
 ## Goal
@@ -50,11 +50,12 @@ The band solo also needs a sound filter design. Collect the facts and references
 7. **A colour wheel component.** What `juce::ColourSelector` offers and lacks for a hue wheel. Any permissively licensed JUCE colour-wheel examples, with a licence check.
 
 ## Acceptance criteria
-- [ ] `docs/research/T-044-host-platform-constraints.md` answers questions 1 to 7. Each answer is marked "confirmed (source)", "inferred" or "not documented".
-- [ ] A host table for question 1 lists, per host: second bus offered (yes, no or unknown), routing steps, and caveats. FL Studio is covered in the most detail.
-- [ ] A clear verdict on Risk 17 (Alt release). If the risk is real in a major host, the report proposes fallback modifiers for level zoom and box zoom, for the user to decide.
-- [ ] A filter recommendation for T-050, with equations or citations: topology, order, how the width maps to the band edges, the expected gain at the centre for widths from 1/12 to 4 octaves, and the smoothing approach.
-- [ ] Every third-party code reference carries its licence and a verdict (usable or rejected).
+- [x] `docs/research/T-044-host-platform-constraints.md` answers questions 1 to 7. Each answer is marked "confirmed (source)", "inferred" or "not documented".
+- [x] A host table for question 1 lists, per host: second bus offered (yes, no or unknown), routing steps, and caveats. FL Studio is covered in the most detail.
+- [x] A clear verdict on Risk 17 (Alt release). If the risk is real in a major host, the report proposes fallback modifiers for level zoom and box zoom, for the user to decide.
+- [x] A filter recommendation for T-050, with equations or citations: topology, order, how the width maps to the band edges, the expected gain at the centre for widths from 1/12 to 4 octaves, and the smoothing approach.
+- [x] Every third-party code reference carries its licence and a verdict (usable or rejected).
 
 ## Log
 - 2026-10-03 vst-architect: Created for M3c. Documentation only; may run in parallel with any C++ task and with T-043. T-045 and T-050 wait for it.
+- 2026-10-04 researcher: Report written to docs/research/T-044-host-platform-constraints.md. Risk 17: plausible, unproven in FL/Reaper/Live; JUCE Standalone safe by source; plugin-side mitigation (consume Alt key-up) proposed, fallback modifiers A to D listed for the user. Finding: PluginProcessor's Sidechain bus uses a disabled default layout, which JUCE asserts against; use stereo() with isActivatedByDefault=false (plugin-engineer, before T-046). T-050: two cascaded Simper SVF band-passes. No host was tested; FL Studio steps come from the Image-Line manual.

@@ -40,3 +40,9 @@ Make the display mapping correct down to 1 Hz, and add SPAN's "Align 0 dB" optio
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. The `freqLow` parameter range changes only later, in T-051, so this task makes the DSP ready first.
+- 2026-10-04 vst-architect: Align 0 dB method decided from `docs/research/T-043-span-m3c-reference.md` (question 4 and its recommendations):
+  - On the analysis thread, whenever an input changes (window, block size, smoothing, slope, sample rate, the point grid), model the bin power of a 0 dBFS 1 kHz sine from the exact window transform at its fractional bin position.
+  - Run that power through the real `SpectrumMapper` at slope 0, and take the negative of the displayed peak as the offset.
+  - With Align off, the frames stay bit-identical to today.
+  - Use the report's 10-group test signal set for the criteria. The researcher has not run or tested the method; if it fails a criterion, record the evidence and return BLOCKED with it rather than tuning tolerances.
+  - SPAN confirms only that Align exists, not its exact maths, so the plan's numeric criterion is the reference.

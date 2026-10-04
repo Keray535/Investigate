@@ -135,7 +135,7 @@ Editor (message thread):
   - **Release:** on button up, Ctrl up, focus loss, or the pointer leaving the editor.
   - **Visuals:** outside the band, the spectrum is tinted. The band edges are marked, and a small readout shows the centre and the width.
   - **Interactions:** Ctrl gestures never pan, zoom or reset the spectrum.
-  - **Touchpad pinch:** it arrives as Ctrl+wheel on Windows, so it changes the solo width (Risk 18).
+  - **Touchpad pinch:** Windows delivers it as a wheel event with a synthetic Ctrl flag. T-044 infers that JUCE may not report that flag as Ctrl, because JUCE reads the physical key state. So a pinch over the data rect either changes the solo width or acts as a plain wheel (frequency zoom). T-037 tests it on a laptop and records the result (Risk 18).
 - **Zoom modifier change (T-042):** level zoom moves from Ctrl+wheel to Alt+wheel, and box zoom from Ctrl+left-drag to Alt+left-drag. Until M3c lands, Ctrl+wheel and Ctrl+left-drag over the data rect do nothing.
 
 **[2] Metering modes and style**
@@ -144,14 +144,14 @@ Editor (message thread):
 | Mode | Bar scale | Level part of the bar | Bias | Integration and release |
 |---|---|---|---|---|
 | dBFS | −60 … +6 dBFS (as today) | integrated level | none | `meterIntegration`, `meterRelease` |
-| dBFS.30, dBFS.15 | a 30 dB and a 15 dB range (exact ends from T-043) | integrated level | none | parameters |
+| dBFS.30, dBFS.15 | −24 … +6 dBFS and −9 … +6 dBFS (user decision of 2026-10-04; SPAN does not document the ends, T-043 R1) | integrated level | none | parameters |
 | dBFS+3 | as dBFS | integrated level + 3.01 dB; the statistics RMS also + 3.01 dB; peaks unchanged | +3.01 dB | parameters |
 | K-20, K-14, K-12 | K scale (as today) | integrated level, K-referenced | as today | parameters |
 | K-20 C, K-14 C, K-12 C | K scale | integrated level, K-referenced | as today | fixed at 600 ms |
 | LUFS ML, LUFS SL | LUFS scale | momentary (ML) or short-term (SL) loudness | none | fixed (0.4 s or 3 s windows) |
 | LU ML, LU SL | LU relative to −23 LUFS | as LUFS | none | fixed |
 
-- **LUFS and LU bars.** By default both bars show the programme loudness, which is one value per BS.1770. If T-043 shows that SPAN meters loudness per channel, T-049 adds per-channel K-weighted windows instead. This is decided before T-049 starts.
+- **LUFS and LU bars.** They show the programme loudness, which is one value per BS.1770 (user decision of 2026-10-04). SPAN does not document a per-channel display (T-043 R5), so no per-channel K-weighted windows are added.
 - **`meterStyle`** is Bars or Density.
   - Bars is today's two-part bar: the integrated level below, the peak above.
   - Density, following SPAN, shows how often the signal stays at each level, as brightness along the track.
@@ -437,8 +437,8 @@ These continue the roadmap's numbering.
 |---|---|---|---|
 | 15 | Some hosts offer only one sidechain input for VST3 (Ableton Live, for example), or route a second one awkwardly | Sidechain 2 unusable there | T-044 surveys the hosts, FL Studio first. An inactive bus shows "no input". No feature depends on Sidechain 2. The README documents host support. |
 | 16 | The band solo changes the audio: clicks, a stuck solo, or an accidental solo during a mix or a render | Audible damage; loss of trust in a "pass-through" tool | The solo only works while held. 10 ms crossfades. A 250 ms heartbeat failsafe. Release on Ctrl or button up, focus loss, editor close and `releaseResources`. Null tests with the solo idle. Never saved, never automatable. |
-| 17 | On Windows, releasing Alt after Alt+wheel or Alt+drag may activate the host's menu bar | Zoom gestures feel broken in some hosts | T-044 researches it. T-037, T-038 and T-059 check FL Studio, Reaper and the Standalone. If it is confirmed in a major host, the architect brings a fallback modifier to the user. |
-| 18 | A touchpad pinch arrives as Ctrl+wheel, so it changes the solo width instead of zooming | Unexpected on laptops | Accepted, and documented in the checklist. It replaces roadmap Risk 14. |
+| 17 | On Windows, releasing Alt after Alt+wheel or Alt+drag may activate the host's menu bar | Zoom gestures feel broken in some hosts | T-044 verdict: plausible but unproven. JUCE re-posts an unconsumed `WM_SYSKEYUP` to the host window, and the JUCE Standalone suppresses `SC_KEYMENU`. User decision of 2026-10-04: keep Alt. T-037 adds an Alt key-up guard, which consumes the key-up after an Alt gesture while the editor has keyboard focus. The user tests in FL Studio: hold Alt, scroll 5 notches, release. Only if the menu bar activates does the user choose a fallback from T-044 (A: Shift; B: Shift plus right-drag; C: Ctrl+Shift; D: Alt behind a setting). |
+| 18 | A touchpad pinch may arrive as Ctrl+wheel, so it would change the solo width instead of zooming | Unexpected on laptops | Accepted, and documented in the checklist. It replaces roadmap Risk 14. T-044 infers that JUCE may not see the pinch's Ctrl flag at all; T-037 tests it on a laptop and the checklist text follows the finding. |
 | 19 | Several instances or processes share the `GlobalSettings` file (bridged or sandboxed hosts) | Lost or torn updates | `InterProcessLock`, debounced writes, reload on editor open, defaults on a corrupt file. Never touched by the audio thread. |
 | 20 | User-chosen colours break the colour-blind-safe distinctions or the contrast | Curves hard to tell apart | Curve styles still differ by fill, width and dash. A contrast warning in the picker. Reset to default. |
 | 21 | 14 items in 18 tasks delay the v1 release | Later release | The M3c gate. The user can drop or defer items at the T-045 mockup review. M4 and M5 are otherwise unchanged. |
@@ -461,15 +461,17 @@ These continue the roadmap's numbering.
 | 2026-10-03 | Four reference slots are saved with the session; CSV export and import use a fixed 4096-point log grid from 1 Hz to 48 kHz. | User choice of slots plus CSV. The grid sizes, slot count and folder layout are architect defaults that T-045 may refine. |
 | 2026-10-03 | Settings presets hold the parameter values only. The new directory `source/presets/` is owned by plugin-engineer. The VST3 program list stays unused. | User choice. The preset store is host-facing state, which plugin-engineer already owns. |
 | 2026-10-03 | Architect defaults, open to change at the T-045 review: `channelMode` Mid, `underlay` Off, `soloWidth` 1 octave (1/12 to 4), LUFS and LU bars showing the programme loudness, anti-alias on, Align off. | Keeps today's behaviour as the default wherever possible. |
+| 2026-10-04 | User decisions after T-043 and T-044:<br>• keep Alt for the zoom gestures, with an Alt key-up guard in T-037 and a hands-on test; a fallback is chosen only if the test fails;<br>• dBFS.30 spans −24 to +6 dBFS and dBFS.15 spans −9 to +6 dBFS;<br>• the integration default stays 1.00 ms, so the level part reacts like a peak meter by default (release 750 ms, peak hold 1000 ms);<br>• the LUFS and LU bars show one programme loudness value. | SPAN documents none of these values. The user confirmed the stated ballistics after being told that 1.00 ms reads like a peak meter. |
+| 2026-10-04 | Architect decisions after T-043 and T-044:<br>• Align 0 dB uses T-043's calibration method: a 0 dBFS 1 kHz sine is modelled through the real mapper on the analysis thread, and the offset is recomputed when its inputs change. Its test signal set goes to T-047.<br>• The band solo uses two cascaded TPT/Simper state-variable band-passes, with a unity-peak output, edges at fc·2^(±W/2), Q = 0.6436 / (2^(W/2) − 2^(−W/2)), log-domain smoothing, coefficient updates every 16 to 32 samples, and 10 ms crossfades. A Linkwitz-Riley pair is rejected: it loses 11 dB at 1/12 octave.<br>• The shared preference file uses `PropertiesFile`, an `InterProcessLock` and `SharedResourcePointer`, with a lock, reload, change, save, unlock write cycle, and a reload when the editor opens.<br>• File dialogs use `launchAsync` only, with the chooser held as a member and cancelled when the editor closes.<br>• The colour wheel choice (an own wheel component, `juce::ColourSelector` plus a hex field, or the MIT-licensed reFX/ColourSelector) is made in T-045. Any third-party code goes through build-engineer.<br>• The sidechain bus declaration defect (a disabled default layout) is fixed now, in T-060, before T-037. | Research findings with sources (`docs/research/T-043-*.md`, `docs/research/T-044-*.md`). |
 
 ## Status
 
 | Task | Owner | Status |
 |---|---|---|
-| T-042 | ui-ux-designer | TODO (runs now, before T-037) |
-| T-043 | researcher | TODO |
-| T-044 | researcher | TODO |
-| T-045 | ui-ux-designer | TODO |
+| T-042 | ui-ux-designer | DONE |
+| T-043 | researcher | DONE |
+| T-044 | researcher | DONE |
+| T-045 | ui-ux-designer | IN_PROGRESS |
 | T-046 | dsp-engineer | TODO |
 | T-047 | dsp-engineer | TODO |
 | T-048 | dsp-engineer | TODO |
