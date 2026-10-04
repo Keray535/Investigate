@@ -1,7 +1,7 @@
 # T-041: Processor: request the visible point count, not the frame capacity
 - Owner: plugin-engineer
 - Milestone: M3b
-- Status: TODO
+- Status: DONE
 - Depends on: T-039
 
 ## Goal
@@ -22,3 +22,4 @@ Since T-039, `SpectrumFrame::maxPoints` is the frame capacity (3072, margin incl
 
 ## Log
 - 2026-10-03 vst-architect: Created from the T-039 open question 1. One-line change in a file that dsp-engineer does not own. It runs before T-037, as a separate C++ task (one at a time). It may be folded into the same session as T-037's start, but not into gui-engineer's edits.
+- 2026-10-04 plugin-engineer: PluginProcessor.cpp line 105 now uses SpectrumFrame::maxVisiblePoints; no other maxPoints use in PluginProcessor.*. unit-tester: PASS (docs/qa/T-041-unit.md), 395/395 ctest, /W4 clean.

@@ -56,10 +56,12 @@ Rules:
 | Input | Action |
 |---|---|
 | Wheel, vertical | Zooms frequency around the pointer. One notch scales the span by 0.8 (in) or 1.25 (out). The frequency under the pointer stays fixed. Shift gives fine steps (0.95 and 1.05). The event is consumed. |
-| Alt+wheel | Zooms level around the pointer, with the same factors. The level under the pointer stays fixed. (Was Ctrl+wheel until 2026-10-03.) |
-| Ctrl+wheel, Ctrl+left press or drag | Reserved for the M3c band solo (`docs/plans/m3c-feature-expansion.md`). Until M3c they do nothing: the wheel event is consumed, and nothing pans, zooms or resets. |
-| Wheel over the frequency label gutter | Zooms frequency, anchored at the pointer's x. |
-| Wheel over the dB label gutter | Zooms level, with no modifier needed, anchored at the pointer's y. |
+| Alt+wheel | Zooms level around the pointer, with the same factors; Alt+Shift gives the fine steps. The level under the pointer stays fixed. (Was Ctrl+wheel until 2026-10-03.) |
+| Ctrl+wheel, Ctrl+left press, click, double-click or drag (ui-spec G22, G23) | Reserved for the M3c band solo (`docs/plans/m3c-feature-expansion.md`). Until M3c they do nothing: the wheel event is consumed, and nothing pans, zooms, box-zooms, fits or starts the deferred reset. The crosshair and hover readout keep working. |
+| Alt+click or Alt+double-click on the data rect (ui-spec G14) | Nothing. It is not a reset; the Alt+click reset applies to the chips only (ui-spec §7.1). |
+| Modifier order in the data rect | Ctrl is checked first, then Alt, then no modifier. |
+| Wheel over the frequency label gutter | Zooms frequency, anchored at the pointer's x. The gutters ignore Ctrl and Alt, so a touchpad pinch there zooms that axis. |
+| Wheel over the dB label gutter | Zooms level, with no modifier needed, anchored at the pointer's y. Ctrl and Alt are ignored. |
 | Horizontal wheel or two-finger swipe | Pans frequency. |
 | Left-drag (> 4 px of movement) | Pans both axes. The cursor is a grabbing hand while dragging. It does nothing at Fit, because there is nothing to pan. |
 | Middle-drag | The same as a left-drag. |
@@ -169,7 +171,7 @@ Order:
 | Z1 | Rebuilding the grid and labels on every frame during a pan exceeds the message-thread budget | Laggy pan; a sluggish host UI | Grid lines as one rectangle list per colour during an interaction, label images reused while their text is unchanged, and the T-029 rules. T-037 gates CPU during a continuous pan at both sizes. |
 | Z2 | A live frame published just before a freeze, or a torn view pair, shows the wrong data | Flicker, or a wrong curve after a freeze or zoom | A freeze epoch in every frame (the editor drops stale epochs), and the view pair packed into one 64-bit atomic. T-036 stress-tests both. |
 | Z3 | Zooming past the FFT resolution shows straight interpolated segments, which may look like a bug | User confusion | The indicator shows the bin spacing below 16 bins in view. The checklist explains it. |
-| Z4 | Windows precision touchpads deliver pinch as Ctrl+wheel. Since 2026-10-03 Ctrl+wheel is reserved for the band solo, so a pinch does nothing on the spectrum until M3c, and then changes the solo width. | Unexpected on laptops | Accepted v1 limitation, documented (roadmap Risk 18). A horizontal swipe still pans frequency. |
+| Z4 | Windows precision touchpads deliver pinch as Ctrl+wheel. Since 2026-10-03 Ctrl+wheel is reserved for the band solo, so a pinch over the data rect does nothing until M3c, and then changes the solo width. Over the label gutters a pinch still zooms that axis. | Unexpected on laptops | Accepted v1 limitation, documented (roadmap Risk 18, ui-spec §5.9.3 G4, G5 and G22). A horizontal swipe still pans frequency. |
 | Z7 | On Windows, releasing Alt after Alt+wheel or Alt+drag may activate the host's menu bar | Zoom gestures feel broken in some hosts | T-044 researches it; T-037 and T-038 record the behaviour in the Standalone and FL Studio (roadmap Risk 17). |
 | Z5 | The 250 ms click defer makes the curve reset feel slower | Minor | It is the same rule as the chips, and the toast confirms the reset. |
 | Z6 | Smoothing at the view edges differs from the unzoomed curve | Curves "bend" at the edges while panning | Padded smoothing in the mapper. T-035 tests the edges against a wider view within 0.05 dB. |

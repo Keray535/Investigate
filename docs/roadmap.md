@@ -535,12 +535,12 @@ Open user decisions:
 | T-036 | Processor: view and freeze API, analysis-thread wiring | plugin-engineer | M3b | T-035 | DONE (`docs/qa/T-036-unit.md` and `docs/qa/T-036-validation.md` PASS in round 1) |
 | T-040 | Move the 20 ms frozen-frame bound out of the default test run | unit-tester | M3b | T-036 | DONE (`docs/qa/T-040-unit.md` PASS; `[.perf]` p95 6.6 ms, max 6.8 ms; ctest 3 of 3 green) |
 | T-039 | Spectrum engine: pan margin and bin spacing in the frame | dsp-engineer | M3b | T-035, T-036 (build order) | DONE (`docs/qa/T-039-unit.md` PASS in round 1; re-map 0.33 ms with the margin) |
-| T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | M3b | T-039 | TODO (next C++ task; one-line change) |
-| T-042 | Zoom modifiers: Alt+wheel level zoom, Alt+drag box zoom, Ctrl reserved for band solo (spec and mockup) | ui-ux-designer | M3b | none | TODO (documentation; runs now, before T-037) |
+| T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | M3b | T-039 | DONE (`docs/qa/T-041-unit.md` PASS in round 1; ctest 395 of 395, /W4 clean, no behaviour change) |
+| T-042 | Zoom modifiers: Alt+wheel level zoom, Alt+drag box zoom, Ctrl reserved for band solo (spec and mockup) | ui-ux-designer | M3b | none | DONE (2026-10-04; spec and mockup on Alt, new rows G22 and G23 for the reserved Ctrl gestures; a second pass follows only if T-044 confirms the Alt-release risk) |
 | T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041, T-042 | TODO |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037, T-042 | TODO |
-| T-043 | SPAN reference for M3c | researcher | M3c | none | TODO (documentation; runs now) |
-| T-044 | Host and platform constraints, band-solo filter references | researcher | M3c | none | TODO (documentation; runs now) |
+| T-043 | SPAN reference for M3c | researcher | M3c | none | DONE (`docs/research/T-043-span-m3c-reference.md`; R1 to R20 for M3c; three user questions open: the dBFS.30/.15 bar ends, the ballistics defaults, programme loudness for the LUFS/LU bars) |
+| T-044 | Host and platform constraints, band-solo filter references | researcher | M3c | none | IN_PROGRESS (dispatched 2026-10-04) |
 | T-045 | M3c UI spec addendum, tokens, assets and mockup | ui-ux-designer | M3c | T-042, T-043, T-044 | TODO (the user approves the mockup) |
 | T-046 | Spectrum engine: underlay model and a second sidechain input (additive) | dsp-engineer | M3c | T-043, T-038 (build order) | TODO |
 | T-047 | Spectrum mapper: 1 Hz range and Align 0 dB | dsp-engineer | M3c | T-043, T-046 | TODO |

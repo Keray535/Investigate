@@ -346,10 +346,11 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
   
   **While the zoom panel shows (T-034)** the card also avoids the panel. Try four candidates in this order and take the first that lies fully inside the data rect (4 px inset) and does not intersect the panel bounds inflated by 4 px (`zoomLayout.hoverCardExclusion`): (a) `(px + 18, py − 18 − cardH)`; (b) `(px − 18 − cardW, py − 18 − cardH)`; (c) `(px + 18, py + 18)`; (d) `(px − 18 − cardW, py + 18)`. If none qualifies, use steps 1 to 4 above and draw the card over the panel (the card is above the panel in the z-order, §5.9.7). Without the panel, candidates (a) to (d) give the same result as steps 1 to 4, so one implementation serves both.
 - **Hint line:** while the pointer is in the data rect, no pan or box drag is active, and the pointer is not over the zoom panel. It uses `body-sm` at 10 px in `text-tertiary` on `bg-plot` at 85 %, radius 4, padding 2 × 6, anchored with its bottom-right at (data.right − 8, data.bottom − 6). Its text depends on the zoom state (T-034) and switches when the state changes:
-  - At Fit: "Scroll: zoom · Ctrl+drag: box zoom · Click: reset max/avg · Right-click: copy frequency".
+  - At Fit: "Scroll: zoom · Alt+drag: box zoom · Click: reset max/avg · Right-click: copy frequency".
   - While zoomed: "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset max/avg · Right-click: copy frequency".
-  - **Fit rule:** the measured width (text plus 12 px padding) must be at most data.w − 16, which is 544 px at the minimum size 920 × 540. Estimated with Inter 500 at 10 px, the two texts are about 431 px and 474 px wide, so both fit at the minimum size. If the measured width is larger (for example with a fallback font), use the short forms "Scroll: zoom · Ctrl+drag: box · Click: reset · Right-click: copy" and "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy".
-  - Level zoom (Ctrl+scroll, or scroll over the dB labels) is not in the hint, because it does not fit at the minimum size. It is in the zoom panel's tooltip (§5.9.6), the accessible description (§10.3) and the M3b user checklist.
+  - **Fit rule:** the measured width (text plus 12 px padding) must be at most data.w − 16, which is 544 px at the minimum size 920 × 540. Estimated with Inter 500 at 10 px, the two texts are at most about 431 px and 474 px wide (the Fit text was estimated with the longer "Ctrl"; "Alt" is narrower), so both fit at the minimum size. If the measured width is larger (for example with a fallback font), use the short forms "Scroll: zoom · Alt+drag: box · Click: reset · Right-click: copy" and "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy".
+  - Level zoom (Alt+scroll, or scroll over the dB labels) is not in the hint, because it does not fit at the minimum size. It is in the zoom panel's tooltip (§5.9.6), the accessible description (§10.3) and the M3b user checklist.
+  - The reserved Ctrl gestures (§5.9.3 G22, G23) are not in the hint until M3c gives them a function.
 - **Formats:**
   - **Frequency:** round to 3 significant figures first, then:
     - below 100 Hz: 1 decimal, "43.7 Hz";
@@ -376,22 +377,24 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
 
 ### 5.6 Spectrum interactions
 
-This table replaces the T-010 table (T-034). The pointer actions are distinguished by button, modifier and movement, so none of them conflicts with hover. "G1" to "G21" refer to the exact rules in §5.9.3; the numbers are repeated here for convenience.
+This table replaces the T-010 table (T-034; modifiers remapped by T-042). The pointer actions are distinguished by button, modifier and movement, so none of them conflicts with hover. "G1" to "G23" refer to the exact rules in §5.9.3; the numbers are repeated here for convenience, and every G number appears in exactly one row of each table.
 
 | Input | Action | Feedback |
 |---|---|---|
 | Hover / move in the data rect | Hover readout (§5.5) over the view mapping | Crosshair, markers, card, hint line |
-| Wheel, vertical, in the data rect (G1, G2) | Zooms frequency around the pointer: one notch scales the visible span by 0.8 (in) or 1.25 (out); Shift gives 0.95 or 1 / 0.95. Limits: 1/6 octave and the home range. Always consumed. | Curves, grid and zoom panel update on the next editor frame |
-| Ctrl+wheel in the data rect (G3) | Zooms level around the pointer, same factors, limits 6 dB and the home range. A touchpad pinch arrives as Ctrl+wheel and zooms level. | as above |
-| Wheel over the frequency labels or the dB labels (G4, G5) | Zooms that axis around the pointer, no modifier needed | as above |
-| Horizontal wheel or sideways two-finger swipe (G6) | Pans frequency by 10 % of the visible span per notch, only while frequency is zoomed | as above |
-| Left drag (> 4 px) or middle drag (G7 to G9) | Pans both axes while zoomed; does nothing at Fit | Grabbing-hand cursor; hover readout hidden while dragging |
-| Left click, ≤ 4 px of movement, no Ctrl (G11) | After a **250 ms defer**, `requestSpectrumReset()`, which clears the all-time max and all-time average. A double-click inside the defer cancels it. | Only when `secondary` is All-time max or All-time avg: a toast "Max/avg curves reset" centred at the top of the data rect (y = data.y + 8, or data.y + 36 while the FROZEN badge shows), for 900 ms, shifted left clear of the zoom panel (§5.9.7). With Off or RT max nothing visible changes, so no toast appears. |
-| Double-click (G12) | Fit: the view returns to the home range. No spectrum reset. | Zoom panel disappears |
-| Ctrl+left drag (G13 to G15) | Box zoom: on release both axes zoom to the box. A box under 4 px in either dimension cancels; so does Esc when the editor has keyboard focus. | Box-zoom cursor and rubber band |
-| Ctrl+left click, middle click (G10, G14) | Nothing | |
+| Wheel, vertical, in the data rect, without Ctrl or Alt (G1, G2) | Zooms frequency around the pointer: one notch scales the visible span by 0.8 (in) or 1.25 (out); Shift gives 0.95 or 1 / 0.95. Limits: 1/6 octave and the home range. Always consumed. | Curves, grid and zoom panel update on the next editor frame |
+| Alt+wheel in the data rect (G3) | Zooms level around the pointer, same factors (Alt+Shift for fine steps), limits 6 dB and the home range | as above |
+| Wheel over the frequency labels or the dB labels (G4, G5) | Zooms that axis around the pointer, no modifier needed (any modifier, including Ctrl or Alt, is ignored there) | as above |
+| Horizontal wheel or sideways two-finger swipe, without Ctrl (G6) | Pans frequency by 10 % of the visible span per notch, only while frequency is zoomed | as above |
+| Left drag (> 4 px) without Ctrl or Alt, or middle drag (G7 to G9) | Pans both axes while zoomed; does nothing at Fit | Grabbing-hand cursor; hover readout hidden while dragging |
+| Left click, ≤ 4 px of movement, no Ctrl or Alt (G11) | After a **250 ms defer**, `requestSpectrumReset()`, which clears the all-time max and all-time average. A double-click inside the defer cancels it. | Only when `secondary` is All-time max or All-time avg: a toast "Max/avg curves reset" centred at the top of the data rect (y = data.y + 8, or data.y + 36 while the FROZEN badge shows), for 900 ms, shifted left clear of the zoom panel (§5.9.7). With Off or RT max nothing visible changes, so no toast appears. |
+| Double-click, without Ctrl or Alt (G12) | Fit: the view returns to the home range. No spectrum reset. | Zoom panel disappears |
+| Alt+left drag (G13 to G15) | Box zoom: on release both axes zoom to the box. A box under 4 px in either dimension cancels; so does Esc when the editor has keyboard focus. | Box-zoom cursor and rubber band |
+| Alt+left click or Alt+double-click, middle click (G10, G14) | Nothing. An Alt+click on the data rect is not a reset (the Alt+click reset of §7.1 applies to chips only). | |
 | Right button down (G16) | Copy the frequency under the pointer to the system clipboard (`juce::SystemClipboard::copyTextToClipboard`). Ignored during a pan or box drag. | Toast "Copied 1250 Hz" at (px + 12, py − 28), clamped inside the data rect and clear of the zoom panel (§5.9.7), for 1200 ms |
 | Zoom panel: Fit button, overview strip (G17 to G21) | Fit; pan by dragging the window; press beside the window to centre the view there; the wheel passes through to the data rect | §5.9.6 |
+| Ctrl+wheel in the data rect, including a Windows touchpad pinch (G22) | **Reserved for the band solo width (M3c).** Until M3c: nothing; the event is consumed. | None |
+| Ctrl+left press, click, double-click or drag in the data rect (G23) | **Reserved for the band solo (M3c).** Until M3c: nothing; never pans, zooms, box-zooms, fits or starts the deferred reset. | None; the crosshair cursor and hover readout continue |
 
 - **Clipboard text:** the hover frequency in Hz, as a plain number with no unit, so it pastes into any EQ field. It always matches the card value:
   - 3 significant figures (spans of 1 octave or more): 1 decimal below 100 Hz ("43.7") and none above ("1250", "14300");
@@ -467,36 +470,43 @@ Frequency is handled in natural-log units (`u = ln f`), level in dB. The data re
 
 | # | Input | Where | Action | Exact rule |
 |---|---|---|---|---|
-| G1 | Wheel, vertical | Data rect, and the zoom panel (which passes the wheel through to the data rect at the same position) | Zooms frequency, anchored at the pointer's x | `k = 0.8^n`; limits 1/6 octave and the home range. Always consumed, also when nothing changes at a limit. |
-| G2 | Shift+wheel | Data rect | Fine frequency zoom | `k = 0.95^n`. If the platform reports Shift+wheel as horizontal (deltaY = 0, deltaX ≠ 0), deltaX is used as the vertical amount. Shift+wheel never pans. |
-| G3 | Ctrl+wheel, Ctrl+Shift+wheel | Data rect | Zooms level, anchored at the pointer's y; Shift for fine steps | Same factors; limits 6 dB and the home range. A Windows precision-touchpad pinch arrives as Ctrl+wheel and therefore zooms level (accepted v1 limitation, plan risk Z4). |
-| G4 | Wheel, any modifier | Frequency gutter | Zooms frequency, anchored at the pointer's x | Shift for fine steps; Ctrl is ignored, because the gutter chooses the axis |
-| G5 | Wheel, any modifier | dB gutter | Zooms level, anchored at the pointer's y, with no modifier needed | Shift for fine steps |
-| G6 | Horizontal wheel, or a sideways two-finger swipe | Data rect, frequency gutter | Pans frequency | 10 % of the visible span per notch. Consumed only while frequency is zoomed; at frequency Fit it is passed to the parent. An event whose `|deltaX|` exceeds `|deltaY|` pans; otherwise it zooms (G1), so a diagonal swipe never does both. |
-| G7 | Left press, then more than 4 px of movement (Euclidean distance from the press point) | Data rect, while zoomed on either axis | Pans both axes like a hand tool | 1:1 (§5.9.2). The pan includes the first 4 px, so the content does not jump at the threshold. An axis at Fit cannot move. Wheel events during the pan are applied, and the pan continues from the new view. |
+| G1 | Wheel, vertical, without Ctrl or Alt | Data rect, and the zoom panel (which passes the wheel through to the data rect at the same position) | Zooms frequency, anchored at the pointer's x | `k = 0.8^n`; limits 1/6 octave and the home range. Always consumed, also when nothing changes at a limit. |
+| G2 | Shift+wheel, without Ctrl or Alt | Data rect | Fine frequency zoom | `k = 0.95^n`. If the platform reports Shift+wheel as horizontal (deltaY = 0, deltaX ≠ 0), deltaX is used as the vertical amount. Shift+wheel never pans. |
+| G3 | Alt+wheel, Alt+Shift+wheel, without Ctrl | Data rect | Zooms level, anchored at the pointer's y; Shift for fine steps | Same factors; limits 6 dB and the home range. Always consumed. The Shift-as-horizontal rule of G2 applies here too. With Alt held, a vertical-dominant event zooms level; a horizontal-dominant event pans as G6. |
+| G4 | Wheel, any modifier | Frequency gutter | Zooms frequency, anchored at the pointer's x | Shift for fine steps; Ctrl and Alt are ignored, because the gutter chooses the axis. A touchpad pinch over the gutter therefore zooms frequency. |
+| G5 | Wheel, any modifier | dB gutter | Zooms level, anchored at the pointer's y, with no modifier needed | Shift for fine steps; Ctrl and Alt are ignored. This is the modifier-free way to zoom level. |
+| G6 | Horizontal wheel, or a sideways two-finger swipe, without Ctrl | Data rect, frequency gutter (in the gutter, Ctrl is ignored) | Pans frequency | 10 % of the visible span per notch. Consumed only while frequency is zoomed; at frequency Fit it is passed to the parent. An event whose `|deltaX|` exceeds `|deltaY|` pans; otherwise it zooms (G1 or G3), so a diagonal swipe never does both. In the data rect, any wheel event with Ctrl held is G22 instead. |
+| G7 | Left press without Ctrl or Alt, then more than 4 px of movement (Euclidean distance from the press point) | Data rect, while zoomed on either axis | Pans both axes like a hand tool | 1:1 (§5.9.2). The pan includes the first 4 px, so the content does not jump at the threshold. An axis at Fit cannot move. Wheel events during the pan are applied, and the pan continues from the new view. |
 | G8 | Left drag at Fit (both axes) | Data rect | Nothing: no pan and no reset | The crosshair cursor stays and the hover readout continues (the pre-T-034 behaviour that protects against accidental resets) |
 | G9 | Middle press and drag (> 4 px) | Data rect | The same as G7, or G8 at Fit | |
 | G10 | Middle click (≤ 4 px) | Data rect | Nothing | |
-| G11 | Left click: press and release within 4 px, without Ctrl | Data rect | After **250 ms**, `requestSpectrumReset()` and the reset toast (§5.6) | Started on the release. Cancelled by a double-click (G12) that arrives before it fires. A release that ends a pan, a box or a no-op drag never starts it. |
-| G12 | Double-click: JUCE `mouseDoubleClick` (the second press within the OS double-click time and distance) | Data rect | **Fit** both axes, at the second press | Cancels a pending G11 reset. The release that completes the double-click starts no reset. If the second click comes after the 250 ms defer, the first click's reset has already run; this is the same edge case as the chips (§7.1). |
-| G13 | Ctrl+left press, then drag | Data rect | **Box zoom:** a rubber band from the press point to the pointer, clamped to the data rect. On release both axes zoom to it (§5.9.2). | The mode is fixed at the press: releasing Ctrl during the drag keeps the box. A box narrower or lower than **4 px** at the release cancels (no zoom, no reset). An axis below its minimum span is widened, and the widened result is previewed (§5.9.6, box style). |
-| G14 | Ctrl+left click (no movement) | Data rect | Nothing | So a cancelled box never resets curves |
+| G11 | Left click: press and release within 4 px, without Ctrl or Alt at the press | Data rect | After **250 ms**, `requestSpectrumReset()` and the reset toast (§5.6) | Started on the release. Cancelled by a double-click (G12) that arrives before it fires. A release that ends a pan, a box or a no-op drag never starts it. |
+| G12 | Double-click: JUCE `mouseDoubleClick` (the second press within the OS double-click time and distance), without Ctrl or Alt at the second press | Data rect | **Fit** both axes, at the second press | Cancels a pending G11 reset. The release that completes the double-click starts no reset. If the second click comes after the 250 ms defer, the first click's reset has already run; this is the same edge case as the chips (§7.1). |
+| G13 | Alt+left press (without Ctrl), then drag | Data rect | **Box zoom:** a rubber band from the press point to the pointer, clamped to the data rect. On release both axes zoom to it (§5.9.2). | The mode is fixed at the press: releasing Alt, or pressing Ctrl, during the drag keeps the box. A box narrower or lower than **4 px** at the release cancels (no zoom, no reset). An axis below its minimum span is widened, and the widened result is previewed (§5.9.6, box style). |
+| G14 | Alt+left click (no movement), and Alt+double-click | Data rect | Nothing: no reset, no Fit | So a cancelled box never resets curves. This is not the Alt+click reset of §7.1, which applies to chips only. |
 | G15 | Esc during a box drag | Editor with keyboard focus | Cancels the box | SpectrumView never takes keyboard focus (§7.2), so Esc works only when the host has given the editor focus and a control in it holds the focus. Otherwise, dragging back to a box under 4 px cancels. |
 | G16 | Right press | Data rect | Copies the frequency under the pointer (view mapping, §5.6) | Ignored while a pan or a box drag is active |
 | G17 | Fit button, click | Zoom panel | **Fit** both axes, on release inside the button | |
 | G18 | Press on the view window, then drag | Overview strip | Pans both axes | The pointer's offset from the window centre is kept; 1:1 in strip coordinates |
 | G19 | Press outside the view window | Overview strip | The view centres on that point at once (both axes, spans kept, clamped); continuing to drag pans as in G18 | The press acts on mouse-down, so there is no click or double-click ambiguity in the strip |
 | G20 | Double-click, right-click, middle press | Zoom panel | Nothing (a double-click on the strip is two G19 presses) | |
-| G21 | Wheel | Zoom panel | Passes through to the data rect at the same position (G1 to G3) | The panel component does not override `mouseWheelMove`, so JUCE forwards the event to SpectrumView |
+| G21 | Wheel | Zoom panel | Passes through to the data rect at the same position (G1 to G3, G6, G22) | The panel component does not override `mouseWheelMove`, so JUCE forwards the event to SpectrumView |
+| G22 | Ctrl+wheel, with any other modifier, vertical or horizontal (T-042) | Data rect, and the zoom panel (pass-through) | **Reserved for the band-solo width (M3c).** Until M3c: nothing | The event is consumed (never passed to the parent), changes no view, and causes no repaint. A Windows precision-touchpad pinch arrives as Ctrl+wheel, so until M3c a pinch does nothing over the data rect; from M3c it changes the solo width (M3c plan Risk 18). Over the gutters a pinch zooms that axis (G4, G5). |
+| G23 | Ctrl+left press (with any other modifier), then click, double-click, hold or drag (T-042) | Data rect | **Reserved for the band solo (M3c).** Until M3c: nothing | Ctrl is read at the press, and the mode is fixed there: releasing Ctrl later does not start a pan or box, and the release never starts the G11 reset. A Ctrl+double-click does not fit. Pressing Ctrl during a pan or box that began without Ctrl changes nothing. The cursor stays the crosshair and the hover readout continues, as at G8. Middle (G9, G10) and right (G16) presses keep their behaviour with Ctrl held. |
+
+**Modifier precedence in the data rect:** Ctrl is tested first (G22, G23), then Alt (G3, G13, G14), then no modifier. Shift only selects fine steps.
 
 **Coalescing:** the input handlers only record the requested view. The editor applies it once per editor update (§12), so a burst of wheel events or drag moves produces at most one repaint and one `setSpectrumView` per update.
+
+**Alt on Windows:** whether releasing Alt after an Alt gesture activates a host's menu bar is under research in T-044 (M3c plan Risk 17); this section does not change until that result is in.
 
 #### 5.9.4 Cursors
 
 | State | Cursor | Source |
 |---|---|---|
-| Data rect, no button down, Ctrl not held (zoomed or not) | Crosshair | `juce::MouseCursor::CrosshairCursor` |
-| Data rect, Ctrl held, no button down | Box zoom | `assets/ui/cursor-zoom-box.svg`, hotspot (7.5, 7.5) |
+| Data rect, no button down, Alt not held, or Ctrl held (zoomed or not) | Crosshair | `juce::MouseCursor::CrosshairCursor` |
+| Data rect, Alt held without Ctrl, no button down | Box zoom | `assets/ui/cursor-zoom-box.svg`, hotspot (7.5, 7.5) |
+| Ctrl+left press or drag (G23, reserved until M3c) | Crosshair | |
 | Box drag (G13) | Box zoom | as above |
 | Press, before the 4 px threshold | Unchanged | |
 | Pan (G7, G9) | Grabbing hand | `assets/ui/cursor-hand-grab.svg`, hotspot (12, 12) |
@@ -508,7 +518,7 @@ Frequency is handled in natural-log units (`u = ln f`), level in dB. The data re
 | Overview strip, outside the window | `juce::MouseCursor::PointingHandCursor` | |
 | Overview drag (G18, G19) | Grabbing hand | |
 
-- **Ctrl state:** take it from the modifiers of the latest mouse event, and from `modifierKeysChanged` when the host delivers it. Some hosts do not deliver key changes to an unfocused plugin window; then the cursor updates on the next mouse move.
+- **Alt and Ctrl state:** take it from the modifiers of the latest mouse event, and from `modifierKeysChanged` when the host delivers it. Some hosts do not deliver key changes to an unfocused plugin window; then the cursor updates on the next mouse move.
 - **Custom cursors:** render each SVG once per display scale into an ARGB `juce::Image` of 24 × scale pixels, and create `juce::MouseCursor (juce::ScaledImage (image, scale), hotspot)`. T-037 checks that the hotspot lands on the logical point given above at 100 % and 200 %. The cursors are fixed black and white and are never recoloured (§11).
 
 #### 5.9.5 Hover readout, crosshair, markers and hint during gestures
@@ -605,7 +615,7 @@ Strip states:
 
 **Tooltips** (700 ms delay, standard tooltip style):
 - Fit button: "Show the full range set by the Frequency and Level chips. Double-clicking the spectrum does the same."
-- Rows 1 and 2: "Visible range. Scroll to zoom frequency; Ctrl+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan."
+- Rows 1 and 2: "Visible range. Scroll to zoom frequency; Alt+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan."
 - Row 3: "Fewer than 16 FFT bins are in view, so the curve is drawn straight between bins. Raise Block for finer detail."
 - Overview strip: "Overview of the full range. Drag the window to pan, or click beside it to jump there."
 
@@ -704,13 +714,14 @@ Edge checks: in A, "20k" at x = 888 ends at 897.9 ≤ 902; in E, "1.12k" at x = 
 | 2 | Horizontal wheel pans frequency (no amount) | 10 % of the visible log span per notch-equivalent; an event pans only when `|deltaX| > |deltaY|`, otherwise it zooms | The plan gave no number. The dominant-axis rule keeps a slightly diagonal touchpad swipe from zooming and panning at once. |
 | 3 | Home-range change: clamp, keep span, else Fit | Decided **per axis**, and an axis at Fit follows the new home range | A Level chip change should not reset the frequency zoom, and a chip change while unzoomed must not produce a "zoomed" state. |
 | 4 | Overview: click outside the rectangle centres the view | A **press** outside the window centres at once, and continuing the drag pans | One gesture to jump and fine-tune. It also removes any click or double-click ambiguity in the strip. |
-| 5 | Not specified | Middle click, Ctrl+click and a right-click during a drag do nothing; a release that ends a pan, box or no-op drag never resets; the release that completes a double-click does not start a reset | Clarifications, so no gesture can reset curves by accident. |
+| 5 | Not specified | Middle click, Alt+click (box modifier; T-042 replaced Ctrl) and a right-click during a drag do nothing; a release that ends a pan, box or no-op drag never resets; the release that completes a double-click does not start a reset | Clarifications, so no gesture can reset curves by accident. |
 | 6 | Not specified | The hover card and clipboard use 4 significant figures while the visible span is below 1 octave (§5.5, §5.6) | At deep zoom, 3 figures are coarser than the axis labels and the pixel resolution. The unzoomed formats, and the T-012 tests that pin them, are unchanged. |
 | 7 | An indicator and an overview strip | Both in one **zoom panel** at the top-right of the data rect | One rectangle to keep clear of the legend, badge, toasts, hint and hover card, at every size. |
 | 8 | One view change per editor update | The same, and view-change repaints follow the T-029 frame pacing (§12) | A view change repaints the whole data rect, like a new frame, so it must obey the same pacing to stay inside the CPU budget. |
 | 9 | Esc cancels a box when the editor has focus | The same; SpectrumView never takes keyboard focus itself | Taking focus on a click could stop the host's Space (transport) key from working in some hosts. |
 | 10 | Not specified | The wheel over the zoom panel passes through to the data rect | The panel covers part of the data rect; the wheel should not stop working there. |
 | 11 | Not specified | The box-zoom preview outlines the widened result when an axis is below its minimum span | The user sees in advance what the release will produce. |
+| 12 | Level zoom and box zoom on the Control modifier; a pinch zooms level (plan risk Z4) | Level zoom on **Alt+wheel** (G3), box zoom on **Alt+left-drag** (G13). Ctrl+wheel and Ctrl+left press over the data rect are reserved and inert until M3c (G22, G23); a pinch does nothing over the data rect. | User decision of 2026-10-03 (T-042): Ctrl is kept free for the M3c band solo. The architect updates the plan's interaction table to match, after which this row is no longer a deviation. |
 | — | Minimum spans 1/6 octave and 6 dB; 4 px drag threshold; 250 ms click defer; 4 px box cancel | **Unchanged** | Checked against the grid rules: the 1/6-octave span at 560 px still has 7 to 13 labels (§5.9.8, E and F), and 6 dB at 404 px has 13 dB lines 33.7 px apart. |
 
 #### 5.9.11 What the mockup simplifies
@@ -718,6 +729,7 @@ Edge checks: in A, "20k" at x = 888 ends at 897.9 ≤ 902; in E, "1.12k" at x = 
 - **Engine:** the mockup's synthetic analyser keeps 4096 log-spaced points from 10 Hz to Nyquist as its stand-in for the engine's bin-domain spectra, and draws the ones in view (at most 2 vertices per physical column, §5.1). Zooming therefore shows more detail, as the real re-mapping does. The real engine uses linear FFT bins, so below the bin-spacing hint threshold the plugin shows straight segments between bins, while the mockup stays smooth.
 - **Wheel units:** the browser reports 100 px (or 3 lines) per notch rather than JUCE's 0.234375. The mockup normalises to notches the same way (§5.9.2).
 - **Double-click:** the mockup uses the browser's click count on the second press, which follows the OS double-click time, the same as JUCE's `mouseDoubleClick`.
+- **Alt and Ctrl in a browser (T-042):** the mockup cancels the browser's default action for Alt+wheel, Ctrl+wheel (page zoom) and an Alt key release while the pointer is over the plot, so the browser's own zoom and menu bar stay out of the preview. Whether the browser honours this varies; it says nothing about how DAW hosts treat Alt (§5.9.3, T-044).
 - **Rendering:** the mockup draws with Canvas 2D and DOM elements. It shows the look and behaviour, not the T-029 drawing method of §12.
 
 ## 6. Control inventory
@@ -860,6 +872,8 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
 | Right-click | None (no context menu) | none | none | none |
 
 Why the 250 ms defer: a double-click must reset without a menu or text field flashing up first. 250 ms is short enough to feel immediate, and double-clicks slower than that fall back to click, click.
+
+The Alt+click reset applies to the controls in this table only. On the spectrum's data rect, Alt is the box-zoom modifier and an Alt+click does nothing (§5.9.3 G14).
 
 Other pointer rules:
 - **Menus:** a `juce::PopupMenu` styled by the LookAndFeel.
@@ -1107,7 +1121,7 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
   - Channel mode, Block size, Overlap, Window, Average time, Smoothing, Slope, Secondary curve, Frequency low, Frequency high, Range low, Range high, Sidechain trace, Meter scale, RMS window.
   - Freeze display, Reset spectrum curves, Reset statistics, Show meters, Settings, About.
   - The About view names are listed in §6.2.
-  - The spectrum view has the description "Spectrum display. Hover for a readout. Scroll to zoom frequency, Ctrl+scroll to zoom level, drag to pan, double-click to fit, Ctrl+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency." (updated by T-034).
+  - The spectrum view has the description "Spectrum display. Hover for a readout. Scroll to zoom frequency, Alt+scroll to zoom level, drag to pan, double-click to fit, Alt+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency." (updated by T-034, modifiers by T-042). The reserved Ctrl gestures are not described until M3c gives them a function.
   - Zoom panel (T-034): a group named "Zoom", whose accessible value is the visible range, for example "1.00 to 1.12 kHz, −30.0 to −24.0 dB", followed by ", bin spacing 11.7 Hz" while row 3 shows. The Fit button is named "Fit view", with the description "Show the full range set by the Frequency and Level chips", and supports the press action. The overview strip is named "Spectrum overview" and has the same value as the group. None of them is in the Tab order (§7.2), but assistive technology can press Fit through its accessibility handler.
   - Meter readouts are labels with names such as "Left peak max", "Integrated loudness" and "Correlation".
 
@@ -1124,7 +1138,7 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
 | `icon-meters.svg` / `-16.svg` | 24 / 16 | Meters toggle | A panel with a right column and a chevron; drawn mirrored when collapsed |
 | `cursor-hand-open.svg` (T-034) | 0 0 24 24 | Open hand over the overview window (§5.9.4) | Hotspot (12, 12) |
 | `cursor-hand-grab.svg` (T-034) | 0 0 24 24 | Grabbing hand while panning | Hotspot (12, 12) |
-| `cursor-zoom-box.svg` (T-034) | 0 0 24 24 | Ctrl held over the data rect, and during a box drag | Hotspot (7.5, 7.5), the open centre of the crosshair |
+| `cursor-zoom-box.svg` (T-034) | 0 0 24 24 | Alt held (without Ctrl) over the data rect, and during a box drag (T-042) | Hotspot (7.5, 7.5), the open centre of the crosshair |
 
 - **Cursor exception (T-034):** the three cursor SVGs use a fixed `#FFFFFF` fill with a 1 px `#000000` outline instead of `currentColor`, which is the OS cursor convention and keeps them visible on any background. They are rendered to images (§5.9.4) and never recoloured. They are otherwise clean: a `viewBox`, a `<title>`, no raster images, scripts or external references.
 - The Fit button is text-only, so there is no Fit icon.
@@ -1173,6 +1187,7 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 - **Coalescing.** Wheel, drag and overview handlers write a pending view only. The editor update callback (vblank, at most 60 per second) applies it at most once per update.
   - The update is dropped when it would move none of the four view edges by 0.5 physical px or more in the current mapping. This is the "repaint only on a physical-pixel change" rule for views; it absorbs tiny touchpad deltas and wheel steps at a limit.
   - `setSpectrumView (fLo, fHi)` is called at most once per update, and only when the frequency view changed. Level-only changes never reach the processor.
+  - The reserved Ctrl gestures (§5.9.3 G22, G23) record no view and request no repaint, so a touchpad pinch over the data rect costs nothing until M3c.
   - A view change repaints the whole data rect, like a new frame, so it follows the T-029 frame pacing: when the spectrum is paced (physical plot area above 2.0 Mpx, or 7 curve layers), view changes are applied at most 30 times per second. Hover, clicks and the Fit button still respond within one editor update.
 - **Repaint regions.** A frequency-only change repaints the data rect and the frequency gutter; a level-only change repaints the data rect and the dB gutter; a change on both axes repaints both gutters. The header, control bar and meter strip never repaint because of zoom or pan.
 - **Curves until the re-mapped frame arrives.** The editor draws the frame it has through the new mapping (its points carry `freqHz`), using the existing T-029 curve path: one bar per physical column for fills, simplified strokes, columns built only under the clip. Where that frame has no points (a margin exposed by a pan or a zoom-out), nothing is drawn for that frame (§15 question 5).
@@ -1269,6 +1284,7 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 | Frame overview (`overviewFreqHz[256]`, `overviewDb[256]`, primary A over the home range) | Overview strip curve | 5.9.6 |
 | Bin spacing of the displayed data | Bin-spacing row of the zoom panel | 5.9.6, 15 |
 | Zoom panel, box zoom, cursors | Indicator, Fit button, overview strip, rubber band, custom cursors | 5.9.4 to 5.9.7 |
+| Zoom modifiers (T-042) | Alt+wheel level zoom (G3), Alt+left-drag box zoom (G13); Ctrl+wheel and Ctrl+left press over the data rect reserved for the M3c band solo and inert until then (G22, G23) | 5.6, 5.9.3 |
 
 ## 14. IP check against T-001 §8
 
@@ -1309,3 +1325,4 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 | 2026-09-28 | T-010 | First version. The user approved `mockup.html` without changes; layout and visual design frozen for T-011 to T-013. |
 | 2026-10-03 | T-034 | **Spectrum zoom and pan (M3b).** New §5.9: view model, view arithmetic, gestures G1 to G21 with exact numbers, cursors, hover behaviour during gestures, zoom panel (indicator, Fit button, bin-spacing row, overview strip) with geometry at four sizes, collision rules, deep-zoom grid rules with worked examples, Fit and no-op cases, changes from the plan, mockup simplifications. Updated: §4.1 (gutters as wheel targets, panel position); §5.3 (view mapping, cache rule); §5.5 (view-based frequency formula, 4-figure zoom precision, hover-card candidates around the panel, new hint-line texts and fit rule); §5.6 (interaction table replaced, clipboard precision); §5.7 (freeze plus zoom, freeze epoch); §6 (Fit view action, deferred click reset); §7.2 (no zoom keys, Esc during a box drag); §10 (new §10.2a contrast tables, names, hit targets); §11 (three cursor SVGs); §12.1 (rendering and budgets for zoom and pan); §13.3 (view state not persisted, new frame fields); §15 (questions 5 and 6). `tokens.json` 1.1.0 adds the groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid` and `cursor`. New assets: `cursor-hand-open.svg`, `cursor-hand-grab.svg`, `cursor-zoom-box.svg`. `mockup.html` implements every gesture and no longer loads web fonts, so it opens from the file system with no network access. |
 | 2026-10-03 | T-034 (fold-in) | Two stale points that T-011 had overridden in its task file (roadmap Decision 2026-10-01) are folded in: the font files and license texts live in `third_party/fonts/` and the `InvestigateAssets` binary-data target, not in `assets/ui/fonts/` (§3.2, §6.2, §11, and the font file paths in `tokens.json`); and the old §15 open questions 1 to 3 are closed (§15). |
+| 2026-10-04 | T-042 | **Zoom modifier remap**, from the user decision of 2026-10-03 (Ctrl is kept free for the M3c band solo). Level zoom moves from Ctrl+wheel to **Alt+wheel** (G3) and box zoom from Ctrl+left-drag to **Alt+left-drag** (G13), with the same factors, Shift fine steps, 4 px cancel rule and Esc cancel. Ctrl+wheel and a Ctrl+left press, click, double-click or drag over the data rect are reserved for the band solo and do nothing until M3c (new rows G22, G23; the other G numbers are unchanged); a Windows touchpad pinch, which arrives as Ctrl+wheel, is therefore inert over the data rect until M3c and changes the solo width from M3c (this replaces the old "pinch zooms level" note, plan risk Z4). An Alt+click on the data rect does nothing; the chip Alt+click reset (§7.1) is unchanged. Updated: §5.5 hint line, §5.6, §5.9.3 (G1 to G7, G11 to G14, G21 to G23, modifier precedence, a pointer to T-044 for Risk 17), §5.9.4 cursors, §5.9.6 tooltip, §5.9.10 rows 5 and 12, §5.9.11, §7.1, §10.3 description, §11, §12.1, §13.3, and the `cursor-zoom-box.svg` title. `tokens.json` has no gesture references and is unchanged. `mockup.html` handlers use Alt, and the Ctrl variants are inert. |

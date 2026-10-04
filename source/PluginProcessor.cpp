@@ -102,7 +102,7 @@ public:
             settings.dbHigh                = params.getDbHigh();
             settings.smoothing             = params.getSmoothing();
             settings.slopeDbPerOct         = params.getSlope();
-            settings.numPoints             = SpectrumFrame::maxPoints;
+            settings.numPoints             = SpectrumFrame::maxVisiblePoints;
             settings.showSidechain         = params.getShowSidechain();
 
             // One atomic load each: the packed pair can never be torn.

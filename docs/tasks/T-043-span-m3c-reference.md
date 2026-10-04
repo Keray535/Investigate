@@ -1,7 +1,7 @@
 # T-043: SPAN reference for M3c (metering, ballistics, Align 0 dB, channel groups, static spectra)
 - Owner: researcher
 - Milestone: M3c
-- Status: TODO
+- Status: DONE
 - Depends on: none
 
 ## Goal
@@ -53,3 +53,4 @@ The user chose Voxengo SPAN as the reference for the M3c metering modes and ster
 
 ## Log
 - 2026-10-03 vst-architect: Created for M3c. Documentation only; may run in parallel with any C++ task. T-045, T-046, T-047, T-049 and T-051 wait for it.
+- 2026-10-04 researcher: Report written to docs/research/T-043-span-m3c-reference.md. Guides give no numeric ranges, defaults or dBFS.30/.15 scales; ballistics defaults unverified. Align 0 dB: calibration from an analytic 1 kHz window model through the real mapper, test set included. LUFS bar display, Stereo definition, slot count and CSV header not documented; recommendations R1 to R20 name affected tasks. Open: user-supplied SPAN CSV/scale evidence.

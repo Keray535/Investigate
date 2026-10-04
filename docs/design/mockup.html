@@ -183,7 +183,7 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
     <span class="dv-note">Try: hover the spectrum, click it, right-click it, drag or scroll any chip, double-click to reset, click a value to type.</span>
   </div>
   <div class="dv-row dv-zoom">
-    <span><b>Zoom and pan:</b> scroll over the spectrum to zoom frequency (Shift: fine) · Ctrl+scroll, or scroll over the dB labels, to zoom level · scroll over the frequency labels · drag (left or middle) to pan · double-click or Fit for the full view · Ctrl+drag to zoom into a box (Esc cancels) · drag or click the overview strip · sideways touchpad swipe pans. A single click resets the max/avg curves after 250 ms. Set Block to 512 and zoom in to see the bin-spacing hint. A touchpad pinch zooms level, as it will in the plugin.</span>
+    <span><b>Zoom and pan:</b> scroll over the spectrum to zoom frequency (Shift: fine) · Alt+scroll, or scroll over the dB labels, to zoom level · scroll over the frequency labels · drag (left or middle) to pan · double-click or Fit for the full view · Alt+drag to zoom into a box (Esc cancels) · drag or click the overview strip · sideways touchpad swipe pans. A single click resets the max/avg curves after 250 ms. Set Block to 512 and zoom in to see the bin-spacing hint. Ctrl+scroll, Ctrl+click or drag, and a touchpad pinch over the spectrum do nothing: they are reserved for the band solo (M3c).</span>
   </div>
 </div>
 
@@ -202,7 +202,7 @@ html,body{margin:0;background:#05070B;color:var(--text-primary);font-family:var(
     <button class="btn icon" id="btnSettings" aria-label="Settings" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.5H8.5M11.5 3.5H13.5M1.5 7.5H3.5M6.5 7.5H13.5M1.5 11.5H7M10 11.5H13.5"/><circle cx="10" cy="3.5" r="1.5"/><circle cx="5" cy="7.5" r="1.5"/><circle cx="8.5" cy="11.5" r="1.5"/></svg><span class="dot"></span></button>
   </header>
 
-  <div id="plotWrap" aria-label="Spectrum display. Hover for a readout. Scroll to zoom frequency, Ctrl+scroll to zoom level, drag to pan, double-click to fit, Ctrl+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency.">
+  <div id="plotWrap" aria-label="Spectrum display. Hover for a readout. Scroll to zoom frequency, Alt+scroll to zoom level, drag to pan, double-click to fit, Alt+drag to zoom into a box. Click to reset the max and average curves; right-click to copy the frequency.">
     <canvas id="plot"></canvas>
     <div id="legend" class="legend"></div>
     <div id="badge" class="badge">FROZEN</div>
@@ -1220,7 +1220,7 @@ function drawOverview() {
 
 /* ---------- hint line (spec 5.5) ---------- */
 const HINTS = {
-  fit: ['Scroll: zoom · Ctrl+drag: box zoom · Click: reset max/avg · Right-click: copy frequency', 'Scroll: zoom · Ctrl+drag: box · Click: reset · Right-click: copy'],
+  fit: ['Scroll: zoom · Alt+drag: box zoom · Click: reset max/avg · Right-click: copy frequency', 'Scroll: zoom · Alt+drag: box · Click: reset · Right-click: copy'],
   zoomed: ['Drag: pan · Double-click: fit · Scroll: zoom · Click: reset max/avg · Right-click: copy frequency', 'Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy'],
 };
 function updateHint() {
@@ -1507,10 +1507,11 @@ const SVG_CURSOR = {
 const svgCursor = (svg, x, y, fallback) => `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${x} ${y}, ${fallback}`;
 const CURSOR = { hand: svgCursor(SVG_CURSOR.hand, 12, 12, 'grab'), grab: svgCursor(SVG_CURSOR.grab, 12, 12, 'grabbing'), box: svgCursor(SVG_CURSOR.box, 7, 7, 'crosshair') };
 
-/* Spectrum gestures (spec 5.9.3, G1 to G16) */
+/* Spectrum gestures (spec 5.9.3, G1 to G16, G22, G23). Modifier precedence in the data rect:
+   Ctrl first (reserved for the M3c band solo, inert), then Alt (level zoom, box zoom), then none. */
 function bindPlot() {
   const wrap = $('plotWrap');
-  let clickTimer = null, suppressUp = false, ctrlHeld = false;
+  let clickTimer = null, suppressUp = false, ctrlHeld = false, altHeld = false;
   const inData = p => p.x >= D.x && p.x <= D.x + D.w && p.y >= D.y && p.y <= D.y + D.h;
   const inFreqGutter = p => p.x >= D.x && p.x <= D.x + D.w && p.y > D.y + D.h && p.y <= PH;
   const inDbGutter = p => p.x >= 0 && p.x < D.x && p.y >= D.y && p.y <= D.y + D.h;
@@ -1521,7 +1522,7 @@ function bindPlot() {
     let cur = '';
     if (G && G.kind === 'pan') cur = CURSOR.grab;
     else if (G && G.kind === 'box') cur = CURSOR.box;
-    else if (p && inData(p) && !overPanel(p)) cur = ctrlHeld ? CURSOR.box : 'crosshair';
+    else if (p && inData(p) && !overPanel(p)) cur = (altHeld && !ctrlHeld && !G) ? CURSOR.box : 'crosshair';   // G23 keeps the crosshair
     wrap.style.cursor = cur;
   };
   const showHover = p => {                                   // spec 5.9.5
@@ -1531,8 +1532,8 @@ function bindPlot() {
   };
   const rebase = () => { if (G && G.kind === 'pan' && lastPtr) { G.v0 = { ...V }; G.start = { ...lastPtr }; } };
   wrap.addEventListener('pointermove', e => {
-    const p = local(e); lastPtr = p; ctrlHeld = e.ctrlKey;
-    if (G) {
+    const p = local(e); lastPtr = p; ctrlHeld = e.ctrlKey; altHeld = e.altKey;
+    if (G && G.kind !== 'reserved') {                         // a G23 press never pans or boxes; the readout continues
       const dx = p.x - G.start.x, dy = p.y - G.start.y;
       if (G.kind === 'press' && Math.hypot(dx, dy) > ZOOM.dragPx) G.kind = isZoomed() ? 'pan' : 'noop';   // G7 / G8
       if (G.kind === 'pan') { panBy(G.v0, dx, dy); showHover(null); return; }
@@ -1544,7 +1545,12 @@ function bindPlot() {
   wrap.addEventListener('pointerdown', e => {
     const p = local(e); lastPtr = p;
     if (G || OG || overPanel(p) || !inData(p)) return;
-    if (e.button === 0 && e.ctrlKey) {                       // G13 box zoom
+    if (e.button === 0 && e.ctrlKey) {                       // G23: reserved for the band solo (M3c); inert until then
+      G = { kind: 'reserved', button: 0, start: p };
+      wrap.setPointerCapture(e.pointerId); return;
+    }
+    if (e.button === 0 && e.altKey) {                        // G13 box zoom
+      e.preventDefault();
       G = { kind: 'box', button: 0, start: p, cur: p };
       wrap.setPointerCapture(e.pointerId); showHover(null); return;
     }
@@ -1557,7 +1563,7 @@ function bindPlot() {
   wrap.addEventListener('mousedown', e => {
     if (e.button === 1) e.preventDefault();                  // no browser auto-scroll on a middle press
     const p = local(e);
-    if (e.button !== 0 || e.ctrlKey || e.detail < 2 || overPanel(p) || !inData(p)) return;
+    if (e.button !== 0 || e.ctrlKey || e.altKey || e.detail < 2 || overPanel(p) || !inData(p)) return;   // G14, G23: no Fit
     // G12: the second press of a double-click (as JUCE's mouseDoubleClick) fits and cancels the pending reset
     clearTimeout(clickTimer); clickTimer = null; suppressUp = true; fitView();
   });
@@ -1578,12 +1584,19 @@ function bindPlot() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && G && G.kind === 'box') { G = null; showHover(lastPtr); }   // G15
     if (e.key === 'Control') { ctrlHeld = true; updateCursor(); }
+    if (e.key === 'Alt') { altHeld = true; updateCursor(); if (lastPtr) e.preventDefault(); }
   });
-  document.addEventListener('keyup', e => { if (e.key === 'Control') { ctrlHeld = false; updateCursor(); } });
-  wrap.addEventListener('wheel', e => {                      // G1 to G6, G21
+  document.addEventListener('keyup', e => {
+    if (e.key === 'Control') { ctrlHeld = false; updateCursor(); }
+    if (e.key === 'Alt') { altHeld = false; updateCursor(); if (lastPtr) e.preventDefault(); }   // keep the browser menu bar out of the preview
+  });
+  window.addEventListener('blur', () => { ctrlHeld = false; altHeld = false; updateCursor(); });
+  wrap.addEventListener('wheel', e => {                      // G1 to G6, G21, G22
     const p = local(e);
     const region = inData(p) ? 'data' : inFreqGutter(p) ? 'fg' : inDbGutter(p) ? 'dbg' : null;
     if (!region) return;
+    if (region === 'data' && e.ctrlKey) { e.preventDefault(); return; }   // G22: reserved (band-solo width, M3c); a pinch lands here too
+    if (e.ctrlKey) e.preventDefault();                        // gutters ignore Ctrl (G4, G5); no browser page zoom
     const unit = e.deltaMode === 1 ? ZOOM.linesPerNotch : e.deltaMode === 2 ? 1 : ZOOM.pxPerNotch;
     let dy = e.deltaY, dx = e.deltaX;
     if (e.shiftKey && dy === 0) { dy = dx; dx = 0; }          // browsers report Shift+wheel as horizontal
@@ -1595,7 +1608,7 @@ function bindPlot() {
     const n = clamp(-dy / unit, -ZOOM.maxNotches, ZOOM.maxNotches);
     if (!n) return;
     const k = Math.pow(e.shiftKey ? ZOOM.fineIn : ZOOM.notchIn, n);
-    const levelAxis = region === 'dbg' || (region === 'data' && e.ctrlKey);
+    const levelAxis = region === 'dbg' || (region === 'data' && e.altKey);   // G3, G5
     if (levelAxis) zoomDbAt(clamp(p.y, D.y, D.y + D.h), k); else zoomFreqAt(clamp(p.x, D.x, D.x + D.w), k);
     rebase();
     if (!G) showHover(p);
@@ -1641,7 +1654,7 @@ function bindZoomPanel() {
   ov.addEventListener('pointercancel', endOv);
   $('zFit').addEventListener('click', e => { e.stopPropagation(); fitView(); });   // G17
   attachTip($('zFit'), 'Show the full range set by the Frequency and Level chips. Double-clicking the spectrum does the same.', false);
-  const rangeTip = 'Visible range. Scroll to zoom frequency; Ctrl+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan.';
+  const rangeTip = 'Visible range. Scroll to zoom frequency; Alt+scroll, or scroll over the dB labels, to zoom level. Drag the spectrum to pan.';
   attachTip($('zFreq'), rangeTip, false); attachTip($('zDb'), rangeTip, false);
   attachTip($('zBin'), 'Fewer than 16 FFT bins are in view, so the curve is drawn straight between bins. Raise Block for finer detail.', false);
   attachTip(ov, 'Overview of the full range. Drag the window to pan, or click beside it to jump there.', false);
