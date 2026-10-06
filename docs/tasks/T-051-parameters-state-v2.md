@@ -58,3 +58,24 @@ Add every M3c parameter, extend the two choice lists without breaking saved sess
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. Existing IDs and indices are preserved deliberately (roadmap Decision of 2026-10-03), so no migration code is needed. Generate the version-1 fixtures with the current build before changing the layout.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** ("Parameter changes" table). That plan wins over the M3c plan table. Changes to the scope above:
+  - **Scope 2 (`underlay`) is dropped.** Do not add `underlay`.
+  - **Slot parameters, generated from one table** in `source/params/` (one definition per slot setting, instantiated for N = 2, 3, 4):
+    - `sNSource`, `sNChannel`, `sNLink`, `sNFftSize`, `sNOverlap`, `sNWindow`, `sNAvgTime`, `sNSmoothing`, `sNSlope` and `sNFill`;
+    - `s2Visible`, `s3Type`, `s4Type` and `s1Fill`.
+
+    The ranges, choices and defaults follow slot 1's parameters of the same meaning, as stated in the plan.
+  - **Existing IDs reused as slot parameters.** Keep their IDs and indices, and change only the display names:
+    - `secondary` becomes slot 2's Type, with "Real-time" appended;
+    - `showSidechain` becomes slot 3's Visible;
+    - `showSidechain2` (new here) becomes slot 4's Visible.
+  - **`channelMode`.** The L/R and M/S values stay in the list for compatibility, but they now resolve to Left and Mid. A version-1 state with L/R loads as `channelMode` = L/R and is displayed as Left; nothing is rewritten.
+  - **`offsetMode`** (new choice): Off, Normalize, Center, Spectrum 2, Spectrum 3, Spectrum 4. Default Off.
+  - **`freqHigh`.** The range becomes 1000 to 96000 Hz, with a log skew centred at 9798 Hz (the geometric centre). The default stays 20000 Hz. The formatting handles "96 kHz".
+  - **Already changed by T-064 (M3d):** `smoothing` (4 choices appended), and `dbLow`/`dbHigh` (−150 to +30 dB, defaults −72 and −18). Do not change them again; include them in the table-driven test.
+  - **`ViewState`.** Add `slotName1` to `slotName4` (defaults "Main", "Spectrum 2", "SC 1", "SC 2", at most 16 characters) **instead of** `inputLabel0` to `inputLabel2`.
+  - **A/B states are not parameters.** T-068 adds the `ABStates` child; this task only reserves `stateVersion` 2 for it.
+  - **More criteria:**
+    - the table-driven test covers every slot parameter of every slot;
+    - a version-1 fixture with `secondary` = All-time max and `showSidechain` = off loads with those values, and as slot 2 Type and slot 3 Visible;
+    - the current editor keeps working, with every slot parameter randomised.

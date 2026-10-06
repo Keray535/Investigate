@@ -1,7 +1,7 @@
 # T-045: M3c UI spec addendum, design tokens, assets and mockup
 - Owner: ui-ux-designer
 - Milestone: M3c
-- Status: TODO
+- Status: IN_PROGRESS
 - Depends on: T-042, T-043, T-044
 
 ## Goal
@@ -95,3 +95,49 @@ Write a new spec section (for example §17 "M3c additions"), update every affect
 
 ## Log
 - 2026-10-03 vst-architect: Created for M3c. Documentation only; may run in parallel with T-037, T-038 and the M3c DSP tasks. Ownership: only this task edits `docs/design/` and `assets/ui/` during M3c.
+- 2026-10-04 vst-architect: T-042, T-043 and T-044 are DONE. Decisions made since the plan was written (also in the plan's Decisions table):
+  - **User decisions:**
+    - dBFS.30 spans −24 to +6 dBFS and dBFS.15 spans −9 to +6 dBFS;
+    - the ballistics defaults stay integration 1.00 ms, release 750 ms and peak hold 1000 ms (so by default the level part of the bar reacts like a peak meter; the spec should make the Integration control easy to find);
+    - the LUFS and LU bars show one programme loudness value, not per-channel values. Design that bar so it does not look like a per-channel L/R bar;
+    - the Alt zoom gestures stay. If the hands-on test in T-037 or T-038 shows the host menu bar activating, a later small task changes the modifiers. Design nothing for that now.
+  - **From T-043:** follow its "Recommendations for M3c" (R1 to R20) wherever they concern the UI, and list every one you adopt or reject in your log. The IP note applies: use generic mode names only (dBFS+3, K-20, LUFS, LU, Underlay, Density, Align 0 dB), never SPAN's texts, artwork, preset names or file formats.
+  - **From T-044:**
+    - The band solo is Ctrl plus left-drag (SPAN confirms it), with Ctrl+wheel setting the width. The band edges are at fc·2^(±W/2), and the filter is unity at the centre and −3 dB at the edges, so draw the edge markers at those frequencies.
+    - The colour wheel: `juce::ColourSelector` has a square HSV field plus RGB and alpha sliders, and no circular wheel, hex field or presets. Choose and specify one of: an own hue-wheel component (recommended if the design wants a circle), `ColourSelector` plus an own hex field and preset row, or reFX/ColourSelector (MIT; whether it has a round wheel is not documented). Record the choice and the reason. Any third-party code goes through build-engineer.
+    - File dialogs are native, asynchronous and can fall behind the host window. The flow must not assume a modal dialog.
+    - Sidechain 2 may not exist in some hosts (Live, Bitwig: probably only one sidechain). Specify how the UI shows an input that the host does not provide.
+- 2026-10-04 vst-architect (progress record; the ui-ux-designer session stopped before it wrote a log entry): the work is partly done and nothing is committed. The next session resumes from here.
+  - **Done:**
+    - `docs/design/ui-spec.md`: new §17 "M3c additions" (§17.1 to §17.21, where §17.21 lists the 20 changes from the plan), new §6.3, §10.4, §12.2 and §13.4, and "M3c" pointers in the existing sections. §5.9.3 gains rows G22-M3c, G23-M3c and G24, labelled "M3c only"; rows G1 to G23 (the M3b behaviour) are unchanged. §15 holds open questions 7 to 15, and §16 has a change-log row.
+    - `docs/design/tokens.json` version 1.2.0.
+    - 12 new SVGs in `assets/ui/`: `icon-refs`, `icon-refs-16`, `icon-eye-16`, `icon-eye-off-16`, `icon-section-bars-16`, `icon-section-table-16`, `icon-section-loudness-16`, `icon-section-correlation-16`, `icon-warning-16`, `icon-chevron-down-16`, `cursor-band`, `cursor-band-solo`.
+  - **Design decisions so far:**
+    - an own `ColourWheel` component (a hue ring, a saturation and value square, a hex field), with no third-party code;
+    - a compact header below 1174 px wide, where Refs, Freeze and Reset curves become icons;
+    - one Refs panel holding the reference slots and the colour editor;
+    - a two-row meter header (Metering, Style and Reset; Integration and four section toggles), with Release, Peak hold and the RMS window in Settings > Meters;
+    - LUFS and LU as one wide programme bar, with no Density style in those modes;
+    - Sidechain 2 with a striped fill; each reference slot with its own dash pattern;
+    - the band-solo readout in the hover card, tagged BAND while previewing and SOLO while listening.
+  - **Draft disposition of T-043 R1 to R20 (to confirm in the next session):** adopted: R1 to R3, R5 to R7, R10 to R16, R18 to R20. R4 is partly adopted. R17 (one fill switch for every reference) is rejected. R8, R9 and R15 concern the DSP only. R15 is listed both as adopted and as DSP-only, so resolve that.
+  - **Remaining:**
+    1. Extend `docs/design/mockup.html` to every demonstration item in the acceptance criteria. This enables the approval gate.
+    2. Fix a known mismatch: §17.9.2 and the §11 row describe `cursor-band-solo.svg` as "filled brackets and sound marks", but the file shows a filled band between the brackets.
+    3. Check §17 against the new tokens and SVGs.
+    4. Write the full log entry with the R1 to R20 disposition, then set the status to IN_REVIEW.
+- 2026-10-06 vst-architect: **Scope narrowed by the M3 review triage** (`docs/plans/m3-review-spectrum-slots.md`). Read that plan before resuming.
+  - **Superseded parts of §17.** The following parts are now covered by a new task, **T-065** (spec §18 and the mockup for the review items and the spectrum slots), which you or the next ui-ux-designer session run right after this task:
+    - the **underlay** (the Channel plus Underlay header control, the underlay curve style);
+    - the **per-input labels**;
+    - the **Sidechain 2 trace toggle**;
+    - the **colour roles** tied to Primary B.
+
+    Do not extend the mockup for them. Mark those §17 subsections "Superseded by §18 (T-065, spectrum slots)" with a one-line pointer, and keep their text for history.
+  - **Finish the rest of the current scope:**
+    - mockup steps 1 to 4 above, for the remaining §17 items: band solo, metering modes and styles, ballistics, section hiding, 1 Hz, Align and anti-alias, colour wheel and colour presets (applied to generic curve roles), frame rate, reference slots, CSV, settings presets, and the compact header;
+    - the cursor SVG mismatch;
+    - the token check;
+    - the R1 to R20 disposition.
+  - **Approval.** It moves: the user approves **one combined mockup after T-065**, so set this task to DONE (not IN_REVIEW) when the narrowed scope is delivered, and note in the log that the approval is pending T-065.
+  - **Scope.** Do not add the M3d review items (tooltips, the "SC" text, the 48 kHz label, All Settings duplicates, the 3 dB grid) here. T-065 covers them.

@@ -1,4 +1,4 @@
-# T-055: SpectrumView M3c: channel and underlay controls, sidechain curves and labels, 1 Hz axis, Align
+# T-055: SpectrumView M3c: slot curves, Spectra list, Offset, Fill, 1 Hz and 96 kHz axis, Align
 - Owner: gui-engineer
 - Milestone: M3c
 - Status: TODO
@@ -49,3 +49,28 @@ Bring the spectrum side of the editor to the M3c design:
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (spectrum slots; review findings #3, #7, #8, #9 and #12). That plan and T-065's spec §18 win over the Goal, Scope and criteria above where they differ:
+  - **Scope 1 (Channel and Underlay) is replaced.**
+    - The header Channel control sets slot 1's channel (`channelMode` 0 to 4). There is no Underlay control.
+    - A legacy L/R or M/S value displays as Left or Mid, without writing any parameter.
+    - Auto-unfreeze fires when slot 1's effective channel changes.
+  - **Scope 2 (sidechains) is replaced by the slot curves and the Spectra list.**
+    - Draw every active slot from the T-046 frame fields, in its slot colour and style; slot 2's type curves keep today's secondary look.
+    - The **Spectra list** has one row per slot: visible toggle, colour swatch, name, source, type, and a gear that opens the slot settings window (T-069 builds the window; this task only adds the entry point).
+    - Names come from `ViewState` `slotName1` to `slotName4`, are edited per T-065, and are at most 16 characters.
+    - A slot whose source bus is inactive shows the "no input" state.
+    - The visible toggles use the turquoise active colour, with no "SC" text (review #10 and #11, same rule as T-066).
+  - **Fill (#7).** A slot with Fill on draws a filled area per T-065, using the existing per-column sprite-batch fill (T-029 rules).
+  - **Offset (#8).** The Offset selector, bound to `offsetMode`, per T-065.
+    - An option is disabled while its target slot is off or its source is missing.
+    - An inactive selection is marked.
+    - The hover card shows the applied offset, taken from the frame.
+  - **96 kHz axis (#3).** The axis spans to `freqHigh`, with grid labels up to 96 kHz. Nothing is drawn above the Nyquist frequency (the "no data" points), and the region is shaded per T-065.
+  - **Pacing layer count.** It counts active slots, slot 2's type curve, references and the solo tint, recalibrated per T-065 §12.
+  - **Criteria.** Replace the "Channel and underlay" and "Sidechains" criteria with:
+    - every default slot reproduces today's look (a pixel comparison with the pre-M3c editor on the same synthetic frame, within the T-012 tolerance);
+    - each slot's visibility, name, colour and "no input" state behave per spec and persist through a state round trip;
+    - Fill and Offset draw as specified on synthetic frames;
+    - the 96 kHz axis is correct at 48 and 192 kHz.
+
+    The budget criterion now covers four active slots, four references and three meter sets.

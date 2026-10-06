@@ -2,7 +2,7 @@
 - Owner: plugin-engineer
 - Milestone: M3c
 - Status: TODO
-- Depends on: T-046, T-047, T-048, T-049, T-050, T-051
+- Depends on: T-046, T-047, T-048, T-049, T-050, T-051, T-067
 
 ## Goal
 Connect the M3c DSP to the host and to the editor-facing API:
@@ -84,3 +84,18 @@ The output must stay bit-exact whenever the band solo is not engaged.
   - Renaming the existing bus from "Sidechain" to "Sidechain 1" may change how hosts show or restore the routing. Decide it with evidence and record the decision in the log.
   - How pluginval and the Steinberg validator handle three input buses is not documented. Run pluginval at strictness 10 on this build, and test every combination of disabled, mono and stereo on each sidechain.
   - The user checks by hand whether FL Studio lists inputs 1 to 6; that check goes in the M3c hands-on checklist.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (spectrum slots, sidechain meters, Offset):
+  - **Scope 4 (analysis settings).** Fill the per-slot settings from the slot parameters (T-051), not `underlay`. Resolve Link: when on, a slot uses slot 1's analysis parameters. Pass `offsetMode` to the engine (T-067), and pass `align0dB`. Legacy `channelMode` L/R and M/S resolve to Left and Mid; **this replaces the "legacy values still produce dual frames" criterion.**
+  - **Scope 5 (meters).** Run **one `MeterBank` per input**: Main always, and Sidechain 1 and Sidechain 2 only while their bus is enabled. Pass the same integration, release, peak-hold and RMS settings to every bank. `requestStatsReset()` resets every bank.
+  - **New API:**
+    - `MeterSnapshot getMeterSnapshot (int input) const noexcept` for 0 (Main), 1 (SC1) and 2 (SC2); the no-argument form stays and means 0;
+    - `bool isMeterInputActive (int input) const noexcept`.
+
+    Prepare and resize the banks on a layout change, off the audio thread, using the T-009 pattern.
+  - **Budget change.** At 48 kHz, 128 samples, stereo main plus two stereo sidechains, three banks, analysis active, solo engaged and sweeping: `processBlock` mean ≤ **40 µs** and p99 ≤ **90 µs** (it was 20 and 50 µs). 0 allocations are still required.
+  - **More criteria:**
+    - each sidechain snapshot equals a stand-alone `MeterBank` fed the same signal;
+    - a disabled sidechain reports inactive, and its snapshot stops updating;
+    - every slot reaches the engine with its own settings, and changing `s3FftSize` with Link off changes only slot 3's `binHz`;
+    - Link on makes slots 2 to 4 follow slot 1's `fftSize` within one analysis frame;
+    - `offsetMode` reaches the engine within one analysis frame.

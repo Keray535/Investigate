@@ -1,7 +1,7 @@
 # T-037: SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid
 - Owner: gui-engineer
 - Milestone: M3b
-- Status: TODO
+- Status: IN_PROGRESS
 - Depends on: T-034 (mockup approved by the user), T-036, T-039, T-041, T-042, T-060 (build order)
 
 ## Goal
@@ -111,3 +111,8 @@ The editor stays inside the message-thread and paint budgets during a continuous
   - **Manual checks for the validation report (they do not fail the task, but record the results):**
     - Standalone, and FL Studio if available: hold Alt, scroll 5 notches over the spectrum, release Alt. Does the menu bar highlight, with the guard on? If possible, also compare with the guard disabled.
     - On a laptop touchpad, if available: does a pinch over the data rect do nothing (it arrives as Ctrl+wheel), or does it zoom frequency (JUCE does not see the Ctrl flag)? T-044 infers the second outcome. Record which one happens. Over the gutters, a pinch zooms that axis.
+- 2026-10-06 vst-architect: **Re-dispatch.** The session dispatched on 2026-10-04 stopped before it changed any source file: `git status` on 2026-10-06 shows no change under `source/` or `tests/`. Start from this task file as written. The status stays IN_PROGRESS.
+  - Context from the M3 review triage (`docs/plans/m3-review-spectrum-slots.md`), which does **not** change this task's scope:
+    - M3d follows right after this task. T-062 changes the mapper's low-frequency interpolation, T-063 changes the level-range rule to 1 dB and the minimum level view span to `min (6 dB, home span)`, and T-066 changes the spectrum grid to 3 dB steps and removes every tooltip except the hover readout.
+    - Implement this task to the current spec. Keep the minimum level span and the grid step as named constants or functions (in `DisplayRange.h` or `SpectrumMath.h`) rather than literals, so T-063 and T-066 change one place.
+    - Do not add new tooltips for the zoom panel or the gestures.

@@ -1,6 +1,6 @@
 # Investigate: Roadmap
 
-Last updated: 2026-10-03 by vst-architect (third session: milestone M3c planned with the user, `docs/plans/m3c-feature-expansion.md`, tasks T-042 to T-059; zoom modifiers moved to Alt).
+Last updated: 2026-10-06 by vst-architect. The M3 review findings were triaged with the user and M3 is closed. A new milestone, M3d (review fixes), was added, and M3c was amended with the four-slot spectrum model, sidechain meters, Offset, A/B and the compact layout (`docs/plans/m3-review-spectrum-slots.md`, tasks T-061 to T-070).
 
 ## Vision
 
@@ -44,15 +44,31 @@ Investigate reproduces SPAN's features and workflow, not its identity. It uses i
   - SPAN's metering modes (14) and a Density style;
   - integration, release and peak-hold times;
   - each meter section can be hidden;
-  - SPAN's primary channel plus underlay model;
+  - ~~SPAN's primary channel plus underlay model~~ (superseded on 2026-10-06 by the spectrum slots, below);
   - frequencies down to 1 Hz;
   - Align 0 dB, and an anti-alias switch;
-  - a second sidechain input, with labels for each input;
+  - a second sidechain input (the per-input labels became slot names on 2026-10-06);
   - curve colours chosen with a colour wheel, which persist globally, with colour presets;
   - a frame-rate cap from 30 to 144 fps with Adaptive pacing;
   - four reference slots saved with the session;
   - CSV export and import;
   - settings presets, which never include colours.
+- **M3 review fixes and M3c amendment** (2026-10-06; plan in `docs/plans/m3-review-spectrum-slots.md`, which wins over the M3c plan where they differ):
+  - **M3d review fixes** (before the M3c C++ chain):
+    - a smooth curve at low frequencies at every Smooth setting (#2, high priority);
+    - no stutter when the block size changes;
+    - the Standalone starts with output monitoring off (the analyser still receives the input);
+    - Smooth up to 3 octaves;
+    - a 3 dB spectrum grid with a default level range of −18 to −72 dB, and a bottom edge at least 1 dB below the top;
+    - no tooltips except the hover readout;
+    - no "48 kHz" label, and no duplicate settings in All Settings;
+    - the sidechain button without "SC" text, turquoise when active.
+  - **Four spectrum slots.** Slot 1 is the main spectrum. Slots 2 to 4 each take a source (Main, Sidechain 1 or Sidechain 2), a channel, a type (Real-time, RT max, All-time max, All-time avg), their own analysis settings or a Link to slot 1, Fill, visibility, a name and a colour. One settings window serves every slot. They replace the underlay, today's secondary curve and the fixed sidechain traces.
+  - Level meters, statistics, loudness and correlation for each connected sidechain.
+  - Offset: Normalize, Center, or align to Spectrum 2, 3 or 4.
+  - A frequency range up to 96 kHz, and a read-only Max crest factor readout.
+  - A compact layout below 600 px wide, with a smaller minimum size.
+  - **A/B comparison** of two full parameter states.
 - Windows 11 x64: VST3 and Standalone.
 - A signed Windows installer for a free public release.
 
@@ -61,7 +77,9 @@ Investigate reproduces SPAN's features and workflow, not its identity. It uses i
 - macOS, AU, AAX and CLAP builds.
 - Surround or more than two main channels.
 - SPAN's multi-channel routing groups, routing between plugin instances, and more than two sidechain inputs.
-- Match EQ, a full preset browser (tags, search, factory banks, the VST3 program list), A/B comparison and undo. A simple Presets menu and CSV export are in scope from M3c.
+- Match EQ, a full preset browser (tags, search, factory banks, the VST3 program list), and undo. A simple Presets menu and CSV export are in scope from M3c, and A/B comparison is in scope from 2026-10-06.
+- Factory presets, a "User" preset label, and panel visibility inside presets (review finding #21, cancelled by the user on 2026-10-06).
+- More than four spectrum slots.
 - Recolouring the whole theme (M3c recolours the spectrum curves only), and exporting meter statistics.
 - Saving or automating the band solo.
 - Loudness targets, platform presets (streaming targets) and automatic reset on transport start.
@@ -110,6 +128,16 @@ Zoom and pan (M3b) work as a view layer. The range parameters define the **home 
 - **MeterBank** adds an integrated level (integration and release times) and a density histogram per channel.
 - **The analysis thread** computes an optional underlay curve and a Sidechain 2 curve, maps down to 1 Hz with optional Align 0 dB, and serves spectrum captures for reference slots and CSV export.
 - **The editor** reads and writes a machine-wide preference file (curve colours, frame-rate cap, Adaptive pacing, anti-alias), and settings and colour preset files, on the message thread only.
+
+**Amendment of 2026-10-06** (full design in `docs/plans/m3-review-spectrum-slots.md`; it supersedes the M3c points above where they differ):
+- **Spectrum slots.** The analysis thread runs four identical `SpectrumSlot`s.
+  - Each slot has a source FIFO (Main, Sidechain 1 or Sidechain 2), a channel combination, its own analyser settings or a Link to slot 1, and a type.
+  - Each input FIFO is drained once per poll and fed to every slot that uses it.
+  - Slots with equal source, channel and analysis settings share one analyser.
+  - The underlay and the dual-curve display are removed. The legacy `channelMode` values L/R and M/S resolve to Left and Mid.
+- **Meter banks per input.** One `MeterBank` per input (Main, SC1, SC2) on the audio thread. A sidechain bank runs only while its bus is enabled. The banks share the metering settings. `MeterSnapshot` gains a max crest factor per channel (SPAN's 50 ms definition).
+- **Offset.** The engine computes it per frame (Normalize, Center, or align slot 1 to slot N), time-smoothed, and applies it to slot 1 only.
+- **A/B.** An `ABStateStore` in `source/presets/` holds two full parameter states in the session state.
 
 ### Modules
 
@@ -187,21 +215,23 @@ No parameter changes the audio, except `soloWidth` while the band solo is held (
 
 | ID | Name | Type | Range / choices | Default | Unit | Skew | Smoothing |
 |---|---|---|---|---|---|---|---|
-| `channelMode` | Channel (M3c; was "Mode") | choice | Mid, Side, Left, Right, L+R (power mean, shown as "Stereo" from M3c), L/R dual, M/S dual | Mid* | – | – | none. From M3c the editor offers the first five. L/R dual and M/S dual stay valid aliases for Left plus underlay Right and Mid plus underlay Side. |
-| `underlay` (M3c) | Underlay | choice | Off, Mid, Side, Left, Right, Stereo | Off | – | – | none. Ignored while `channelMode` holds a legacy dual value. |
+| `channelMode` | Channel (M3c; was "Mode"); slot 1 channel from 2026-10-06 | choice | Mid, Side, Left, Right, L+R (power mean, shown as "Stereo" from M3c), L/R dual, M/S dual | Mid* | – | – | none. From M3c the editor offers the first five. From 2026-10-06 the legacy L/R and M/S values resolve to Left and Mid (no dual display). |
+| ~~`underlay`~~ | dropped on 2026-10-06 before it was built; replaced by the spectrum slots | – | – | – | – | – | – |
 | `fftSize` | Block size | choice | 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536 | 4096* | samples | – | none |
 | `overlap` | Overlap | choice | 1x, 2x, 4x, 8x | 4x* | – | – | none |
 | `window` | Window | choice | Hann, Blackman, Hi-Res (Nuttall squared), Flat-top | Hann | – | – | none |
 | `avgTime` | Avg time | float | 0 to 10000; the time for the spectrum to fall 20 dB | 1000* | ms | centre at 500 ms | none |
-| `smoothing` | Smoothing | choice | Off, 1/48, 1/24, 1/12, 1/6, 1/3 octave | 1/12 oct* | – | – | none |
+| `smoothing` | Smoothing | choice | Off, 1/48, 1/24, 1/12, 1/6, 1/3 octave; appended in M3d (T-064): 1/2, 1, 2, 3 octave | 1/12 oct* | – | – | none |
 | `slope` | Slope | float | −12 to +12, step 0.5 | 4.5 | dB/oct | linear | none |
-| `secondary` | Secondary curve | choice | Off, Real-time max, All-time max, All-time average | Real-time max* | – | – | none |
+| `secondary` | Secondary curve; slot 2 Type from 2026-10-06 | choice | Off, Real-time max, All-time max, All-time average; "Real-time" appended (T-051) | Real-time max* | – | – | none |
 | `freqLow` | Frequency low | float | 1 to 1000 (M3c; was 10 to 1000) | 20 | Hz | log (centre 31.6 Hz from M3c; was 100 Hz) | none |
-| `freqHigh` | Frequency high | float | 1000 to 40000, clamped to Nyquist at display | 20000 | Hz | log (centre 6325 Hz) | none |
-| `dbLow` | Range low | float | −150 to −30, step 1 | −90* | dB | linear | none |
-| `dbHigh` | Range high | float | −30 to +30, step 1 | +6* | dB | linear | none |
-| `showSidechain` | Sidechain trace ("Sidechain 1 trace" from M3c) | bool | off / on | on | – | – | none |
-| `showSidechain2` (M3c) | Sidechain 2 trace | bool | off / on | on | – | – | none |
+| `freqHigh` | Frequency high | float | 1000 to 96000 (T-051; was 40000); data ends at Nyquist and the plot above it is empty | 20000 | Hz | log (centre 9798 Hz from T-051; was 6325 Hz) | none |
+| `dbLow` | Range low | float | −150 to +30, step 1 (M3d, T-064; was −150 to −30) | −72 (M3d; was −90) | dB | linear | none |
+| `dbHigh` | Range high | float | −150 to +30, step 1 (M3d, T-064; was −30 to +30) | −18 (M3d; was +6) | dB | linear | none |
+| `showSidechain` | Sidechain trace; slot 3 Visible from 2026-10-06 | bool | off / on | on | – | – | none |
+| `showSidechain2` (M3c) | Slot 4 Visible (was planned as "Sidechain 2 trace") | bool | off / on | on | – | – | none |
+| Slot parameters (T-051) | `s1Fill`; `s2Visible`; `s3Type`, `s4Type`; and for N = 2, 3, 4: `sNSource`, `sNChannel`, `sNLink`, `sNFftSize`, `sNOverlap`, `sNWindow`, `sNAvgTime`, `sNSmoothing`, `sNSlope`, `sNFill` | mixed | ranges, choices and defaults in `docs/plans/m3-review-spectrum-slots.md`, generated from one table | slots reproduce today's look | – | – | none |
+| `offsetMode` (T-051) | Offset | choice | Off, Normalize, Center, Spectrum 2, Spectrum 3, Spectrum 4 | Off | – | – | time-smoothed on the analysis thread (display only) |
 | `align0dB` (M3c) | Align 0 dB | bool | off / on | off | – | – | none |
 | `meterScale` | Meter scale ("Metering" from M3c) | choice | dBFS, K-20, K-14, K-12; from M3c, appended: dBFS.30, dBFS.15, dBFS+3, K-20 C, K-14 C, K-12 C, LUFS ML, LUFS SL, LU ML, LU SL | dBFS | – | – | none |
 | `meterStyle` (M3c) | Meter style | choice | Bars, Density | Bars | – | – | none |
@@ -213,6 +243,7 @@ No parameter changes the audio, except `soloWidth` while the band solo is held (
 
 Constraints:
 - The mapper (T-005) and the editor (T-012) compute the effective display range with exactly these formulas: `fHiEff = min(freqHigh, sampleRate / 2)`, `fLoEff = min(freqLow, fHiEff / 2)`, `dbHiEff = dbHigh`, and `dbLoEff = min(dbLow, dbHigh − 12)`. Parameters are never rewritten; only the effective values are clamped.
+  - **Amended on 2026-10-06.** In M3d (T-063) the level rule becomes `dbLoEff = min(dbLow, dbHigh − 1)`, and the minimum level view span becomes `min(6 dB, home span)`. In M3c (T-047) the frequency axis spans up to `freqHigh`, the data ends at `min(freqHigh, sampleRate / 2)`, and the plot above the Nyquist frequency is empty.
 - `avgTime` follows SPAN's convention: it is the time for the displayed level to fall by 20 dB. The primary curve's power-domain exponential average uses τ = avgTime / ln(100). The real-time max secondary curve falls linearly in dB at 20 dB per `avgTime`. With `avgTime = 0` there is no averaging, and the real-time max equals the current frame.
 - Correlation uses a fixed 500 ms averaging window (SPAN User Guide p. 5–6). The L/R balance readout uses a fixed 3 s window.
 - The values still marked * are not documented anywhere in Voxengo's guides (confirmed by T-020). They are final product decisions, open to change after user testing.
@@ -288,6 +319,11 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | Whole editor with every M3c layer visible, 60 fps cap, Adaptive on (M3c) | message thread ≤ 25 %; paint p95 ≤ 4 ms and ≤ 8 ms. Caps above 60 fps are measured and reported, not gated. |
 | Preset load / CSV import of 65,536 rows / preference writes (M3c) | ≤ 50 ms / ≤ 200 ms on the message thread / ≤ 2 writes per second |
 | Session state with four full reference slots (M3c) | ≤ 150 KB |
+| `processBlock`, stereo main plus two stereo sidechains, three meter banks, analysis active, solo engaged (2026-10-06; supersedes the two `processBlock` rows above for this configuration) | mean ≤ 40 µs, p99 ≤ 90 µs per block |
+| Analysis thread with four spectrum slots (2026-10-06; supersedes the M3c analysis row) | ≤ 4 % at the defaults with every slot active; ≤ 20 % in the worst case (four unlinked slots at 65536 points, 8x overlap, 192 kHz) |
+| One re-map of every slot, worst case (2026-10-06; supersedes the zoom re-map row when slots differ) | ≤ 2.0 ms on the analysis thread |
+| Block-size change (M3d, T-063) | the last frame stays on screen until the new size produces its first frame, which arrives within one hop of the new size plus 50 ms |
+| A/B switch (M3c, T-068) | ≤ 50 ms on the message thread |
 
 ## Milestones
 
@@ -296,10 +332,11 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | M0 Scaffold | Research, CMake project, pinned JUCE, Catch2 and pluginval, a placeholder pass-through plugin | T-001, T-002, T-003 | The placeholder VST3 builds, pluginval passes at strictness 10, CTest runs, and both research reports are delivered |
 | M1 DSP core | DSP dependencies, then the spectrum pipeline and meters in `source/dsp/` with unit tests | T-021, T-004, T-005, T-006, T-007, T-024 | Unit QA reports PASS, including the EBU conformance cases |
 | M2 Parameters and state | APVTS, buses, state, and DSP wiring with the analysis thread | T-008, T-025, T-026, T-009 | Unit and validation QA PASS: bit-exact null test, state round trip, and real-time safety |
-| M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met |
+| M3 UI | Design spec, then the editor shell, SpectrumView, the rendering CPU pass and MeterPanel | T-010, T-011, T-012, T-029, T-013 | The spec is accepted; QA PASS on the editor; the paint budget and the message-thread budget are met. **Closed on 2026-10-06**, after the user's hands-on review was triaged. |
 | M3b Zoom and pan | A view-layer spectrum zoom and pan (`docs/plans/spectrum-zoom-pan.md`): the spec and mockup, engine re-mapping and the freeze snapshot, the processor API, the pan margin and bin spacing, the editor gestures, the overview strip and box zoom | T-034, T-035, T-036, T-039, T-037, T-038 | The user approves the T-034 mockup before T-037 starts. Every QA report is PASS, and the zoom budgets are met during a continuous pan. The user completes the hands-on checklist in the plan. |
-| M3c Feature expansion | The 14 user items of 2026-10-03 (`docs/plans/m3c-feature-expansion.md`):<br>• research and the UI spec addendum (T-042 to T-045);<br>• additive DSP work (T-046 to T-050);<br>• parameters, processor wiring and the preset store (T-051 to T-053);<br>• the editor (T-054 to T-058);<br>• the gate validation (T-059). | T-042 to T-059 | The user approves the T-045 mockup before T-054 starts. Every QA report for T-046 to T-058 says PASS, `docs/qa/T-059-validation.md` says PASS, and the M3c budgets are met. The user completes the hands-on checklist in the plan. |
-| M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met. T-015 to T-017 also cover zoom and pan, and the M3c features; they depend on T-059. |
+| M3d Review fixes | Fixes from the M3 hands-on review (`docs/plans/m3-review-spectrum-slots.md`): diagnosis (T-061), a smooth low-frequency curve and wider smoothing (T-062), block-size continuity and the 1 dB level rule (T-063), parameters and the Standalone mute default (T-064), editor fixes (T-066) | T-061, T-062, T-063, T-064, T-066 | Every QA report for T-062, T-063, T-064 and T-066 says PASS. The null test is bit-exact, and pluginval passes at strictness 10. The user re-checks the fixed findings in FL Studio. |
+| M3c Feature expansion | The 14 user items of 2026-10-03 (`docs/plans/m3c-feature-expansion.md`), amended on 2026-10-06 (`docs/plans/m3-review-spectrum-slots.md`):<br>• research and the UI spec addenda (T-042 to T-045, T-065);<br>• additive DSP work (T-046 to T-050, T-067);<br>• parameters, processor wiring, the preset store and A/B (T-051 to T-053, T-068);<br>• the editor (T-054 to T-058, T-069, T-070);<br>• the gate validation (T-059). | T-042 to T-059, T-065, T-067 to T-070 | The user approves the combined T-045 and T-065 mockup before T-054 starts. Every QA report for the M3c coder tasks says PASS, `docs/qa/T-059-validation.md` says PASS, and the revised budgets are met. The user completes the hands-on checklist in the plan. |
+| M4 Validation | Validation tooling, the loudness start-of-measurement fix, the full black-box suite, performance, and a real-time safety and sanitizer audit | T-014, T-033, T-015, T-016, T-017 | All QA reports PASS and all budgets are met. T-015 to T-017 also cover zoom and pan, the M3c features and the M3d fixes; they depend on T-059. T-016 tests on a 1440p or 4K display if one is available (Risk 25). |
 | M5 Packaging | Windows CI, then a signed installer and release docs | T-018, T-019 | CI is green; a signed installer installs, uninstalls and passes pluginval on the installed binary |
 
 ## Working rules for this project
@@ -307,36 +344,48 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 - Source directories are picked up by CMake globbing with `CONFIGURE_DEPENDS` (set up in T-003). Coders therefore add files without editing CMake.
 - Every coder task ends with a unit QA report. Tasks that touch the plugin binary also end with a validation QA report.
 
-## Handoff (architect session of 2026-10-03, third session of the day: M3c planning)
+## Handoff (architect session of 2026-10-06: M3 review triage)
 
 Status at handoff:
-- M0 to M2 are closed. In M3 every task is DONE, including T-013 and T-032.
-- M3 stays open only for the user's hands-on review (`docs/plans/m3-user-review.md`), which the user deferred. Triage its findings into tasks when they arrive, including the frame-pacing look as a decision point.
-- M3b: T-034 (mockup approved by the user without changes), T-035, T-036, T-040 and T-039 are DONE with passing QA reports. T-041, T-037 and T-038 are TODO.
-- **M3c planned in this session** with the user (`docs/plans/m3c-feature-expansion.md`, tasks T-042 to T-059). The documents of this session (the roadmap, both plans, the new task files, and the amended T-015, T-016, T-017, T-037 and T-038) are not committed yet. No agent is running.
-- **The zoom modifiers changed by user decision:** Alt+wheel for level zoom, Alt+left-drag for box zoom; Ctrl is reserved for the band solo. T-042 updates the spec before T-037 starts.
+- M0 to M3 are closed. M3 closed on 2026-10-06, after the user's hands-on review (`docs/plans/m3-user-review-findings.md`) was triaged with the user.
+- M3b:
+  - DONE with passing QA: T-034, T-035, T-036, T-039, T-040, T-041, T-042 and T-060.
+  - **T-037** is marked IN_PROGRESS since 2026-10-04, but no source file was changed (`git status` on 2026-10-06 showed only documents). The session stopped before writing code. **Re-dispatch T-037 from its task file.**
+  - T-038 is TODO.
+- M3c:
+  - T-043 and T-044 are DONE.
+  - **T-045 is part-way:** spec §17, tokens 1.2.0 and 12 SVGs are written but **not committed**. Resume steps are in its log, and the 2026-10-06 entry narrows its remaining scope.
+- **This session (documents only, no agent was dispatched):**
+  - the triage, with the user's decisions;
+  - the new plan `docs/plans/m3-review-spectrum-slots.md`, which wins over the M3c plan where they differ;
+  - a new milestone, M3d;
+  - new tasks T-061 to T-070;
+  - dated amendments in T-037, T-045 to T-049, T-051, T-052, T-055 and T-057 to T-059;
+  - updates to this roadmap and to the M3c plan.
+
+  None of this is committed yet.
 - Raw QA log folders (`docs/qa/*-logs/`) are gitignored and not committed.
 
 The next session continues with:
-1. **Commit** this session's documents (build-engineer, or the user), with an explicit path list.
+1. **Commit** (build-engineer), after checking that no `cmake`, `MSBuild`, `cl`, `link`, `ctest` or `InvestigateUnitTests` process is running. Use an explicit path list:
+   - the documents changed on 2026-10-03 to 2026-10-06: `docs/roadmap.md`, `docs/plans/`, `docs/tasks/`;
+   - the T-045 work so far: `docs/design/ui-spec.md`, `docs/design/tokens.json`, and the 12 new SVGs in `assets/ui/`.
 2. **In parallel:**
-   - **T-041** (plugin-engineer): a one-line constant change in `source/PluginProcessor.cpp`, with a short unit QA report. It builds C++, so it runs alone.
-   - **T-042** (ui-ux-designer): Alt modifiers in the spec and the mockup.
-   - **T-043** and **T-044** (researcher): the SPAN reference and the host and platform constraints.
-
-   All three are documentation only.
-3. **T-037** (gui-engineer), once T-041 and T-042 are DONE: the editor zoom, pan, Fit, zoom panel indicator and deep-zoom grid, with Alt+wheel level zoom. Its task log carries everything it needs from T-034, T-035, T-036 and T-039, including the legend and FROZEN badge measurement at 920×540. It needs unit and validation QA reports, including the continuous-pan CPU gate.
-4. **T-038** (gui-engineer): the overview strip and Alt+drag box zoom. After T-038, the user runs the M3b hands-on checklist in `docs/plans/spectrum-zoom-pan.md`.
-5. **T-045** (ui-ux-designer), once T-042, T-043 and T-044 are DONE. It runs in parallel with T-037 and T-038. The user then approves the M3c mockup.
-6. **The M3c C++ chain, one task at a time:**
-   - T-046 to T-050 (dsp-engineer, additive);
-   - T-051 to T-053 (plugin-engineer);
-   - T-054 to T-058 (gui-engineer, after the mockup approval);
-   - then T-059 (plugin-validator), and the user's M3c checklist.
-7. Then M4 (T-033, T-014 to T-017) and M5 (T-018 and T-019).
+   - **T-037** (gui-engineer): the only C++ task.
+   - **T-045** (ui-ux-designer): finish the narrowed scope. **T-065** (ui-ux-designer) follows it, because both edit the same spec files.
+   - **T-061** (researcher): read-only diagnosis of #2, #15 and #16.
+3. **The C++ chain, one task at a time:**
+   1. M3d: T-062 (needs T-061), T-063, T-064;
+   2. T-038; after T-038 the user runs the M3b hands-on checklist in `docs/plans/spectrum-zoom-pan.md`;
+   3. T-066 (needs T-065 delivered; the mockup approval is not needed). The user then re-checks the M3d fixes;
+   4. the M3c chain: T-046, T-047, T-067, T-048, T-049, T-050, T-051, T-052, T-053, T-068, T-054 (needs the user's approval of the combined T-045 and T-065 mockup), T-055, T-069, T-056, T-057, T-070, T-058;
+   5. T-059 and the user's M3c checklist.
+4. Then M4 (T-033, T-014 to T-017) and M5 (T-018 and T-019).
+5. **If T-061 finds that #2 lives in the editor's path drawing** rather than in the mapper, re-route T-062 to gui-engineer, keeping the same acceptance criteria, before dispatching it.
 
 M3c rules for every dispatch:
-- The DSP tasks (T-046 to T-050) must stay additive. The current processor and editor must build and pass unchanged after each of them.
+- The spectrum slot model in `docs/plans/m3-review-spectrum-slots.md` replaces the underlay, the secondary curve and the fixed sidechain traces. Where the M3c plan and that plan differ, that plan wins.
+- The DSP tasks (T-046 to T-050, T-067) must stay additive. The current processor and editor must build and pass unchanged after each of them.
 - Existing parameter IDs and choice indices are never changed (roadmap Decision of 2026-10-03).
 - `source/presets/` is owned by plugin-engineer. gui-engineer only includes `UserDataPaths.h` from it.
 
@@ -376,7 +425,7 @@ Open user decisions:
 | 4 | Clone concerns: trade dress or trademark | Legal or takedown risk | Own name and artwork only; no Voxengo text, assets or colour-scheme copies. T-001 lists what is off-limits. |
 | 5 | FIFO overflow when the analysis thread is starved | Spectrum glitches | Drop samples and count the overflow; the consumer resynchronises. FIFO capacity ≥ 2^17 frames per channel. The overflow counter is visible in debug builds. |
 | 6 | Hosts with odd sidechain handling (bus disabled, or present but silent) | Wrong or missing trace | `isSidechainActive()` reflects the enabled bus layout; the trace is hidden when inactive; T-015 tests the layouts. |
-| 7 | The Standalone mutes input by default ("Mute audio input") | The analyser shows silence in the Standalone | T-008 sets the Standalone's mute-input default to off (T-002 section 9). The output is a bit-exact copy of the input, so users should use headphones or a separate output device to avoid acoustic feedback when the input is a microphone. T-015 checks the behaviour. |
+| 7 | The Standalone mutes input by default ("Mute audio input") | The analyser shows silence in the Standalone | T-008 sets the Standalone's mute-input default to off (T-002 section 9). The output is a bit-exact copy of the input, so users should use headphones or a separate output device to avoid acoustic feedback when the input is a microphone. T-015 checks the behaviour. **Amended on 2026-10-06 (review #1):** the user hears the microphone at launch. T-064 adds a Standalone-only output monitoring switch that defaults to off, and JUCE's "Mute audio input" stays off, so the analyser still receives the input. T-064 verifies both. |
 | 8 | An unsigned installer triggers SmartScreen warnings | Poor user trust | Choose a signing method (for example Azure Trusted Signing or an OV certificate) before M5. |
 | 9 | JUCE license choice for a free closed-source release | Cannot ship legally | The user chooses before M5: JUCE Starter licence (closed source, with a revenue cap) or AGPLv3 (the source must be published). T-002 reports the Starter cap as $20,000 per year of gross revenue, not the $50k assumed earlier. The user must read the current JUCE 8 EULA before deciding. |
 | 10 | Parallel agents collide in the same working tree | Broken builds, lost work | Apply the one-C++-task-at-a-time rule; revisit worktree isolation after M1 if throughput matters. |
@@ -392,7 +441,12 @@ Open user decisions:
 | 20 | User-chosen colours break the colour-blind-safe distinctions or the contrast (M3c) | Curves hard to tell apart | Curve styles still differ by fill, width and dash. A contrast warning in the colour editor. Reset to default. |
 | 21 | 14 items in 18 tasks delay the v1 release (M3c) | Later release | The M3c gate. The user can drop or defer items at the T-045 mockup review. M4 and M5 are otherwise unchanged. |
 | 22 | Align 0 dB behaves differently from SPAN or from user expectations (M3c) | Confusing levels | T-043 researches it. A numeric criterion with sines in T-047. Off by default, with today's frames bit-identical. |
-| 23 | Sessions or automation saved with earlier builds load differently after M3c | Lost settings or a changed view | Existing parameter IDs and choice indices are preserved: the legacy dual modes become aliases, and the new metering modes are appended. T-051 and T-059 test stored version-1 states. |
+| 23 | Sessions or automation saved with earlier builds load differently after M3c | Lost settings or a changed view | Existing parameter IDs and choice indices are preserved: the legacy dual modes become aliases, and the new metering modes are appended. T-051 and T-059 test stored version-1 states. From 2026-10-06 the legacy dual modes resolve to single channels (accepted: the product is unreleased), and slot 2 and slot 3 reproduce the old secondary curve and sidechain trace. |
+| 24 | Four slot analysers, three meter banks and up to four smoothing passes exceed the CPU budgets (2026-10-06) | A sluggish host, or missed frames | Slots with equal settings share an analyser, and unlinked slots only cost when used. The revised budgets are gated in T-046, T-052 and T-059 with `[.perf]` cases. |
+| 25 | The editor is not checked on displays above 1080p (review #17) | Pacing or layout issues on 1440p or 4K | The CPU harness already runs at 2560×1440. T-016 tests on real hardware if available. The README notes the tested displays. |
+| 26 | The slot model makes the editor harder to understand | Users get lost among four slots and a settings window | The defaults reproduce today's look, Link is on by default, and the Spectra list shows source, type and visibility at a glance. Reviewed at the combined mockup approval. |
+| 27 | M3c grows from 18 to 23 tasks, plus 5 tasks in M3d | A later v1 release | One C++ task at a time, in a fixed order. The user can still drop or defer items at the mockup review. Supersedes Risk 21. |
+| 28 | The 1 dB level rule and the 3 dB grid interact badly with level zoom (minimum view span 6 dB) | A confusing grid, or a view narrower than its home range | T-063 makes the minimum level view span `min(6 dB, home span)`. T-065 specifies the grid steps for narrow ranges. |
 
 ## Decisions
 
@@ -507,6 +561,13 @@ Open user decisions:
 | 2026-10-04 | User decisions after T-043 and T-044:<br>• **Alt stays** for level zoom and box zoom. T-037 adds an Alt key-up guard, and the user tests in FL Studio. A fallback (Shift; Shift plus right-drag; Ctrl+Shift; or Alt behind a setting) is chosen only if the menu bar activates.<br>• **dBFS.30** spans −24 to +6 dBFS and **dBFS.15** spans −9 to +6 dBFS.<br>• The **integration default stays 1.00 ms**, so the level bar reacts like a peak meter by default.<br>• The **LUFS and LU bars** show one programme loudness value. | SPAN does not document these values (T-043). The Alt-release risk is plausible from JUCE's source but unobserved in any host (T-044), and a plugin-side guard exists. |
 | 2026-10-04 | Architect decisions from T-043 and T-044 (details in `docs/plans/m3c-feature-expansion.md`, Decisions):<br>• Align 0 dB uses a modelled-sine calibration through the real mapper (T-047).<br>• The band solo uses two cascaded TPT state-variable band-passes (T-050).<br>• The shared preference file uses `PropertiesFile` with an `InterProcessLock` (T-053, T-054).<br>• File dialogs use `launchAsync` only.<br>• T-045 chooses the colour wheel approach. | Research with sources. A Linkwitz-Riley pair is rejected for the band solo because it loses 11 dB at 1/12 octave. |
 | 2026-10-04 | **New task T-060** (plugin-engineer): the sidechain bus is declared with a disabled default layout. JUCE asserts against that, and the VST3 wrapper takes its channel count from the last enabled layout. It becomes `stereo()` and inactive by default. T-060 runs before T-037, so the M3b host test uses a correct bus. | T-044 code finding. It is a host-facing defect in the current product, independent of M3c. |
+| 2026-10-06 | **M3 closed.** The user's 22 hands-on findings are triaged in `docs/plans/m3-user-review-findings.md` (Triage column). The frame pacing (30 fps on large windows) is accepted, checked on a 1080p display only. | The M3 gate rule of 2026-10-03. |
+| 2026-10-06 | **New milestone M3d, review fixes** (T-061 to T-064 and T-066), before the M3c C++ chain. #2 (the jagged low-frequency curve) has high priority, and it must be smooth at every Smooth setting. T-062 runs right after T-037. | Fixes to the current product should not wait for M3c. |
+| 2026-10-06 | **Four spectrum slots** (user decision). Slot 1 is the main spectrum. Slots 2 to 4 take a source (Main, SC1 or SC2), a channel, a type, their own analysis settings or a Link to slot 1, Fill, visibility, a name and a colour. One settings window serves every slot. They replace the M3c underlay, today's secondary curve and the fixed sidechain traces. The default slots reproduce today's look. The legacy dual modes resolve to Left and Mid. Plan: `docs/plans/m3-review-spectrum-slots.md`, which wins over the M3c plan where they differ. | The user wants every spectrum to have every setting, and one template is simpler to build and test. The product is unreleased, so dropping the dual display breaks no public session. |
+| 2026-10-06 | **Sidechain meters** (user decision): each connected sidechain gets level bars next to the main bars, and statistics, loudness and correlation rows below the main rows at a lower opacity. There is one `MeterBank` per input, sharing the metering settings. The `processBlock` budget becomes a mean of 40 µs and a p99 of 90 µs with three banks. This supersedes "the meters measure the main input only" (2026-10-03). | User request #12. Three banks do not fit the single-bank budget. |
+| 2026-10-06 | **Offset** (`offsetMode`): Off, Normalize, Center, Spectrum 2, Spectrum 3 or Spectrum 4. It is applied to slot 1 only, time-smoothed, and eases to 0 dB when its target is missing. **Max crest factor** is a read-only readout using SPAN's definition (50 ms windows, maximum since reset). This reverses the 2026-09-28 divergence. | User decisions on #8 and #13. |
+| 2026-10-06 | **A/B comparison is in v1** (T-068, T-058): two full parameter states, saved in the session, with an A→B copy. **#21 is cancelled** (factory presets, the "User" label and panel visibility in presets); the M3c user settings presets stay. | User decisions. |
+| 2026-10-06 | Parameter and default changes from the review: the Standalone starts with output monitoring off (the analyser still receives the input; the plugin is unaffected); the M3c reference grid reaches 96 kHz; `smoothing` gains 1/2 to 3 octaves; `dbLow` and `dbHigh` both range from −150 to +30 dB, with defaults of −72 and −18 dB; the effective level rule becomes 1 dB; `freqHigh` reaches 96 kHz; the spectrum grid uses 3 dB steps; tooltips are removed except the hover readout. | User requests #1 and #3 to #6, #18. Renormalised automation is accepted before the first public release. |
 ## Status
 
 | Task | Title | Owner | Milestone | Depends on | Status |
@@ -542,24 +603,34 @@ Open user decisions:
 | T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | M3b | T-039 | DONE (`docs/qa/T-041-unit.md` PASS in round 1; ctest 395 of 395, /W4 clean, no behaviour change) |
 | T-042 | Zoom modifiers: Alt+wheel level zoom, Alt+drag box zoom, Ctrl reserved for band solo (spec and mockup) | ui-ux-designer | M3b | none | DONE (2026-10-04; spec and mockup on Alt, new rows G22 and G23 for the reserved Ctrl gestures; a second pass follows only if T-044 confirms the Alt-release risk) |
 | T-060 | Sidechain bus declaration: a stereo default layout, inactive by default | plugin-engineer | M3b | T-041 | DONE (`docs/qa/T-060-unit.md` and `docs/qa/T-060-validation.md` PASS in round 1; ctest 399 of 399 in Release and Debug, no jassert, pluginval strictness 10 including the bus-layout tests) |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041, T-042, T-060 (build order) | IN_PROGRESS (dispatched 2026-10-04; includes the Alt key-up guard) |
-| T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037, T-042 | TODO |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041, T-042, T-060 (build order) | IN_PROGRESS (dispatched 2026-10-04, but no code was written; re-dispatch; includes the Alt key-up guard) |
+| T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037, T-042, T-064 (build order) | TODO |
+| T-061 | Diagnosis: low-frequency curve, block-size stutter, small-window glitch | researcher | M3d | none | TODO |
+| T-062 | Spectrum mapper: smooth low-frequency curve and wider smoothing | dsp-engineer | M3d | T-061, T-037 (build order) | TODO (high priority) |
+| T-063 | Engine continuity on block-size change, and the 1 dB level-range rule | dsp-engineer | M3d | T-061, T-062 | TODO |
+| T-064 | M3d parameters and the Standalone mute default | plugin-engineer | M3d | T-062, T-063 | TODO |
+| T-066 | Editor review fixes | gui-engineer | M3d | T-064, T-065, T-038 (build order) | TODO |
 | T-043 | SPAN reference for M3c | researcher | M3c | none | DONE (`docs/research/T-043-span-m3c-reference.md`; R1 to R20 for M3c; three user questions open: the dBFS.30/.15 bar ends, the ballistics defaults, programme loudness for the LUFS/LU bars) |
 | T-044 | Host and platform constraints, band-solo filter references | researcher | M3c | none | DONE (`docs/research/T-044-host-platform-constraints.md`; Risk 17 plausible but unproven, Alt key-up mitigation exists; found a sidechain bus declaration defect; band solo = two cascaded TPT SVF band-passes) |
-| T-045 | M3c UI spec addendum, tokens, assets and mockup | ui-ux-designer | M3c | T-042, T-043, T-044 | IN_PROGRESS (dispatched 2026-10-04; the user approves the mockup) |
-| T-046 | Spectrum engine: underlay model and a second sidechain input (additive) | dsp-engineer | M3c | T-043, T-038 (build order) | TODO |
-| T-047 | Spectrum mapper: 1 Hz range and Align 0 dB | dsp-engineer | M3c | T-043, T-046 | TODO |
-| T-048 | Spectrum engine: reference grid and capture | dsp-engineer | M3c | T-047 | TODO |
-| T-049 | MeterBank: integration, release, metering modes and density (additive) | dsp-engineer | M3c | T-043, T-048 (build order) | TODO |
+| T-045 | M3c UI spec addendum, tokens, assets and mockup | ui-ux-designer | M3c | T-042, T-043, T-044 | IN_PROGRESS (stopped part-way on 2026-10-04: spec §17, tokens 1.2.0 and the SVGs are written, not committed; scope narrowed on 2026-10-06; resume steps in the task log) |
+| T-065 | UI spec §18 and mockup: review items and spectrum slots | ui-ux-designer | M3c | T-045 | TODO |
+| T-046 | Spectrum engine: spectrum slots and a second sidechain input (additive; amended 2026-10-06) | dsp-engineer | M3c | T-043, T-063, T-066 (build order) | TODO |
+| T-047 | Spectrum mapper: 1 Hz range, 96 kHz axis and Align 0 dB | dsp-engineer | M3c | T-043, T-046 | TODO |
+| T-067 | Spectrum engine: offset modes | dsp-engineer | M3c | T-047 | TODO |
+| T-048 | Spectrum engine: reference grid and capture (any slot) | dsp-engineer | M3c | T-067 (build order) | TODO |
+| T-049 | MeterBank: integration, release, metering modes, density and max crest factor (additive) | dsp-engineer | M3c | T-043, T-048 (build order) | TODO |
 | T-050 | BandSoloFilter | dsp-engineer | M3c | T-044, T-049 (build order) | TODO |
-| T-051 | Parameters and state version 2 | plugin-engineer | M3c | T-043, T-047, T-050 (build order) | TODO |
-| T-052 | Processor wiring for M3c | plugin-engineer | M3c | T-046 to T-051 | TODO |
+| T-051 | Parameters and state version 2 (slot parameters, Offset, ranges) | plugin-engineer | M3c | T-043, T-047, T-050 (build order) | TODO |
+| T-052 | Processor wiring for M3c (slots, meter banks per input, Offset) | plugin-engineer | M3c | T-046 to T-051, T-067 | TODO |
 | T-053 | Settings preset store | plugin-engineer | M3c | T-052 | TODO |
-| T-054 | Global settings, curve colours, colour wheel and colour presets, frame rate, anti-alias | gui-engineer | M3c | T-045 (mockup approved), T-053 | TODO |
-| T-055 | SpectrumView M3c: channel and underlay controls, sidechain curves and labels, 1 Hz axis, Align | gui-engineer | M3c | T-054 | TODO |
-| T-056 | Band solo interaction and outside-band tint | gui-engineer | M3c | T-055 | TODO |
-| T-057 | Meter panel M3c: metering modes, styles, ballistics, section hiding | gui-engineer | M3c | T-056 | TODO |
-| T-058 | Presets menu, reference slots, CSV import and export | gui-engineer | M3c | T-057 | TODO |
+| T-068 | A/B state store | plugin-engineer | M3c | T-053 | TODO |
+| T-054 | Global settings, slot colours, colour wheel and colour presets, frame rate, anti-alias | gui-engineer | M3c | T-045 and T-065 (mockup approved), T-068 (build order) | TODO |
+| T-055 | SpectrumView M3c: slot curves, Spectra list, Offset, Fill, 1 Hz and 96 kHz axis, Align | gui-engineer | M3c | T-054 | TODO |
+| T-069 | Slot settings window | gui-engineer | M3c | T-055 | TODO |
+| T-056 | Band solo interaction and outside-band tint | gui-engineer | M3c | T-069 (build order) | TODO |
+| T-057 | Meter panel M3c: metering modes, styles, ballistics, section hiding, sidechain meters, max crest | gui-engineer | M3c | T-056 | TODO |
+| T-070 | Compact layout and smaller minimum size | gui-engineer | M3c | T-057 | TODO |
+| T-058 | Presets menu, A/B, reference slots, CSV import and export | gui-engineer | M3c | T-070 (build order), T-068 | TODO |
 | T-059 | M3c gate validation | plugin-validator | M3c | T-058 | TODO |
 | T-033 | Loudness meter at the start of a measurement (partly filled gating blocks) | dsp-engineer | M4 | T-013 | TODO |
 | T-014 | Validation tooling: VST3 validator, ASan preset, harness hook | build-engineer | M4 | T-002, T-003 | TODO |

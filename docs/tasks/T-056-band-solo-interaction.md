@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3c
 - Status: TODO
-- Depends on: T-055
+- Depends on: T-055, T-069 (build order)
 
 ## Goal
 Let the user find and hear one frequency band:
@@ -64,3 +64,4 @@ The parts of the spectrum outside the band are tinted. The solo must never stay 
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. The plugin-validator part must include FL Studio if available (user's DAW), noting any host behaviour around Ctrl and Alt (Risk 17).
+- 2026-10-06 vst-architect: Build order changed: this task now follows T-069 (slot settings window), one C++ task at a time. The band solo is unchanged by the slot model. It filters the main output only, whatever the slots show. The outside-band tint applies to every visible slot curve. No tooltips (review #18): the band readout lives in the hover card, as T-045 specifies.

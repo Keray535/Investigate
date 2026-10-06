@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <title>Statistics</title>
+  <rect x="2.5" y="3.5" width="11" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1"/>
+  <path d="M2.5 6.5H13.5M2.5 9.5H13.5M7.5 3.5V12.5" fill="none" stroke="currentColor" stroke-width="1"/>
+</svg>

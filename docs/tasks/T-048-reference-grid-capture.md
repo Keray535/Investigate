@@ -2,7 +2,7 @@
 - Owner: dsp-engineer
 - Milestone: M3c
 - Status: TODO
-- Depends on: T-047
+- Depends on: T-047, T-067 (build order)
 
 ## Goal
 Reference slots ("Take") and the CSV export need a full-range, high-resolution copy of the current curves, independent of the zoom and the editor's point count. Add a shared reference grid and an on-request capture path from the analysis thread to the message thread.
@@ -43,3 +43,11 @@ Reference slots ("Take") and the CSV export need a full-range, high-resolution c
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. The processor API (`requestSpectrumCapture`, `getSpectrumCapture`) is added in T-052.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (spectrum slots):
+  - **What a capture holds.** `SpectrumCapture` holds **one grid curve per slot (1 to 4) plus slot 2's type accumulator where relevant**, instead of the primary, underlay, secondary A/B and Sidechain 1/2 list.
+    - Per-slot validity flags.
+    - Per-slot settings in force: source, channel, type, block size, window, overlap, smoothing, slope and Align.
+    - The applied Offset (T-067), recorded but **not** baked into the values.
+  - **Reference grid.** It stays 4096 points from 1 Hz, but its top rises to **96 kHz** (review #3), so captures at 192 kHz keep their top octave. Update `ReferenceGrid.h` and the CSV notes accordingly. Points above the Nyquist frequency are "no data".
+  - **Criteria.** The criteria apply per slot. Add one: a capture of an unlinked slot with a different block size matches that slot's live frame within 0.01 dB.
+  - **Order.** This task now runs after T-067 (Offset), one C++ task at a time.

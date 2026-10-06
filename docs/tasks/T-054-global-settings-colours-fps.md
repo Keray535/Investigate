@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3c
 - Status: TODO
-- Depends on: T-045 (mockup approved by the user), T-053
+- Depends on: T-045 and T-065 (combined mockup approved by the user), T-053, T-068 (build order)
 
 ## Goal
 Add the machine-wide display preferences:
@@ -58,3 +58,7 @@ The first launch shows the default colours.
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. Must not start before the user approves the T-045 mockup.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`:**
+  - **Approval gate.** The gate is now the user's approval of the **combined T-045 and T-065 mockup**. The build order follows T-068.
+  - **Colour roles.** They become **slot colours**: Slot 1 to Slot 4, plus References 1 to 4. Slot 2's type curves (max or average) use a darker tone of the slot colour, per T-065. "Primary B (underlay)" is dropped. Default slot colours: slot 1 = today's primary, slot 2 = today's secondary tone, slot 3 = today's sidechain, slot 4 = the T-045 Sidechain 2 colour. `GlobalSettings` keys use the slot names.
+  - **Tooltips (review #18).** No new tooltips: the colour editor and the frame-rate controls follow T-065 §18.

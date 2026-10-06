@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3c
 - Status: TODO
-- Depends on: T-057
+- Depends on: T-057, T-068, T-070 (build order)
 
 ## Goal
 Finish the M3c user-facing features:
@@ -70,3 +70,10 @@ Finish the M3c user-facing features:
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (review findings #21 and #22):
+  - **A/B (#22, now in v1).** Add the A, B and "Copy A→B" controls per T-065, wired to `ABStateStore` (T-068): switch, copy, and an indicator of the active letter. Switching applies every parameter as T-068 defines, without freezing the UI (≤ 50 ms). A settings preset load affects the active state only.
+    - Criteria: switching restores every parameter of the other state exactly; the active letter and both states survive a state round trip; undo in the Standalone treats one switch as one step, or T-068 documents why not.
+  - **#21 is cancelled.** No factory presets, no "User" label, and no panel visibility in presets. The existing Presets menu scope (Default, the user presets, Save as, Overwrite, Delete, Open folder, and the "modified" mark) is unchanged.
+  - **References.** "Take" can capture **any slot** (T-048), chosen per T-065, replacing "Take" and "Take 2nd".
+  - **CSV.** The reference grid now reaches 96 kHz (T-048). Export writes one column per visible slot, named by the slot name. The import is unchanged.
+  - **Build order.** This task follows T-070, and needs T-068.

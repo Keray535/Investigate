@@ -1,4 +1,4 @@
-# T-049: MeterBank: integration, release, metering modes and density (additive)
+# T-049: MeterBank: integration, release, metering modes, density and max crest factor (additive)
 - Owner: dsp-engineer
 - Milestone: M3c
 - Status: TODO
@@ -61,3 +61,9 @@ Add SPAN-style level-meter ballistics and the data the new metering modes and th
   - The LUFS and LU bars show one programme loudness value (BS.1770). No per-channel K-weighted windows.
   - Confirmed by T-043: dBFS+3 adds 3.01 dB to the level and the statistics RMS, and peaks are unchanged. Only the K-xx C modes fix integration and release at 600 ms. In the LUFS and LU modes the "Integr" statistic shows the integrated loudness.
   - Follow the report's recommendations for T-049, and record any you do not adopt.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (review findings #12 and #13):
+  - **Max crest factor (#13, read-only readout).** It uses SPAN's definition: per channel, the crest factor over consecutive 50 ms windows (the window's sample peak minus its RMS, in dB), and the maximum since the last statistics reset, published as `crestMax[ch]` in `MeterSnapshot`. `requestReset()` clears it. This reverses the roadmap's 2026-09-28 divergence. The existing editor-derived Crest statistic stays.
+    - Add criteria: a steady sine reads 3.01 ± 0.05 dB; a square wave reads 0 ± 0.05 dB; a 50 ms burst with a crest factor of 12 dB inside steady material raises `crestMax` to 12 ± 0.3 dB and holds it until reset; silence gives no NaN or infinity (the documented silent value).
+  - **One `MeterBank` per input (#12).** The processor (T-052) will run up to three instances: Main, Sidechain 1 and Sidechain 2, all with shared settings. No new DSP is needed for that, but verify that the class carries no hidden static or shared state.
+    - Add a criterion: three instances fed different signals publish independent snapshots.
+    - The per-instance budget stays mean ≤ 15 µs and p99 ≤ 40 µs, with max crest included.

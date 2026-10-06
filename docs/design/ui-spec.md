@@ -2,6 +2,7 @@
 
 - Task: T-010. Author: ui-ux-designer. Date: 2026-09-28. Status: final. The user approved `mockup.html` without changes on 2026-09-28. The layout and visual design are frozen for T-011 to T-013. The final pass reconciled the spec with the roadmap Decisions dated 2026-09-28, finalised the fonts (§3.2) and added the About view (§6.2).
 - Addendum T-034 (2026-10-03, milestone M3b): spectrum zoom and pan, new §5.9, with updates to §4.1, §5.3, §5.5 to §5.7, §6, §7.2, §10, §11, §12, §13.3 and §15. The updated mockup awaits the user's approval; T-037 does not start before it. All changes are listed in §16.
+- Addendum T-045 (2026-10-04, milestone M3c): every M3c change is in the new §17, with marked "M3c" notes in the sections it supersedes, a new §6.3 control inventory, §10.4, §12.2 and §13.4. The M3b behaviour that T-037 implements is unchanged. The updated mockup awaits the user's approval; T-054 to T-058 do not start before it. Changes are listed in §16 and §17.21.
 - Companion files: `docs/design/tokens.json` (the source of truth for every value named `token.*` below), `docs/design/mockup.html` (interactive preview), `assets/ui/*.svg`.
 - All sizes are logical pixels at 100 % scale. "x, y, w, h" rectangles are in editor coordinates, with the origin at the top-left of the editor, unless a rectangle is marked as relative to a parent.
 - Minus signs in displayed text are U+2212 (−), never ASCII hyphen. Multiplication signs are U+00D7 (×).
@@ -167,6 +168,7 @@ Every number is set in the monospaced face so digits do not jitter. JUCE cannot 
 - **Meter strip:** (W − 296, 44, 296, H − 44), `surface`, 1 px `border` left line. It is absent when collapsed.
 - **Data rect** (the plotted area inside the plot region): x = 48, y = 44 + 12, w = (W − MS) − 64, h = (H − 100) − 36. The gutters are left 48 (dB labels), right 16, top 12, bottom 24 (frequency labels). The data rect has a 1 px `border-subtle` frame.
 - **Zoom and pan (T-034, §5.9):** the left gutter (dB labels) and the bottom gutter (frequency labels) are also wheel targets for zooming their axis. While the view is zoomed, the zoom panel (indicator and overview strip) sits at the data rect's top-right corner (§5.9.6). Neither changes the region rectangles above.
+- **M3c (T-045):** the region rectangles are unchanged. The header contents change (§17.2), and the meter strip's header grows to two rows, moving its content top from strip y 52 to 86 (§17.10).
 
 ### 4.2 Header contents (right-anchored items use W)
 
@@ -184,6 +186,8 @@ Every number is set in the monospaced face so digits do not jitter. JUCE cannot 
 | Settings | (W − 40, 8, 28, 28) | 16 px settings icon. A 6 px `accent` dot at its top-right (3, 3 inset) when any control-bar group is hidden (§4.3) |
 
 At the minimum width (920) the sample-rate text starts at x = 476, clear of the Mode control, which ends at 416.
+
+**M3c:** this table describes the header up to M3b. From M3c (T-055) the header is §17.2: Channel, Underlay, Presets, a Sidechain 1 and 2 pair and Refs are added, with a compact mode below 1174 px.
 
 ### 4.3 Control bar (inside the spectrum panel)
 
@@ -239,6 +243,8 @@ Resolved positions:
 | 1200 × 700 | 110 to 672 (562 px) | 28 | 96 to 364 | 443 to 541 | 620 to 688 |
 | 920 × 540 | 110 to 512 (402 px) | 24 | 96 to 328 | 345 to 443 | 460 to 528 |
 
+**M3c:** from M3c (T-057) the strip header has two rows and the sections can be hidden one by one. The layout above is replaced by §17.10.1, §17.10.6 and the resolved tables in §17.17.3.
+
 ### 4.5 Growth rules
 
 - The header (44), the control bar (56) and the meter strip width (296) are fixed. All extra width and height goes to the plot. Extra height also lengthens the meter bars and, up to rowH = 28, the table rows. Beyond that it goes into the two meter-strip gaps.
@@ -268,6 +274,7 @@ The legend and the hover card repeat each swatch next to its name.
 - In dual modes the sidechain curve is the power mean of the sidechain channels (roadmap). In single modes it uses the same channel combination as the main curve.
 - Points below the effective `dbLow` or above `dbHigh` are clamped to the data-rect edge. Frequencies outside the range are clipped by the data rect.
 - **Curve geometry:** reduce each curve to at most 2 vertices per physical pixel column, keeping the column's max and min in dB. Build `juce::Path` objects that are reused across frames (`Path::clear` preserves storage).
+- **M3c:** from M3c (T-054, T-055) the curves use colour roles, the dual modes become the underlay, and Sidechain 2 and four reference curves are added. §17.4 replaces the table above (the M3b styles and colours are its defaults).
 
 ### 5.2 Legend
 
@@ -279,6 +286,7 @@ The legend and the hover card repeat each swatch next to its name.
   - M/S dual: "M", "S".
 - Secondary names: "RT max", "All-time max", "All-time avg".
 - When the pointer is within 16 px of the legend box, the legend drops to 25 % opacity so it never hides the data under the cursor.
+- **M3c:** entries gain the input labels, Sidechain 2, the references and the ALIGN tag, and the legend flows into rows (§17.5).
 
 ### 5.3 Grid and axes
 
@@ -351,6 +359,8 @@ Active while the pointer is inside the data rect. The cursor is a crosshair ther
   - **Fit rule:** the measured width (text plus 12 px padding) must be at most data.w − 16, which is 544 px at the minimum size 920 × 540. Estimated with Inter 500 at 10 px, the two texts are at most about 431 px and 474 px wide (the Fit text was estimated with the longer "Ctrl"; "Alt" is narrower), so both fit at the minimum size. If the measured width is larger (for example with a fallback font), use the short forms "Scroll: zoom · Alt+drag: box · Click: reset · Right-click: copy" and "Drag: pan · Double-click: fit · Scroll: zoom · Click: reset · Right-click: copy".
   - Level zoom (Alt+scroll, or scroll over the dB labels) is not in the hint, because it does not fit at the minimum size. It is in the zoom panel's tooltip (§5.9.6), the accessible description (§10.3) and the M3b user checklist.
   - The reserved Ctrl gestures (§5.9.3 G22, G23) are not in the hint until M3c gives them a function.
+  - **M3c:** while the band solo previews or plays, the hint shows the band texts of §17.9.6 instead. The two texts above are unchanged.
+- **M3c additions to the card and formats** (T-055, T-056): the band block at the top of the card during the band solo (§17.9.4); rows with input labels, Sidechain 2 and references (§17.5); 2 decimals below 10 Hz (3 when zoomed) and note names below C0 (§17.7). Nothing else in this section changes.
 - **Formats:**
   - **Frequency:** round to 3 significant figures first, then:
     - below 100 Hz: 1 decimal, "43.7 Hz";
@@ -395,6 +405,9 @@ This table replaces the T-010 table (T-034; modifiers remapped by T-042). The po
 | Zoom panel: Fit button, overview strip (G17 to G21) | Fit; pan by dragging the window; press beside the window to centre the view there; the wheel passes through to the data rect | §5.9.6 |
 | Ctrl+wheel in the data rect, including a Windows touchpad pinch (G22) | **Reserved for the band solo width (M3c).** Until M3c: nothing; the event is consumed. | None |
 | Ctrl+left press, click, double-click or drag in the data rect (G23) | **Reserved for the band solo (M3c).** Until M3c: nothing; never pans, zooms, box-zooms, fits or starts the deferred reset. | None; the crosshair cursor and hover readout continue |
+| **M3c** (T-056), Ctrl held without a button in the data rect (G24) | Band preview at the pointer, no audio change | Preview tint, dashed band edges, "BAND" block in the hover card, preview hint, band cursor (§17.9) |
+| **M3c** (T-056), Ctrl+wheel in the data rect or over the zoom panel (G22-M3c, replaces G22 from M3c) | Steps `soloWidth` along the width ladder; Ctrl+Shift+wheel in fine steps | The band, tint and readout update (§17.9.5) |
+| **M3c** (T-056), Ctrl+left press and hold in the data rect (G23-M3c, replaces G23 from M3c) | Audible band solo; moving sweeps it; ends on release, Ctrl up, leaving the editor or focus loss | Solo tint, solid edges, "SOLO" block, solo cursor (§17.9) |
 
 - **Clipboard text:** the hover frequency in Hz, as a plain number with no unit, so it pastes into any EQ field. It always matches the card value:
   - 3 significant figures (spans of 1 octave or more): 1 decimal below 100 Hz ("43.7") and none above ("1250", "14300");
@@ -419,7 +432,7 @@ This table replaces the T-010 table (T-034; modifiers remapped by T-042). The po
   - the button uses the `state-frozen` text, a border at 60 % and the `state-frozen-tint` fill;
   - a "FROZEN" badge (20 high, `state-frozen` fill, `caps` with +0.08 em tracking in `text-on-accent`, radius 4, padding 0 × 8) is centred horizontally at y = data.y + 8;
   - the data-rect frame becomes 1 px `state-frozen`.
-- **Auto-unfreeze:** a `channelMode` change from any source (UI, host automation or state load) turns freeze off before the next frame.
+- **Auto-unfreeze:** a `channelMode` change from any source (UI, host automation or state load) turns freeze off before the next frame. **M3c:** a change of the effective channel and underlay pair does (§17.3).
 - **Secondary-curve reset is DSP-side:** `SpectrumAnalyser` clears its secondary accumulators whenever `channelMode`, `fftSize`, `window` or the sample rate changes (roadmap Decision 2026-09-28). The editor does **not** call `requestSpectrumReset()` on any of these changes and shows no toast for them. The first frame after the change already carries the cleared curves. The mockup's `resetCurves(false)` call on a mode change only simulates this DSP behaviour. It is not an editor call to port.
 - Left-click-to-reset still works while frozen, after the same 250 ms defer (§5.9.3 G11). The engine resets, and the effect becomes visible after unfreezing.
 
@@ -428,7 +441,7 @@ This table replaces the T-010 table (T-034; modifiers remapped by T-042). The po
 - **Before the first frame:** only the grid is drawn.
 - **Audio stopped or silent:** frames that keep arriving fall according to `avgTime`. If no new frame arrives (the host stopped calling `processBlock`), the last frame stays on screen. This is intended, because the spectrum is a snapshot tool.
 - **Sidechain active but silent:** the silhouette falls to the floor.
-- **Sidechain bus not active:** no silhouette and no legend entry. The SC button shows its "no input" state (§9).
+- **Sidechain bus not active:** no silhouette and no legend entry. The SC button shows its "no input" state (§9). **M3c:** the same per sidechain, on the Sidechain pair's segments (§17.6).
 
 ### 5.9 Zoom and pan (T-034, milestone M3b)
 
@@ -493,6 +506,9 @@ Frequency is handled in natural-log units (`u = ln f`), level in dB. The data re
 | G21 | Wheel | Zoom panel | Passes through to the data rect at the same position (G1 to G3, G6, G22) | The panel component does not override `mouseWheelMove`, so JUCE forwards the event to SpectrumView |
 | G22 | Ctrl+wheel, with any other modifier, vertical or horizontal (T-042) | Data rect, and the zoom panel (pass-through) | **Reserved for the band-solo width (M3c).** Until M3c: nothing | The event is consumed (never passed to the parent), changes no view, and causes no repaint. A Windows precision-touchpad pinch arrives as Ctrl+wheel, so until M3c a pinch does nothing over the data rect; from M3c it changes the solo width (M3c plan Risk 18). Over the gutters a pinch zooms that axis (G4, G5). |
 | G23 | Ctrl+left press (with any other modifier), then click, double-click, hold or drag (T-042) | Data rect | **Reserved for the band solo (M3c).** Until M3c: nothing | Ctrl is read at the press, and the mode is fixed there: releasing Ctrl later does not start a pan or box, and the release never starts the G11 reset. A Ctrl+double-click does not fit. Pressing Ctrl during a pan or box that began without Ctrl changes nothing. The cursor stays the crosshair and the hover readout continues, as at G8. Middle (G9, G10) and right (G16) presses keep their behaviour with Ctrl held. |
+| G22-M3c | **M3c only (T-056); T-037 implements G22 above.** Ctrl+wheel, with any other modifier, vertical or horizontal | Data rect, and the zoom panel (pass-through) | Steps the band-solo width (`soloWidth`) | Ladder steps per whole accumulated notch; Ctrl+Shift for continuous steps (§17.9.5). Works in Preview and Solo. Consumed; never zooms, pans or repaints the view. |
+| G23-M3c | **M3c only (T-056); T-037 implements G23 above.** Ctrl+left press (with any other modifier), then hold or drag | Data rect, not over the zoom panel | **Audible band solo** at the pointer; dragging sweeps the centre | Mode fixed at the press, as G23: never pans, boxes, fits or resets. Ends on button up, Ctrl up, the pointer leaving the editor, focus loss, hide or close (§17.9.1). A Ctrl+double-click starts a new solo at the second press and does not fit. Middle and right presses keep their behaviour; a right press during a solo does nothing. |
+| G24 | **M3c only (T-056).** Ctrl held with no button down | Data rect, not over the zoom panel | **Band preview** at the pointer, no audio | Ctrl is polled on every editor update (§17.9.2). No view change, no reset. |
 
 **Modifier precedence in the data rect:** Ctrl is tested first (G22, G23), then Alt (G3, G13, G14), then no modifier. Shift only selects fine steps.
 
@@ -517,6 +533,8 @@ Frequency is handled in natural-log units (`u = ln f`), level in dB. The data re
 | Overview strip, over the window's hit area | Open hand | `assets/ui/cursor-hand-open.svg`, hotspot (12, 12) |
 | Overview strip, outside the window | `juce::MouseCursor::PointingHandCursor` | |
 | Overview drag (G18, G19) | Grabbing hand | |
+| **M3c:** Ctrl held, no button, in the data rect (G24) | Band | `assets/ui/cursor-band.svg`, hotspot (12, 12); replaces the crosshair of the rows above from M3c |
+| **M3c:** band solo (G23-M3c) | Band, solo | `assets/ui/cursor-band-solo.svg`, hotspot (12, 12) |
 
 - **Alt and Ctrl state:** take it from the modifiers of the latest mouse event, and from `modifierKeysChanged` when the host delivers it. Some hosts do not deliver key changes to an unfocused plugin window; then the cursor updates on the next mouse move.
 - **Custom cursors:** render each SVG once per display scale into an ARGB `juce::Image` of 24 × scale pixels, and create `juce::MouseCursor (juce::ScaledImage (image, scale), hotspot)`. T-037 checks that the hotspot lands on the logical point given above at 100 % and 200 %. The cursors are fixed black and white and are never recoloured (§11).
@@ -533,6 +551,7 @@ Frequency is handled in natural-log units (`u = ln f`), level in dB. The data re
 | Wheel zoom (G1 to G6) | shown, recomputed in the same frame | shown | shown, values recomputed (the anchored frequency stays fixed) | normal rule | shown (text follows the zoom state) |
 | Pointer over the zoom panel | hidden | hidden | hidden | 100 % | hidden |
 | Overview drag (G18, G19) | hidden | hidden | hidden | 100 % | hidden |
+| **M3c:** band preview (G24) or solo (G23-M3c) | shown | shown | shown, with the band block | normal rule | band text (§17.9.6) |
 
 - After a pan or a box ends with the pointer inside the data rect, the readout reappears at the pointer on the next frame, with no delay.
 - Why hidden: during a pan every value in the card changes under a moving spectrum, the card covers the data the user is dragging, and hiding it reduces the paint cost (§12).
@@ -794,6 +813,7 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
   - Closes on Esc, a click outside it, or the close button.
   - Focus moves into the popover on open and is trapped there. Tab cycles the About button, the fields in column order, then Close. On close, focus returns to the gear.
   - It does not block the spectrum or meters, which keep updating underneath.
+- **M3c:** from M3c (T-055, T-057, T-054) the popover has four tabs and is 560 × 400 (§17.16).
 
 ### 6.2 About view (credits and notices)
 
@@ -857,6 +877,49 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
   - "Credits and licenses" (the viewport, with its full text as the accessible value).
 - **Mockup:** `mockup.html` is the approved design and was deliberately left unchanged in the final pass. The About view is specified here only. It reuses existing tokens and components, so it needs no new visual approval.
 
+### 6.3 M3c control inventory (T-045)
+
+Every new or changed parameter, `ViewState` property and global preference of the M3c plan. "Wheel" is one notch; "Fine" means Shift. Chip behaviours (250 ms click defer, double-click and Alt+click reset, external-change dot, error flash) are those of §7.1 unless a row says otherwise. Stores: P = APVTS parameter (session and settings presets), V = `ViewState` (session only), G = `GlobalSettings` (machine-wide).
+
+| Item (store) | Control and location | Size | Label | Display format | Default | Drag | Wheel (Fine) | Text entry |
+|---|---|---|---|---|---|---|---|---|
+| `channelMode` (P) | Channel segmented, header (§17.2); choice field, Settings > Analysis | Segments 28 to 52 × 24; field 128 × 24 | none; "Channel" | "Mid", "Side", "L", "R", "Stereo" (field: Mid, Side, Left, Right, Stereo); legacy L/R and M/S shown as the pair (§17.3) | Mid | Field: 1 step per 20 px (60) | ±1 segment, clamped | (menu in the field) |
+| `underlay` (P) | Inline choice chip, header; field, Settings > Analysis | 124 × 28; 128 × 24 | UNDERLAY; "Underlay" | "Off", "Mid", "Side", "Left", "Right", "Stereo"; `state-warn` when effectively Off | Off | 1 step per 20 px (60) | ±1 | (menu) |
+| `freqLow` (P, range now 1 to 1000 Hz) | Frequency chip low half (as §6), Settings field | as §6 | FREQUENCY | §5.5 format; below 10 Hz 2 decimals: "1.00" + "Hz" | 20.0 Hz | 240 px over the log range (skew centre 31.6 Hz) | × 2^(±1/6) (× 2^(±1/24)), 3 significant figures | "1", "1 Hz", "2.5", "0.02k" |
+| `align0dB` (P) | On/Off field, Settings > Analysis ("LEVEL AND SOLO"); legend tag while on | 128 × 24 | "Align 0 dB" | "On" / "Off" | Off | none | up = On, down = Off | (none) |
+| `soloWidth` (P, not automatable) | Float field, Settings > Analysis; Ctrl+wheel over the plot (§17.9.5) | 128 × 24 | "Solo width" | Ladder labels "1/12 oct" … "4 oct", else 2 decimals "0.42 oct" | 1 oct | 240 px over the normalised range (skew centre 0.58 oct) | one ladder step (× 2^(±1/8)) | "1/3", "1/3 oct", "0.5", "2 oct" |
+| `showSidechain` (P, name "Sidechain 1 trace") | Segment "1" of the Sidechain pair, header; field, Settings > Inputs | 28 × 24; 128 × 24 | "1"; "Sidechain 1 trace" | On: accent state; "On" / "Off" | On | none | up = On, down = Off | (none) |
+| `showSidechain2` (P) | Segment "2" of the Sidechain pair; field, Settings > Inputs | 28 × 24; 128 × 24 | "2"; "Sidechain 2 trace" | as above | On | none | up = On, down = Off | (none) |
+| `meterScale` (P, 14 modes) | Inline choice chip, strip row 1; field, Settings > Meters | 128 × 28; 128 × 24 | METERING; "Metering" | Short names of §17.10.2 ("dBFS", "dBFS 30", "K-20 cal", "LUFS M", "LU S"); menu grouped with separators | dBFS | 1 step per 20 px (60), in menu order | ±1 in menu order | (menu) |
+| `meterStyle` (P) | Segmented, strip row 1; field, Settings > Meters | 92 × 28 (segments 36 and 52 × 24); 128 × 24 | none ("Bars", "Density"); "Style" | Selected segment; `state-warn` "Density" in loudness modes | Bars | Field: 1 step per 20 px | ±1 | (menu in the field) |
+| `meterIntegration` (P) | Inline float chip, strip row 2; field, Settings > Meters | 160 × 28; 128 × 24 | INTEGRATION; "Integration" | 3 significant figures: "0.25 ms" (2 decimals below 1 ms), "1.00 ms", "35.0 ms", "350 ms", "1.50 s"; `state-warn` in the cal and loudness modes | 1.00 ms | 240 px normalised (skew centre 30 ms), snap 3 significant figures | ±0.02 normalised (±0.004), at least one snap step | "1", "1 ms", "0.5", "2 s" |
+| `meterRelease` (P) | Float field, Settings > Meters | 128 × 24 | "Release" | as Integration: "10.0 ms" … "750 ms" … "5.00 s"; `state-warn` in the cal and loudness modes | 750 ms | 240 px normalised (skew centre 500 ms), snap 3 significant figures | ±0.02 (±0.004) | "750", "1.2 s" |
+| `meterPeakHold` (P) | Float field, Settings > Meters | 128 × 24 | "Peak hold" | 0: "Off"; else "350 ms", "1.00 s", "10.0 s" | 1.00 s | 240 px normalised (skew centre 1000 ms), snap 10 ms below 1 s and 100 ms above | ±0.02 (±0.004) | "off", "0", "1500", "1.5 s" |
+| `rmsWindow` (P, moved) | Float field, Settings > Meters (no longer in the strip) | 128 × 24 | "RMS window" | as §6 | 300 ms | as §6 | as §6 | as §6 |
+| `meterSections` (V) | Four icon toggles, strip row 2; four On/Off fields, Settings > Meters | 24 × 24 each; 128 × 24 | icons; "Level bars", "Statistics", "Loudness", "Correlation" | Shown: accent; hidden: slashed icon | all shown | none | none (toggles); fields: up = On | (none). No double-click reset on the strip toggles |
+| `inputLabel0`, `1`, `2` (V) | Text fields, Settings > Inputs | 160 × 24 | "Main input", "Sidechain 1", "Sidechain 2" | The text, at most 16 characters | "Main", "SC 1", "SC 2" | none | none | Any printable text; empty restores the default |
+| Reference slot k: name, visibility, offset (V, `ReferenceSlots`) | Curves panel, References tab (§17.11) | Name 128 × 24; eye 24 × 24; offset chip 76 × 24 | "NAME", "SHOW", "OFFSET" | Name text; eye icon; offset signed 1 decimal "+1.5 dB", "0.0 dB" | "Ref k", hidden (empty), 0.0 dB | Offset: 240 px over −40 … +40 (fine ×0.1) | Offset ±0.5 dB (±0.1) | Offset: "−3", "+2.5 dB" |
+| Role colours ×8 (G) | Colours tab: role list, hue ring and square, hex field (§17.14) | ring 176; field 104 × 24 | role names | "#62D6F0" | §17.4 defaults | ring and square, Shift ×0.25 | hue ±2° (±0.5°), value ±0.02 (±0.005) | "#RRGGBB", "RRGGBB", "#RGB" |
+| `frameRate` (G) | Float field, Settings > Display | 128 × 24 | "Frame rate" | "60 fps"; `state-warn` above the display rate | 60 fps | 240 px over 30 … 144, 1 fps snap | ladder 30, 48, 50, 60, 72, 75, 90, 100, 120, 144 (±1 fps) | "75", "75 fps", "75 hz" |
+| `adaptivePacing` (G) | On/Off field, Settings > Display | 128 × 24 | "Adaptive pacing" | "On" / "Off" | On | none | up = On | (none) |
+| `antiAlias` (G) | On/Off field, Settings > Display | 128 × 24 | "Anti-alias" | "On" / "Off" | On | none | up = On | (none) |
+| `metersCollapsed` (V, unchanged) | Header Meters toggle | 28 × 28 | icon | §4.5; restores all sections when all are hidden (§17.10.6) | false | none | none | (none) |
+
+**M3c actions** (not stored):
+
+| Action | Control | Size | Behaviour |
+|---|---|---|---|
+| Load a settings preset | Presets menu item | 24-high menu items | §17.13.2; one host gesture per parameter |
+| Save as, Overwrite, Delete, Open presets folder | Presets menu, dialogs | 280 × 112 / 96 | §17.13.3, §17.13.4 |
+| Open the curves panel | Header Refs button | 72 × 28 (28 × 28 compact) | §17.11.1 |
+| Take, Take 2nd, Clear | Slot row buttons | 48, 62, 46 × 24 | §17.11.1 |
+| Load CSV, Save CSV, Export curves | Slot row buttons, panel title button | 44, 44 × 24; 148 × 28 | §17.12 |
+| Cancel a pending file dialog | Status-line button | 56 × 20 | §17.12.2 |
+| Reset role, Reset all colours | Colours tab text buttons | 104 × 24, 128 × 28 | §17.14.2 |
+| Colour presets: load, Save as, Overwrite, Delete, Open colours folder | Colour preset button and menu | 200 × 28 | §17.14.4 |
+| Edit curve colours | Settings > Display "Edit…" | 128 × 24 | Opens the curves panel on the Colours tab |
+| Band solo, solo width | Ctrl gestures over the plot | — | §17.9 |
+
 ## 7. Interaction conventions
 
 ### 7.1 Pointer
@@ -899,6 +962,8 @@ Other pointer rules:
   3. Scale, RMS, Reset statistics.
   
   Hidden controls are skipped. The spectrum view is not focusable.
+
+  **M3c focus order:** (1) Channel, Underlay, Presets, Sidechain 1, Sidechain 2, Refs, Freeze, Reset curves, Meters, Settings; (2) the control-bar chips as above; (3) Metering, Style, Reset statistics, Integration, then the four section toggles. Popovers (Settings, curves panel, preset dialogs) trap focus as §6.1. The band solo has no keyboard equivalent: it is a listening aid for pointer users, and every analysis result is also available without it.
 - **Focus ring:** a 2 px `accent` outline, 1 px outside the bounds, following the corner radius. It is drawn only for keyboard focus (`juce::Component::hasKeyboardFocus` after a Tab), not after a mouse click.
 - **Keys on a focused chip or half:**
   - Up/Right: +1 wheel step. Down/Left: −1. Shift: fine.
@@ -913,6 +978,8 @@ Other pointer rules:
 ## 8. Meters and statistics
 
 All values come from `MeterSnapshot`. Ballistics are display-only and never change the snapshot.
+
+**M3c:** from M3c (T-057) §17.10 adds the 14 metering modes, the `level` and `density` snapshot fields, the Density style, the parameter-driven ballistics (replacing the fixed 20 dB/s, 1500 ms and 30 dB/s below) and section hiding. §8.1 and §8.4 to §8.8 keep applying, except where §17.10 says otherwise.
 
 ### 8.1 Update rates
 
@@ -1024,6 +1091,13 @@ All values come from `MeterSnapshot`. Ballistics are display-only and never chan
 | Invalid entry | 2 px `state-error` outline for 300 ms, then revert | n/a | n/a | n/a |
 | Automation-driven | When a parameter changes without a local gesture (host automation, state load, or another control such as the Settings copy), the chip shows a 4 × 4 `accent` dot at its top-right (4 px inset) for 600 ms after the last change. The value updates within 1 frame (T-011). | SC: the state updates, no dot | The selection updates | Auto-unfreeze on a mode change |
 | Bypassed | Investigate has no bypass parameter, and host bypass is not reported to the editor. With host bypass the snapshot stops changing, so the stale rule of §8.7 applies. | | | |
+| **M3c:** effective value differs | Underlay effectively Off, Integration and Release fixed by the mode, Density in a loudness mode, frame rate above the display rate: the set value in `state-warn`, the tooltip starts with the effective value (§17.3, §17.10, §17.15) | | | |
+| **M3c:** legacy value | | | Channel and Underlay show the equivalent pair, with the external-change dot after a load (§17.3) | |
+| **M3c:** no input on a sidechain | | Sidechain segment: `text-disabled` digit, 4 px hollow ring (§17.6) | | No curve, legend entry or hover row |
+| **M3c:** band preview / solo | | | | Tint 45 % / 65 %, dashed / solid edges, BAND / SOLO tag, band cursors (§17.9) |
+| **M3c:** disabled action | Slot buttons without data, Take 2nd with no secondary curve, file buttons while a dialog is pending, Overwrite and Delete for Default: `text-disabled`, not clickable, tooltip explains | | | |
+| **M3c:** destructive confirm | Slot Clear: "Sure?" in `state-error` for 3000 ms; preset Delete: confirmation popover (§17.11.1, §17.13.4) | | | |
+| **M3c:** modified preset | Presets button name followed by an `accent` "*" (§17.13.1) | | | |
 
 ## 10. Accessibility
 
@@ -1125,6 +1199,15 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
   - Zoom panel (T-034): a group named "Zoom", whose accessible value is the visible range, for example "1.00 to 1.12 kHz, −30.0 to −24.0 dB", followed by ", bin spacing 11.7 Hz" while row 3 shows. The Fit button is named "Fit view", with the description "Show the full range set by the Frequency and Level chips", and supports the press action. The overview strip is named "Spectrum overview" and has the same value as the group. None of them is in the Tab order (§7.2), but assistive technology can press Fit through its accessibility handler.
   - Meter readouts are labels with names such as "Left peak max", "Integrated loudness" and "Correlation".
 
+### 10.4 M3c (T-045)
+
+§17.19 holds the M3c contrast pairs, the non-text contrast of the role colours, the hit targets and the accessible names; §17.4 holds the colour-vision table of the default role colours and the style cue of every curve type. Summary of the checks:
+- Every default role colour is at least 7.2 : 1 against `bg-plot` (the sidechain edges 4.0 and 6.0, the secondaries 5.1 and 5.2), above the 3 : 1 minimum for graphics.
+- In the protanopia, deuteranopia, tritanopia and greyscale simulations, every pair of curve types stays distinguishable by fill, width, dash or position; no decision depends on hue. Same-type curves (the four references) also differ by dash pattern and by name.
+- The band-solo state, the hidden sections, the modified preset, the effective-value states and the CSV errors each carry a non-colour cue (text, line style, slash, "*", icon).
+- Every new control is at least 24 × 24 and has an accessible name.
+- The spectrum description gains the band-solo sentence of §17.9.7.
+
 ## 11. Assets (`assets/ui/`)
 
 | File | viewBox | Use | Notes |
@@ -1139,8 +1222,18 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
 | `cursor-hand-open.svg` (T-034) | 0 0 24 24 | Open hand over the overview window (§5.9.4) | Hotspot (12, 12) |
 | `cursor-hand-grab.svg` (T-034) | 0 0 24 24 | Grabbing hand while panning | Hotspot (12, 12) |
 | `cursor-zoom-box.svg` (T-034) | 0 0 24 24 | Alt held (without Ctrl) over the data rect, and during a box drag (T-042) | Hotspot (7.5, 7.5), the open centre of the crosshair |
+| `icon-refs.svg` / `-16.svg` (T-045) | 24 / 16 | Header Refs button | A solid curve over a dashed curve |
+| `icon-eye-16.svg`, `icon-eye-off-16.svg` (T-045) | 16 | Reference slot visibility | Open eye; eye with a slash |
+| `icon-section-bars-16.svg` (T-045) | 16 | Section toggle: level bars | Two vertical bars of different heights |
+| `icon-section-table-16.svg` (T-045) | 16 | Section toggle: statistics | A table with three rows |
+| `icon-section-loudness-16.svg` (T-045) | 16 | Section toggle: loudness | A speaker with one sound arc |
+| `icon-section-correlation-16.svg` (T-045) | 16 | Section toggle: correlation | A horizontal scale with a centre tick and a marker |
+| `icon-warning-16.svg` (T-045) | 16 | Contrast warning, CSV warnings and errors | A triangle with an exclamation mark |
+| `icon-chevron-down-16.svg` (T-045) | 16 | Presets and colour-preset buttons | A downward chevron |
+| `cursor-band.svg` (T-045) | 0 0 24 24 | Band preview (G24) | A centre line between two open brackets; hotspot (12, 12). Black and white, never recoloured |
+| `cursor-band-solo.svg` (T-045) | 0 0 24 24 | Band solo (G23-M3c) | Filled brackets and two sound marks; hotspot (12, 12) |
 
-- **Cursor exception (T-034):** the three cursor SVGs use a fixed `#FFFFFF` fill with a 1 px `#000000` outline instead of `currentColor`, which is the OS cursor convention and keeps them visible on any background. They are rendered to images (§5.9.4) and never recoloured. They are otherwise clean: a `viewBox`, a `<title>`, no raster images, scripts or external references.
+- **Cursor exception (T-034; T-045 adds the two band cursors):** the cursor SVGs use a fixed `#FFFFFF` fill with a 1 px `#000000` outline instead of `currentColor`, which is the OS cursor convention and keeps them visible on any background. They are rendered to images (§5.9.4) and never recoloured. They are otherwise clean: a `viewBox`, a `<title>`, no raster images, scripts or external references.
 - The Fit button is text-only, so there is no Fit icon.
 
 - **Size variants:**
@@ -1211,6 +1304,14 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
   - editor paint during a pan: p95 ≤ 4 ms at 1280 × 720 and ≤ 8 ms at 2560 × 1440;
   - no per-frame allocation in Investigate's pan and zoom code; text follows the ≤ 20 per frame rule;
   - from a view change to the re-mapped frame being published: p95 ≤ 10 ms, max ≤ 20 ms (analysis side, T-035).
+
+### 12.2 M3c (T-045)
+
+The M3c rendering rules are in §17.18. In short:
+- **Layer count** (drives Adaptive pacing): one layer per curve drawing operation (primary fill, primary stroke, underlay stroke, each secondary, each sidechain fill, each sidechain edge, each visible reference), at most 13. With Adaptive on, the spectrum repaints at `max (30, cap / 2)` fps when the physical data rect exceeds 2.0 Mpx or the count is at least `pacing.layerThreshold` = 7 (the T-029 value, to be recalibrated by T-054 and T-055). With Adaptive off only the cap applies.
+- **The cap** is `min (frameRate, display refresh)` for every editor update; the numeric meter text stays at 10 Hz; budgets are gated at 60 fps.
+- New drawing: the Sidechain 2 hatch, the reference curves and the anti-alias-off strokes are column-rect lists; the band tint and edges are ≤ 4 rects; Density is ≤ 11 rect lists per meter paint; the colour wheel uses cached images.
+- No new gradients, alpha layers, shadows or blurs. The curves panel and the preset dialogs reuse the popover's cached shadow.
 
 ## 13. Coverage checklist
 
@@ -1286,6 +1387,55 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 | Zoom panel, box zoom, cursors | Indicator, Fit button, overview strip, rubber band, custom cursors | 5.9.4 to 5.9.7 |
 | Zoom modifiers (T-042) | Alt+wheel level zoom (G3), Alt+left-drag box zoom (G13); Ctrl+wheel and Ctrl+left press over the data rect reserved for the M3c band solo and inert until then (G22, G23) | 5.6, 5.9.3 |
 
+### 13.4 M3c coverage (T-045)
+
+**Parameters** (plan parameter table):
+
+| Param ID | Control and location | Display format | Double-click resets to | Settings row | Mockup |
+|---|---|---|---|---|---|
+| `channelMode` (5 offered values, 2 legacy aliases) | Channel segmented, header | "Mid" … "Stereo"; legacy as the pair | Mid | Analysis | yes |
+| `underlay` | Underlay chip, header | "Off" … "Stereo" | Off | Analysis | yes |
+| `freqLow` (1 to 1000 Hz) | Frequency chip low half | "1.00 Hz", "20.0 Hz" | 20.0 Hz | Analysis | yes |
+| `align0dB` | Settings field, legend tag | "On" / "Off" | Off | Analysis | yes |
+| `showSidechain` ("Sidechain 1 trace") | Sidechain pair segment 1 | toggle | On | Inputs | yes |
+| `showSidechain2` | Sidechain pair segment 2 | toggle | On | Inputs | yes |
+| `meterScale` (14 modes) | Metering chip, strip | §17.10.2 short names | dBFS | Meters | yes |
+| `meterStyle` | Style segmented, strip | "Bars" / "Density" | Bars | Meters | yes |
+| `meterIntegration` | Integration chip, strip | "1.00 ms" | 1.00 ms | Meters | yes |
+| `meterRelease` | Settings field | "750 ms" | 750 ms | Meters | yes |
+| `meterPeakHold` | Settings field | "1.00 s", "Off" | 1.00 s | Meters | yes |
+| `soloWidth` | Settings field, Ctrl+wheel | "1 oct", "1/3 oct", "0.42 oct" | 1 oct | Analysis | yes |
+| `rmsWindow` (moved from the strip) | Settings field | "300 ms" | 300 ms | Meters | yes |
+
+**`ViewState`:** `meterSections` (strip toggles and Meters tab, §17.10.6); `inputLabel0` to `inputLabel2` (Inputs tab, §17.5); `ReferenceSlots` (curves panel, §17.11); `metersCollapsed` and the editor size (unchanged). All are in the mockup.
+
+**Global preferences (`GlobalSettings`):** the eight role colours (§17.4, §17.14), the current colour-preset name (§17.14.4), `frameRate`, `adaptivePacing`, `antiAlias` (§17.15). All are in the mockup.
+
+**Files:** settings presets `*.invpreset` (§17.13), colour presets `*.invcolours` (§17.14.4), CSV (§17.12).
+
+**`MeterSnapshot` fields:**
+
+| Field | Readout | Section |
+|---|---|---|
+| `level[ch]` | Level part of the bars; Density's current-level notches; stale as −inf | 17.10.3 to 17.10.5 |
+| `density[ch][204]` | Density style | 17.10.5 |
+| `momentary`, `shortTerm` | Also the programme bar in the loudness modes | 17.10.3 |
+| `integrated`, `maxMomentary`, `maxShortTerm` | Loudness block in LUFS, or in LU (+23) in the LU modes | 17.10.7 |
+| (`momentaryCh`, `shortTermCh`) | Not used: the user chose one programme value (T-043 R5) | 17.10.3 |
+
+**`SpectrumFrame` and engine fields:**
+
+| Item | Where | Section |
+|---|---|---|
+| `primaryBDb`, `secondaryBDb`, `isDual` (now: an underlay is present) | Underlay curve and its secondary | 17.4 |
+| `sidechain2Db`, `hasSidechain2` | Sidechain 2 hatched curve | 17.4 |
+| `sidechainDb`, `hasSidechain` | Sidechain 1 | 17.4 |
+| Point frequencies down to 1 Hz | Grid, hover, notes | 17.7 |
+| Capture (`requestSpectrumCapture`, `getSpectrumCapture`, the settings in force) | Take, Take 2nd, Export curves, info line | 17.11, 17.12 |
+| `isSidechainActive (0)`, `(1)` | Sidechain pair no-input state | 17.6 |
+| `setBandSolo`, `bandSoloHeartbeat` | Band solo states | 17.9 |
+| `PresetStore` (`getCurrentPresetName`, `isModified`, save, overwrite, remove, load) | Presets button and menu | 17.13 |
+
 ## 14. IP check against T-001 §8
 
 | Rule | How this design complies |
@@ -1295,6 +1445,7 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 | No SPAN colour scheme or skin | Blue-black ink with aqua, amber and lavender curves, and teal-to-red meters. The spectrum fill is aqua, not olive or yellow-green, and there is no grey chrome. The controls are flat chips, not SPAN's buttons or knobs. |
 | No copied layout proportions | Statistics live in a right-hand column rather than a bottom band. Settings live in a bottom bar and a popover rather than a title bar and a modal editor. The window is 12:7 rather than about 5:2. |
 | No manual text | Every tooltip and label is newly written. The window and curve names (Hann, Blackman, RT max, …) are generic terms (T-001 §8). |
+| M3c names and formats (T-045) | Mode names are Investigate's own or standard terms ("dBFS 30", "dBFS+3", "K-20 cal", "LUFS momentary", "LU short-term", "Underlay", "Density", "Align 0 dB", "Take", "Take 2nd"); no SPAN preset names; file formats `.invpreset`, `.invcolours` and plain CSV; the M3c tooltips and messages are newly written (T-043 IP note). The colour wheel, the curves panel and the two-row strip header are Investigate's own layout. |
 
 ## 15. Open questions
 
@@ -1318,6 +1469,17 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 5. **Curve margin while panning (dsp-engineer, T-035; T-034):** a frame carries curves only over the view it was mapped for. During a continuous pan, or right after a zoom-out step, the editor has no points for the newly exposed margin until the re-mapped frame arrives (up to one editor frame; p95 ≤ 10 ms). In a fast pan this shows as an empty strip flickering at the leading edge. **Recommended answer:** the mapper also maps a margin of 25 % of the visible log-frequency span on each side (clamped to the home range) at the same point density, so at most 1.5 × 2048 = 3072 points per curve, and the frame's view range records the mapped range. 25 % covers one zoom-out notch (12.5 % per side) and a pan of a quarter of the view per frame. If this is declined, §12.1 applies as written and the margin stays empty for that frame.
 6. **Bin spacing in the frame (dsp-engineer, T-035; T-034):** the bin-spacing row (§5.9.6) needs the bin spacing of the data on screen. That differs from `sampleRate / fftSize` while frozen, and for one frame after a Block change. **Recommended answer:** add `float binHz` to `SpectrumFrame`; the freeze snapshot already stores it (plan, "Changes per module"). Until it exists, the editor uses `sampleRate / fftSize`, captured at the moment of freezing while frozen.
 
+**M3c (T-045), open:**
+7. **Band-solo edge function (dsp-engineer, T-050):** the plan clamps the band edges at 10 Hz … 0.45 fs, T-044 clamps the centre at 20 Hz … 0.45 fs. The editor must draw what is played (§17.9.3). **Recommended answer:** T-050 exposes one header-only function, for example `BandSoloMath::resolve (pointerHz, widthOct, sampleRate) → { fc, fLo, fHi }`, used by both the filter and the editor, and documents its clamps.
+8. **Choice texts (plugin-engineer, T-051):** the host-visible choice texts of `meterScale`, `channelMode` and `underlay` should match the UI names (§17.10.2, §17.3): "dBFS 30", "dBFS 15", "dBFS+3", "K-20 cal", "LUFS M", "LUFS S", "LU M", "LU S"; channel "Stereo"; legacy "L/R (legacy)" and "M/S (legacy)". The indices are unchanged.
+9. **Preset name validation (plugin-engineer, T-053):** `PresetStore` should return a reason code (empty, too long, invalid character, trailing dot or space, reserved device name, reserved "Default") rather than text, so the UI shows the texts of §17.13.3 and the colour presets (T-054) reuse the same check.
+10. **Display refresh rate (gui-engineer, T-054):** JUCE does not report the monitor's refresh rate directly. **Recommended answer:** measure the `VBlankAttachment` interval (median of the last 30 callbacks) and use it for the effective frame rate and the `state-warn` rule (§17.15).
+11. **For the user at the mockup review:** the loudness bar has no zones (one colour). Should it mark a target (for example −14 or −23 LUFS)? The spec has none, because a target is a delivery choice.
+12. **For the user:** Release, Peak hold and the RMS window move into Settings > Meters to make room for Integration and the section toggles in the strip. Is that acceptable, or should Release and Peak hold also be in the strip (a third header row, 34 px less bar height)?
+13. **For the user:** the default colours of Sidechain 2 (green) and References 1 to 4 (pink, yellow, blue, silver), §17.4.
+14. **CSV sample (user, from T-043 R18):** a CSV file exported by the user's other analyser would confirm the import rules before T-058.
+15. **Touchpad pinch (T-037, Risk 18):** whether a pinch arrives with Ctrl decides whether it changes the solo width or zooms (§17.9.5). T-037 records the result; the M3c checklist text follows it. No design change either way.
+
 ## 16. Change log
 
 | Date | Task | Change |
@@ -1326,3 +1488,713 @@ Every element of §5.9 is drawn under the T-029 editor rendering rules (roadmap 
 | 2026-10-03 | T-034 | **Spectrum zoom and pan (M3b).** New §5.9: view model, view arithmetic, gestures G1 to G21 with exact numbers, cursors, hover behaviour during gestures, zoom panel (indicator, Fit button, bin-spacing row, overview strip) with geometry at four sizes, collision rules, deep-zoom grid rules with worked examples, Fit and no-op cases, changes from the plan, mockup simplifications. Updated: §4.1 (gutters as wheel targets, panel position); §5.3 (view mapping, cache rule); §5.5 (view-based frequency formula, 4-figure zoom precision, hover-card candidates around the panel, new hint-line texts and fit rule); §5.6 (interaction table replaced, clipboard precision); §5.7 (freeze plus zoom, freeze epoch); §6 (Fit view action, deferred click reset); §7.2 (no zoom keys, Esc during a box drag); §10 (new §10.2a contrast tables, names, hit targets); §11 (three cursor SVGs); §12.1 (rendering and budgets for zoom and pan); §13.3 (view state not persisted, new frame fields); §15 (questions 5 and 6). `tokens.json` 1.1.0 adds the groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid` and `cursor`. New assets: `cursor-hand-open.svg`, `cursor-hand-grab.svg`, `cursor-zoom-box.svg`. `mockup.html` implements every gesture and no longer loads web fonts, so it opens from the file system with no network access. |
 | 2026-10-03 | T-034 (fold-in) | Two stale points that T-011 had overridden in its task file (roadmap Decision 2026-10-01) are folded in: the font files and license texts live in `third_party/fonts/` and the `InvestigateAssets` binary-data target, not in `assets/ui/fonts/` (§3.2, §6.2, §11, and the font file paths in `tokens.json`); and the old §15 open questions 1 to 3 are closed (§15). |
 | 2026-10-04 | T-042 | **Zoom modifier remap**, from the user decision of 2026-10-03 (Ctrl is kept free for the M3c band solo). Level zoom moves from Ctrl+wheel to **Alt+wheel** (G3) and box zoom from Ctrl+left-drag to **Alt+left-drag** (G13), with the same factors, Shift fine steps, 4 px cancel rule and Esc cancel. Ctrl+wheel and a Ctrl+left press, click, double-click or drag over the data rect are reserved for the band solo and do nothing until M3c (new rows G22, G23; the other G numbers are unchanged); a Windows touchpad pinch, which arrives as Ctrl+wheel, is therefore inert over the data rect until M3c and changes the solo width from M3c (this replaces the old "pinch zooms level" note, plan risk Z4). An Alt+click on the data rect does nothing; the chip Alt+click reset (§7.1) is unchanged. Updated: §5.5 hint line, §5.6, §5.9.3 (G1 to G7, G11 to G14, G21 to G23, modifier precedence, a pointer to T-044 for Risk 17), §5.9.4 cursors, §5.9.6 tooltip, §5.9.10 rows 5 and 12, §5.9.11, §7.1, §10.3 description, §11, §12.1, §13.3, and the `cursor-zoom-box.svg` title. `tokens.json` has no gesture references and is unchanged. `mockup.html` handlers use Alt, and the Ctrl variants are inert. |
+| 2026-10-04 | T-045 | **M3c addendum** (awaits the user's mockup approval; T-054 to T-058 do not start before it). New §17 with every M3c design: header with Channel, Underlay, Presets, Sidechain 1 and 2 and Refs, and a compact mode below 1174 px; curve roles, styles and the colour derivation rule; legend and hover card with input labels; sidechain host support; the 1 Hz axis and note names below C0; Align 0 dB; band solo; the two-row meter-strip header, the 14 metering modes, Density, ballistics and section hiding with re-flow; reference slots; CSV flows; settings presets; the colour editor and colour presets; display preferences; the tabbed Settings popover; resolved layouts; performance and accessibility rules. New §6.3 (control inventory), §10.4, §12.2 and §13.4. Marked M3c additions (the M3b behaviour is unchanged for T-037) in §4.1, §4.2, §4.4, §5.1, §5.2, §5.5, §5.6, §5.9.3 (rows G22-M3c, G23-M3c, G24), §5.9.4, §6.1, §7.2, §8, §9, §11 and §14. New questions 7 to 15 in §15. `tokens.json` 1.2.0 adds the groups `curveRole`, `solo`, `meterModes`, `density`, `headerM3c`, `stripM3c`, `popoverM3c`, `display` and `toastM3c`. New assets: `icon-refs.svg`, `icon-refs-16.svg`, `icon-eye-16.svg`, `icon-eye-off-16.svg`, four `icon-section-*-16.svg`, `icon-warning-16.svg`, `icon-chevron-down-16.svg`, `cursor-band.svg`, `cursor-band-solo.svg`. `mockup.html` demonstrates every M3c item. |
+
+## 17. M3c additions (T-045)
+
+Source: `docs/plans/m3c-feature-expansion.md` (the plan), `docs/research/T-043-span-m3c-reference.md` (R1 to R20), `docs/research/T-044-host-platform-constraints.md`, and the user decisions of 2026-10-04. Every value named `token.*` here is in `tokens.json` 1.2.0. Everything in this section is **M3c** and is implemented by T-054 to T-058; the M3b behaviour of §5.5 to §5.9 that T-037 implements is unchanged. Where an older section is superseded from M3c, it says so with a pointer here.
+
+### 17.1 Scope map
+
+| Plan item | What | Sections |
+|---|---|---|
+| [1] Band solo | Preview, audible solo, tint, edges, readout, width, release, cursor | 17.9, 5.9.3 (G22-M3c, G23-M3c, G24), 5.9.4, 6.3 |
+| [2] Metering modes and style | 14 modes, scales, ticks, zones, Density | 17.10.2 to 17.10.5 |
+| [3] Hide metrics | Section toggles, re-flow, all hidden | 17.10.6, 17.17.3 |
+| [4] Channel model | Channel segmented control, Underlay, legacy pairs | 17.2, 17.3 |
+| [5] 1 Hz | Grid labels, formats, note names | 17.7 |
+| [6] Align 0 dB and anti-alias | Align toggle and legend tag; anti-alias preference | 17.8, 17.15 |
+| [7] Three inputs | Sidechain 2 curve, toggles, labels, host support | 17.4, 17.5, 17.6 |
+| [8] Curve colours | Roles, derivation, colour editor, colour presets, live update | 17.4, 17.14 |
+| [9] Frame rate | Cap, Adaptive, effective rate | 17.15, 17.18 |
+| [10] Ballistics | Integration, release, peak hold: controls and display formulas | 17.10.4, 17.10.7, 6.3 |
+| [11] Multi-track comparison | Covered by [7] | 17.6 |
+| [12] Reference slots | Panel, curve style, legend, persistence | 17.11, 17.4 |
+| [13] CSV | Export curves, slot load and save, async dialogs, error messages | 17.12 |
+| [14] Settings presets | Header menu, Save as, Overwrite, Delete, folder | 17.13 |
+| Coverage, accessibility, performance | | 13.4, 17.19 (and 10.4), 17.18 (and 12.2) |
+
+### 17.2 Header
+
+The M3b Mode control (two segmented groups) is replaced by a **Channel** segmented control and an **Underlay** chip. A **Presets** button, a **Sidechain** toggle pair and a **Refs** button are added. The header stays 44 high.
+
+**Two modes.** The header is **full** when `W ≥ 1174` and **compact** below. Compact changes only the right group: Refs, Freeze and Reset curves become 28 × 28 icon buttons (the label moves into the tooltip and the accessible name), and the Presets button narrows. 1174 is the smallest width at which the full right group starts at least 16 px after the Presets button.
+
+| Item | Full (W ≥ 1174) | Compact (W < 1174) | Content |
+|---|---|---|---|
+| Wordmark | (16, 13, 81, 18) | same | unchanged |
+| Channel | (116, 8, 192, 28) | same | Track `surface-2`, radius 6, padding 2. Segments 24 high at x + 2: Mid 40, Side 40, L 28, R 28, Stereo 52 |
+| Underlay chip | (316, 8, 124, 28) | same | Inline choice chip (§4.4 style): label "UNDERLAY" left at x + 8, value right-aligned at x + w − 8 |
+| Presets button | (452, 8, Pw, 28) | same | `Pw = clamp (SRx − 14 − 452, 96, 160)`, where SRx is the sample-rate text x of the active mode. §17.13 |
+| Sample-rate text | (W − 546, 8, 60, 28) | (W − 358, 8, 60, 28) | unchanged style (§8.8) |
+| Sidechain pair | (W − 470, 8, 84, 28) | (W − 282, 8, 84, 28) | §17.6 |
+| Refs | (W − 380, 8, 72, 28): 16 px `icon-refs-16` + "Refs" | (W − 192, 8, 28, 28): icon only | Opens the curves panel (§17.11) |
+| Freeze | (W − 302, 8, 84, 28) | (W − 158, 8, 28, 28): icon only | unchanged behaviour (§5.7) |
+| Reset curves | (W − 212, 8, 116, 28) | (W − 124, 8, 28, 28): icon only | unchanged behaviour |
+| Divider | (W − 84, 14, 1, 16) | same | |
+| Meters toggle | (W − 72, 8, 28, 28) | same | §17.10.6 adds the all-sections-hidden case |
+| Settings | (W − 40, 8, 28, 28) | same | §17.16 |
+
+Resolved positions are in §17.17.1. Gaps: 16 between the sample-rate text and the sidechain pair, 6 between buttons, 12 before the divider, as in §4.2.
+
+Icon-only buttons keep the 28 × 28 hit target, the hover fill and the states of §9. Their tooltip is the button label followed by the existing tooltip text ("Freeze. Hold the current spectrum. …").
+
+### 17.3 Channel and underlay
+
+**Channel segmented control** (bound to `channelMode` indices 0 to 4):
+- Segment texts: "Mid", "Side", "L", "R", "Stereo". "Stereo" is index 4 (the L+R power mean); the plan keeps the definition (T-043 R12).
+- Behaviour as the M3b Mode control (§7.1): click selects, wheel steps ±1 over the five segments (clamped), double-click or Alt+click resets to Mid, arrows step and Delete resets when focused.
+- Tooltips: "Mid: left and right summed and halved.", "Side: left minus right, halved.", "Left channel.", "Right channel.", "Stereo: the power average of left and right." Each ends with the line "Scroll to step. Double-click to reset to Mid."
+
+**Underlay chip** (bound to `underlay`): an inline choice chip. Values "Off", "Mid", "Side", "Left", "Right", "Stereo". The menu lists them in that order with "default" after Off. Drag, wheel, click-to-menu and reset as every choice chip (§7.1).
+
+**Effective pair and the warn state** (the §5.4 convention: the set value shows in `state-warn`, and the tooltip starts with the effective value):
+- Underlay equal to the channel: the chip value shows in `state-warn`; tooltip "Effective Off: the underlay is the same as the channel."
+- Mono main input: both controls stay editable. The Underlay value shows in `state-warn` with "Effective Off: the main input is mono." The Channel segments show normally; the legend names the curve "Mono" (§17.5).
+
+**Legacy values** (`channelMode` 5 = L/R, 6 = M/S, from sessions or automation of earlier builds):
+- Display: L/R shows the **L** segment selected and the Underlay chip showing "Right"; M/S shows **Mid** and "Side". The `underlay` parameter value is ignored and not shown.
+- Both controls carry the external-change dot (§9) for 600 ms after the load, and the Underlay tooltip starts "Saved by an earlier version as L/R. Changing the channel or the underlay saves it as Left with a Right underlay."
+- Nothing is written until the user edits either control. The first edit writes the normalised pair as **one undoable gesture group**: `underlay` first, then `channelMode` (each with begin, set, end), so a host that groups adjacent gestures undoes both at once. Examples: legacy L/R, the user clicks "Side": `underlay` = Right, `channelMode` = Side. Legacy M/S, the user picks Underlay "Off": `underlay` = Off, `channelMode` = Mid.
+- Host automation that writes 5 or 6 later shows the pair again, with no write-back.
+
+**Auto-unfreeze** (§5.7) fires when the *effective* pair changes, from any source. Changing the set `underlay` while it is ignored (legacy value) does not unfreeze.
+
+### 17.4 Curve roles, styles and colours
+
+This table replaces the §5.1 table from M3c. Draw order 1 is at the back.
+
+| Role (colour role) | When drawn | Stroke | Fill | Order |
+|---|---|---|---|---|
+| Sidechain 1 (`sc1`) | `hasSidechain && showSidechain && isSidechainActive (0)` | 1 px role colour at 70 % | Flat role colour at 26 % to the data bottom (per-column bars, §12) | 1 |
+| Sidechain 2 (`sc2`) | `hasSidechain2 && showSidechain2 && isSidechainActive (1)` | 1 px role colour at 70 % | **Hatched**: a 1 logical px bar at every 3rd logical px column (x where `floor (x − data.x) mod 3 = 0`), from the curve down to the data bottom, role colour at 40 % | 2 |
+| Primary (`primary`) | always | 1.5 px role colour, round joins | Vertical gradient of the role colour, 30 % at the data top to 4 % at the bottom (T-029 bands) | fill 3, stroke 10 |
+| References 1 to 4 (`ref1` to `ref4`) | slot visible and holding data (§17.11) | **Dashed column spans**, 1.5 px thick (§17.18), role colour opaque. Patterns along x, in logical px: Ref 1 dash 8 on 4 off; Ref 2 dot 2 on 3 off; Ref 3 dash-dot 8, 3, 2, 3; Ref 4 long dash 14 on 4 off | none | 4 |
+| Sidechain edges | as the sidechains | (the strokes above) | | 5 |
+| Secondary of the primary (derived from `primary`) | `hasSecondary && secondary ≠ Off` | 1 px derived colour, opaque | none | 6 |
+| Secondary of the underlay (derived from `underlay`) | the same, with an underlay | 1 px derived colour | none | 7 |
+| Underlay (`underlay`) | `isDual` (an effective underlay) | 1.5 px role colour | **none** | 9 |
+
+Without hue, every curve type differs by style:
+- Primary: the only line with a gradient fill.
+- Underlay: the only bright solid line with no fill.
+- Secondaries: thin (1 px) and dark (luminance 0.23 by default).
+- Sidechain 1: a solid flat silhouette. Sidechain 2: a hatched (striped) silhouette.
+- References: the only dashed lines, each slot with its own dash pattern.
+
+**Default role colours** (the first launch, and Reset to default). The first four are the current tokens, so the first launch is pixel-identical to the M3b build.
+
+| Role | Default | Luminance | Contrast on `bg-plot` | Deuteranopia (Machado 1.0) | Greyscale cue |
+|---|---|---|---|---|---|
+| `primary` | #62D6F0 | 0.57 | 11.5 : 1 | #AEC0F0 pale blue | gradient fill |
+| `underlay` | #FFB454 | 0.55 | 11.0 : 1 | #DFCA56 yellow | solid line, no fill |
+| `sc1` | #A58BFF | 0.34 | 7.2 : 1 (edge at 70 %: 4.0 : 1) | #669BFC mid blue | solid silhouette |
+| `sc2` | #8FD96B | 0.57 | 11.4 : 1 (edge at 70 %: 6.0 : 1) | #D5C472 khaki | hatched silhouette |
+| `ref1` | #F48FB1 | 0.42 | 8.7 : 1 | #B6B4AF warm grey | dash 8/4 |
+| `ref2` | #E9DD72 | 0.70 | 13.9 : 1 | #F1DD77 yellow | dot 2/3 |
+| `ref3` | #6FA8FF | 0.39 | 8.1 : 1 | #72A1FD blue | dash-dot |
+| `ref4` | #C8CED8 | 0.61 | 12.3 : 1 | #C9CDD8 silver | long dash 14/4 |
+| derived secondary of `primary` | #3E8FA3 | 0.23 | 5.2 : 1 | dark blue | thin dark line |
+| derived secondary of `underlay` | #A87A3C | 0.23 | 5.1 : 1 | dark olive | thin dark line |
+
+Protanopia moves every colour onto the same blue–yellow axis as deuteranopia (within a few levels of the values above); tritanopia moves them onto a cyan–pink axis. Pairs that collapse to similar hues in a simulation (for example `underlay`, `sc2` and `ref2`, all yellow in deuteranopia) are always different curve types: a solid line, a hatched silhouette and a dotted line. The mockup's "Vision check" selector (§10.2) applies the simulation to all ten colours live, and its "Role colour check" dev button lists the simulated hex values and contrasts for the current colours.
+
+**Derivation rules** (one function in `source/gui/CurveColours.h`, used by the editor and the colour editor's preview):
+- **Secondary tone** of `primary` and `underlay`: if the role colour equals its default, the secondary is the token (#3E8FA3 or #A87A3C), so defaults stay pixel-identical. Otherwise convert to HSV and set `v' = v × 0.68`, `s' = s`, `h' = h`; if the result is below 3 : 1 against `bg-plot`, raise `v'` in steps of 0.01 until it reaches 3 : 1 or `v' = v`. (0.68 is the value ratio of the two default pairs; the default secondaries lie within 4 levels of the rule.)
+- **Fills**: the primary gradient uses the role colour at the token alphas (30 % to 4 %); the T-029 band colours are recomputed from the role colour, once per colour change. The sidechain fills use the role colour at 26 % (`sc1`) and 40 % (`sc2`), the edges at 70 %.
+- **Markers, swatches and hover rows** use the role colour; secondary markers use the derived tone.
+- **Alpha** is never user-editable. Role colours are stored opaque.
+
+Colours apply only to curves. The background, grid, meters, text and accent stay design tokens (plan, Out of scope).
+
+### 17.5 Legend, hover card and input labels
+
+**Input labels** (`ViewState.inputLabel0`, `inputLabel1`, `inputLabel2`; defaults "Main", "SC 1", "SC 2"):
+- Edited in Settings > Inputs (§17.16) in three text fields of 160 × 24.
+- At most **16 characters**: the field refuses further typing (the character is dropped and the field outline flashes `state-error` for 300 ms). Any printable character is allowed; control characters are removed. Leading and trailing spaces are trimmed on commit. An empty field commits the default.
+- Enter or focus loss commits; Esc reverts. A change is a `ViewState` change, not a parameter: no host gesture, no undo.
+
+**Legend entries** (in this order, each only while its curve is drawn):
+1. Primary: "{label0} · {channel}", for example "Main · Mid", "Mix · Stereo". Channel names in the legend: Mid, Side, Left, Right, Stereo, or "Mono" with a mono main input.
+2. Underlay: "{label0} · {underlay channel}", for example "Main · Side".
+3. The secondary: "RT max", "All-time max" or "All-time avg", with both swatches stacked while an underlay is drawn (as §5.2).
+4. Sidechain 1: "{label1}". 5. Sidechain 2: "{label2}".
+6. References, in slot order: the slot name.
+7. "ALIGN 0 dB" as a text-only tag (`caps`, `text-secondary`, no swatch) while `align0dB` is on (§17.8).
+
+Each entry is a 16 × 10 swatch in the curve's style (the hatched swatch for Sidechain 2, the slot's dash pattern for references) and its name in `body-sm` / `text-secondary`.
+
+**Legend flow** (it replaces the single-row legend of §5.2 from M3c; position, fill, padding and the 25 % fade rule are unchanged):
+- Entries flow left to right into rows. A row is a pill of 20 high; row k sits at y = data.y + 8 + 22k (2 px between rows).
+- Row width limit `Wmax = right − (data.x + 8)`, where `right` is `data.right − 8`, or `panel.x − 8` while the zoom panel shows. Row 0 also stops at `badge.x − 8` while the FROZEN badge shows (the badge occupies row 0's height only).
+- An entry that does not fit starts a new row. An entry wider than `Wmax` on its own row truncates its name with "…".
+- Toasts are drawn above the legend (§5.9.7 z-order), so a reset toast may briefly cover row 1. This is accepted: toasts are transient.
+- Widest cases, resolved: §17.17.4.
+
+**Hover card rows** (they replace the rows of §5.5 from M3c; position, style and formats are unchanged):
+- Band block first while the band solo previews or plays (§17.9.4).
+- Then the frequency and note lines, a separator, and one row per curve: primary; then the underlay if drawn, otherwise the secondary if shown; Sidechain 1; Sidechain 2; each visible reference with data at f. Row names follow the legend names. A reference without data at f (outside its file's range) has no row.
+- Name strings come from the label-image cache (§12.1) because they change rarely; only values are drawn per frame.
+
+### 17.6 Sidechain inputs and host support
+
+**Sidechain pair** (header, §17.2): track `surface-2`, radius 6. The 16 px sidechain icon at (x + 6, 14) in `text-secondary`, then two toggle segments of 28 × 24 at (x + 26, 10) and (x + 54, 10), showing "1" and "2" in `body` weight 600.
+- Segment 1 is bound to `showSidechain`, segment 2 to `showSidechain2`. Each toggles on click, resets to On on double-click or Alt+click, and steps with the wheel (up = On) as the M3b SC toggle (§7.1).
+- On: `accent-tint` fill, 1 px `accent` border at 50 %, `accent` digit. Off: transparent, `text-secondary` digit.
+- **No input** (`isSidechainActive (i)` false): `text-disabled` digit plus a 4 px hollow ring (1 px stroke) at the segment's top-right, inset 3. When the trace is On, a 1 px `border` outline remains. The segment stays clickable, and the setting is kept.
+- Tooltips:
+  - connected: "Sidechain 1 ({label1}): show this input as a solid silhouette." and "Sidechain 2 ({label2}): show this input as a striped silhouette." Second line: "Click to toggle. Double-click to reset (on). Rename in Settings > Inputs."
+  - no input on 1: "No input on sidechain 1. Route a track to the plugin's first sidechain input in your host."
+  - no input on 2: "No input on sidechain 2. Route a track to the plugin's second sidechain input. Some hosts offer only one sidechain input (for example Ableton Live and Bitwig Studio); use sidechain 1 there."
+
+A host that never offers the second bus and a host whose second bus is offered but not connected look the same: the processor reports the bus inactive, and the UI cannot tell the two apart. Nothing in the UI depends on Sidechain 2 (plan Risk 15).
+
+**Aux curve combination** (plan [4]): with no underlay, each sidechain uses the primary channel combination; with an underlay, the Stereo power mean. The legend and the hover names do not change with it.
+
+**Silence and inactivity:** as §5.8 for both sidechains: an active silent sidechain falls to the floor; an inactive one has no curve, no legend entry and no hover row.
+
+Settings > Inputs shows a read-only status row per sidechain: "Stereo", "Mono" or "No input" (`body-sm`, `text-secondary`; "No input" in `text-tertiary`).
+
+### 17.7 1 Hz axis, formats and note names
+
+`freqLow` reaches 1 Hz (plan [5]). Everything in §5.3 and §5.9.8 applies unchanged; this section adds only what is new below 10 Hz.
+
+- **Grid labels:** the decade sets already include k = 0, giving the labels "1", "2", "3", "5", "7". Resolved at 1 Hz to 20 kHz: the default size (840 px, 195.5 px per decade) uses {1, 2, 5}: 1, 2, 5, 10, 20, 50, 100, 200, 500, 1k, 2k, 5k, 10k, 20k (14 labels, smallest gap 58.8 px); {1, 2, 3, 5, 7} fails (5 to 7: 28.6 px). The minimum size (560 px, 130.3 px per decade) also uses {1, 2, 5} (smallest gap 39.2 px). "1" at x = 48 extends from 44.7 to 51.3, inside the edge rule.
+- **Deep zoom below 10 Hz:** the linear-step rule of §5.9.8 is unchanged; its format already gives "1.1", "1.25" and so on.
+- **Frequency format below 10 Hz** (hover card, chips, panel rows): 3 significant figures with **2 decimals**, "4.37 Hz", "1.00 Hz". The zoomed 4-figure rule gives **3 decimals** below 10 Hz, "4.372 Hz". Clipboard: "4.37" and "4.372". At 10 Hz and above, §5.5 is unchanged.
+- **Note names below C0:** the formula of §5.5 continues with negative octave numbers, written with U+2212: 13.75 Hz gives "A−1 +0c", 8.66 Hz gives "C#−1 +0c". Below C−1 (MIDI 0, that is when `midi < 0`, below 7.94 Hz) line 2 shows "below C−1" in `text-tertiary`.
+- **Frequency chip:** the low half shows "1.00" + "Hz"; its width is unchanged (4 characters, as "20.0").
+- `freqLow` text entry accepts "1", "1 Hz", "2.5". Its drag and wheel follow the new log range 1 to 1000 Hz (skew centre 31.6 Hz): 240 px for the full range, wheel × 2^(±1/6), fine × 2^(±1/24), rounded to 3 significant figures.
+
+### 17.8 Align 0 dB
+
+- **Control:** an On/Off field "Align 0 dB" in Settings > Analysis, section "LEVEL AND SOLO" (§17.16). The control bar has no room: at 1200 × 700 its groups fill the available 880 px exactly (§4.3), so any new chip would hide group C at the default size.
+- **Visible state:** while on, the legend ends with the text tag "ALIGN 0 dB" (§17.5), so a user reading levels sees that the calibration is active.
+- **Tooltip:** "Calibrates the display so a steady 0 dBFS sine at 1 kHz reads 0 dB at any block size, window and smoothing. Noise and dense music read higher with it on. Pairs well with slope 0 and the dBFS+3 meter mode."
+- Toggling it changes the frames only; the editor issues no reset, toast or unfreeze (frozen data keeps the setting of the freeze moment, §5.7).
+
+### 17.9 Band solo
+
+#### 17.9.1 States
+
+| State | Starts when | Ends when | Audio | Visual |
+|---|---|---|---|---|
+| Idle | otherwise | | pass-through | §5.5 hover |
+| **Preview** | Ctrl held (polled, §17.9.2), pointer in the data rect and not over the zoom panel, no mouse button down, no pan, box or overview gesture active | Ctrl released; the pointer leaves the data rect or enters the zoom panel; a button goes down (a left press with Ctrl enters Solo) | pass-through | band, preview tint and dashed edges at the pointer; band block "BAND" in the hover card; preview hint; band cursor |
+| **Solo** | Ctrl+left press in the data rect, not over the zoom panel (G23-M3c) | the left button is released; Ctrl is released; the pointer leaves the **editor** bounds; the editor loses focus, is hidden, or is destroyed; `setAnalysisActive (false)` | band-pass at the band (`setBandSolo (true, fc)` on the press and at most once per editor update while fc changes; `bandSoloHeartbeat()` on every editor update) | solo tint, solid edges, band block "SOLO", solo hint, solo cursor |
+
+- On every end of Solo the editor calls `setBandSolo (false, fc)` in the same update and stops the heartbeat; the 250 ms failsafe in the processor covers a hung editor.
+- From Solo, a released Ctrl with the button still held ends the solo; the rest of that press does nothing (no pan, box or reset; G23 mode fixed at the press). If the button is released with Ctrl still held, the state returns to Preview.
+- While soloing, the centre follows the pointer x, clamped to the data rect, so the solo continues when the pointer crosses into the gutters or the meter strip. Leaving the editor ends it.
+- The solo is never saved, never automated and never undoable. `soloWidth` changes are host gestures (the parameter is not automatable but is part of the state and of settings presets).
+
+#### 17.9.2 Modifier polling and the cursor
+
+- Ctrl is read with `juce::ModifierKeys::getCurrentModifiersRealtime()` on every editor update while the pointer is over the editor (T-044 Q3), and from mouse events. The editor never needs keyboard focus for it.
+- Shift with Ctrl is still Preview or Solo (Shift only selects fine width steps). Ctrl with Alt (or AltGr, which JUCE reports as Alt without Ctrl) follows the §5.9.3 precedence: Ctrl first.
+- **Cursors:** Preview `assets/ui/cursor-band.svg` (a centre line between two brackets), Solo `assets/ui/cursor-band-solo.svg` (the same with filled brackets and sound marks), both hotspot (12, 12) on the centre line, rendered as §5.9.4. The cursor changes in the first update after Ctrl goes down, also without a mouse move.
+
+#### 17.9.3 The band on the plot
+
+- **Band edges** are the filter's −3 dB points: `fLo = fc · 2^(−W/2)`, `fHi = fc · 2^(+W/2)`, `W = soloWidth` in octaves, after the DSP's clamps. The editor computes `fc`, `fLo` and `fHi` with the same function the filter uses (§15 question 7), so the drawing always shows what is played. Edges outside the view are drawn at the data-rect edge as a 2 px stub at the top and bottom (8 px long) to show that the band continues.
+- **Tint outside the band:** up to two rects, `[data.x, x(fLo))` and `(x(fHi), data.right]`, full data height, in `solo.tint` (`bg-plot`) at **45 %** in Preview and **65 %** in Solo. One `fillRectList` of up to 2 rects. The tint covers the curves, the reference curves and the grid lines inside the data rect; it never covers the gutters, the legend, the zoom panel, the hover card, the hint or the toasts.
+- **Edge markers** at `x(fLo)` and `x(fHi)`, full data height:
+  - Preview: 1 px dashed, 4 on, 3 off (vertical), `solo.edge` (#E8ECF3) at 60 %, one rect list.
+  - Solo: 2 px solid `solo.edge` (#E8ECF3), one rect list.
+- **Centre:** no extra line; the hover crosshair (§5.5) already marks it.
+- **Z-order** in the plot (§5.9.7 extended): grid, curves, **band tint and edges**, crosshair, markers, legend, FROZEN badge, zoom panel, box band, hover card, hint, toasts.
+
+#### 17.9.4 Readout (band block of the hover card)
+
+The hover card keeps following the pointer (the centre). While the band shows, its first block is:
+
+| Line | Content | Style |
+|---|---|---|
+| 1 | A tag, then the width right-aligned: `[BAND]  1.00 oct` or `[SOLO]  1.00 oct` | Tag: `caps`, 16 high, radius 4, padding 0 × 6. BAND: `surface-3` fill, `text-secondary` text. SOLO: `text-primary` (#E8ECF3) fill, `text-on-accent` text. Width: `readout`, `text-primary` |
+| 2 | The edges: "885 Hz … 1.77 kHz" | `readout`, `text-secondary`, §5.5 frequency format (3 figures) |
+
+A 1 px `border` separator follows, then the usual frequency and note lines (the frequency is the effective centre). When the DSP clamps the centre (the pointer is below the lowest or above the highest allowed centre), the frequency line shows the clamped centre in `state-warn`.
+
+**Width format:** a ladder value shows as a fraction or decimal from the ladder labels below ("1/12 oct", "1/6 oct", "1/4 oct", "1/3 oct", "1/2 oct", "2/3 oct", "1 oct", "1.5 oct", "2 oct", "3 oct", "4 oct"); any other value shows 2 decimals ("0.42 oct", "1.25 oct"). A value within 0.001 octave of a ladder value counts as that value.
+
+#### 17.9.5 Width (Ctrl+wheel, G22-M3c)
+
+- **Ladder** (`solo.widthLadder`): 1/12, 1/6, 1/4, 1/3, 1/2, 2/3, 1, 1.5, 2, 3, 4 octaves.
+- **Ctrl+wheel**, in Preview and in Solo, over the data rect or the zoom panel: wheel notches `n` as §5.9.2 (normalised, reversed per `isReversed`, ±3 per event), accumulated; each whole notch moves one ladder step (away from the user = wider). The accumulator resets when Ctrl is released or after 500 ms without a wheel event. A width between ladder values steps to the next ladder value in the wheel direction.
+- **Ctrl+Shift+wheel:** continuous fine steps, `W' = clamp (W × 2^(n / 8), 1/12, 4)`, with fractional n applied directly.
+- Each wheel event that changes the value is one host gesture on `soloWidth`. The event is always consumed and never zooms or pans; a horizontal Ctrl+wheel also changes the width (by its dominant axis).
+- The band, the tint and the readout update in the same editor update; while soloing, the audio follows the parameter.
+- **Touchpad pinch** (plan Risk 18): if JUCE reports the pinch with Ctrl, it changes the width like Ctrl+wheel; if not, it is a plain wheel and zooms frequency (G1). T-037 records which, and the M3c checklist text follows it.
+
+#### 17.9.6 Interactions
+
+| With | Rule |
+|---|---|
+| Zoom and pan | No Ctrl gesture pans, zooms, box-zooms, fits or resets (G22-M3c, G23-M3c). Alt+wheel and Alt+drag still zoom (G3, G13) when Ctrl is not held. A pan or box drag in progress is not interrupted by pressing Ctrl later (§5.9.3 G23). |
+| Zoom panel | Preview does not show while the pointer is over the panel, and a Ctrl+press on the panel acts as the panel (Fit, overview), never as a solo. During a Solo the drag is captured by the spectrum, so the band and card stay visible when the pointer passes over the panel. The panel is drawn above the tint. |
+| Hover card | Stays visible in Preview and Solo, with the band block (§17.9.4). It follows the §5.5 placement and panel-avoidance rules. |
+| Hint line | Replaced while the band shows: Preview "Ctrl+click and hold: listen to the band · Ctrl+scroll: band width"; Solo "Listening to the band · release to stop · Ctrl+scroll: band width". Estimated widths about 330 px and 340 px, within the 544 px limit at the minimum size. |
+| Toasts | Ctrl gestures create no toast (no reset, no copy). A right press while Ctrl is held but no solo is active still copies (G16). A right press during a Solo does nothing. Existing toasts keep fading above the tint. |
+| Freeze | Preview and Solo work while frozen; the tint covers the frozen curves. The solo never unfreezes, and Freeze never ends a solo. |
+| Legend | The 25 % fade rule applies as usual. |
+| Meters | Unchanged: they measure the unfiltered input. The Solo width tooltip says so. |
+| Settings, curves panel, menus | While a popover or menu is open, Ctrl over the plot does nothing (the popover owns the pointer). A popover never opens during a solo. |
+
+#### 17.9.7 Accessibility of the solo
+
+- The state is shown without colour by: the tag text ("BAND" or "SOLO"), the edge style (dashed or solid, 1 or 2 px), the tint strength (45 % or 65 %), the cursor shape (open or filled brackets), and the hint text.
+- On entering Solo the spectrum's accessibility handler posts the announcement "Band solo on, 1.25 kHz, 1 octave" (low priority); on leaving it posts "Band solo off". Width changes during a solo are not announced.
+- The spectrum description (§10.3) gains: "Hold Ctrl to preview a band; hold Ctrl and the mouse button to listen to it; Ctrl+scroll sets the band width."
+
+### 17.10 Meter strip
+
+The strip stays 296 wide. Its header grows to **two rows**, which moves the content top from y = 52 to y = **86** (strip-relative).
+
+#### 17.10.1 Header rows (strip-relative)
+
+| Item | Rect | Content |
+|---|---|---|
+| Metering chip | (12, 12, 128, 28) | Inline choice chip, label "METERING", value the mode's short name (§17.10.2) |
+| Style segmented | (146, 12, 92, 28) | Track `surface-2`, padding 2, segments "Bars" 36 × 24 and "Density" 52 × 24 |
+| Reset statistics | (256, 12, 28, 28) | Icon button (`icon-reset-16`), tooltip "Reset statistics. …" (the §6 text) |
+| Integration chip | (12, 46, 160, 28) | Inline float chip, label "INTEGRATION", value "1.00 ms" |
+| Section toggles | (178, 46, 106, 28) | Track `surface-2`, padding 2; four icon toggles of 24 × 24 at x = 180, 206, 232, 258: level bars, statistics, loudness, correlation (§17.10.6) |
+
+- The RMS window chip and the Release and Peak hold controls are in Settings > Meters (§17.16). The Integration chip is in the strip because the default 1.00 ms makes the level part read like a peak meter (user decision of 2026-10-04), so the control must be easy to find.
+- Integration chip tooltip: "Integration time of the level part of the bars: how long it takes to rise or fall 20 dB. Below about 50 ms it follows the peaks of low frequencies rather than their average. Release and peak hold are in Settings > Meters." (own wording; T-043 R7.)
+
+#### 17.10.2 Metering modes
+
+The menu shows the modes in five groups with separators; drag and wheel step through them in **menu order** (not index order). Display names are Investigate's own (T-043 IP note).
+
+| Menu order | Index (`meterScale`) | Chip value | Menu text | Bar range (display units) | Ticks: candidates (≥ 20 px) | Level part | Zones (safe / warm / hot) | Integration, release |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0 | dBFS | dBFS | −60 … +6 dBFS | 6, 12 | `level` | < −12, −12 … −3, ≥ −3 | parameters |
+| 2 | 4 | dBFS 30 | dBFS 30 (−24 … +6) | −24 … +6 dBFS | 1, 2, 3, 6 | `level` | as dBFS | parameters |
+| 3 | 5 | dBFS 15 | dBFS 15 (−9 … +6) | −9 … +6 dBFS | 1, 2, 3 | `level` | as dBFS | parameters |
+| 4 | 6 | dBFS+3 | dBFS+3 | −60 … +6, dBFS labels (T-043 R2) | 6, 12 | `level` + 3.0103 | as dBFS, on the biased value | parameters |
+| — | | | | | | | | |
+| 5 to 7 | 1, 2, 3 | K-20, K-14, K-12 | K-20, K-14, K-12 | −60 … +6 dBFS, labelled in K units | 4, 8 | `level` + 3.0103, K-referenced | < 0 K, 0 … +4 K, > +4 K | parameters |
+| — | | | | | | | | |
+| 8 to 10 | 7, 8, 9 | K-20 cal, K-14 cal, K-12 cal | K-20 calibration (600 ms), … | as K | 4, 8 | as K | as K | **fixed 600 ms** (T-043 R3) |
+| — | | | | | | | | |
+| 11, 12 | 10, 11 | LUFS M, LUFS S | LUFS momentary, LUFS short-term | −60 … +6 LUFS | 6, 12 | **one programme bar**: `momentary` or `shortTerm` | none (single colour) | fixed windows (400 ms, 3 s) |
+| — | | | | | | | | |
+| 13, 14 | 12, 13 | LU M, LU S | LU momentary, LU short-term | −37 … +29 LU (0 LU = −23 LUFS, T-043 R6); ticks at multiples of the step from 0 | 6, 12 | one programme bar, LUFS + 23 | none | fixed windows |
+
+- **Tick step:** the smallest candidate whose spacing on the track is at least 20 px. Labels are signed integers ("+6", "0", "−24"), right-aligned at x = 24 of the bars column, with a 1 px `meter.track-line` across the tracks, as §8.2. Resolved per size in §17.17.3.
+- The menu's "default" mark is on dBFS. Menu items 8 to 10 carry the hint "(600 ms)" in `text-tertiary`; the C-mode name is Investigate's "cal" wording.
+- **Fixed ballistics are shown, not hidden:** in the cal modes the Integration chip (and the Release field in Settings) show their set values in `state-warn`, with the tooltip starting "Effective 600 ms: fixed in K-20 calibration mode." In the loudness modes they show "Effective: the momentary loudness window (400 ms)." or "(3 s)". The fields stay editable (the parameters keep their values for other modes).
+- Meters measure the main input only (plan decision; T-043 R14). There are no Mid/Side meters.
+
+#### 17.10.3 Bars style (per mode)
+
+The M3b two-part bar (§8.2) remains for the level modes, with `level` replacing `rms` as the lower part:
+- **Level part** (solid, zone colours): from the bar bottom to `level[ch]` plus the mode's bias (above). `level` is the integrated level with release, from the snapshot.
+- **Peak part** (pre-blended peak colours): from the level top to the displayed peak (§17.10.4).
+- **Hold tick:** 2 px `meter.hold-tick` (§17.10.4). Not drawn when `meterPeakHold` = 0.
+- Clip lamps and channel letters as §8.2. Mono: one bar (§8.6).
+- **Loudness modes:** the two tracks merge into **one programme bar** from x = 30 to the column width (30 … 80, or 30 … 272 when the bars are alone), labelled "M" or "S" at the bottom (`caps`) instead of L and R. It has a solid fill in `meter.safe` (no zones, no peak part) and a 2 px hold tick that holds the highest loudness for `meterPeakHold` and then drops to the current value. The two clip lamps stay above, side by side as before, because clips are per channel. The single wide bar, the absent L/R letters and the absent peak part make it read as one value, not as a pair.
+
+#### 17.10.4 Ballistics display formulas (editor)
+
+Let `dt` be the time since the previous editor update in seconds, `R = meterRelease / 1000` (0.6 in the cal modes) and `Hs = meterPeakHold / 1000`.
+- **Peak part:** `p = max (pNew, pPrev − 20 × dt / R)`, where `pNew` is the snapshot `samplePeak[ch]` (the 50 ms maximum). So the peak falls 20 dB per release time.
+- **Hold tick:** `h` takes `pNew` and restarts its timer when `pNew ≥ h`. After `Hs` without a new maximum it falls at `20 / R` dB per second and never below `p`. With `Hs = 0` there is no tick, and the Peak row of the table shows `p`.
+- **Level part:** no editor ballistics; it shows `level[ch]` (the DSP applies integration and release, plan [2]).
+- **TP row** of the table: held like the hold tick, with `Hs` and `R` (it was 1500 ms and 30 dB/s).
+- These replace the fixed 20 dB/s, 1500 ms and 30 dB/s of §8.2 and §8.3 from M3c. A parameter change applies on the next update.
+- **Stale snapshot** (§8.7): `level` and `density` are treated like the live levels: `level` as −inf (so the level part falls with the DSP's last state at the release rate in the editor), the density histogram as all zero (the density fades out over one release time, linearly).
+
+#### 17.10.5 Density style
+
+Density shows how often the level stays at each value, as brightness along the track (`density[ch][204]`, 0.5 dB bins from −96 to +6 dBFS, normalised 0 to 1).
+- **Mapping:** each bin covers the display interval `[bin + bias, bin + bias + 0.5]` (bias as the mode's level part). For each physical pixel row of the track, take the largest density of the bins that overlap it. Rows outside the bar range are skipped.
+- **Quantisation:** `q = floor (7 × sqrt (d) + 0.5)` (the square root makes rare levels visible). q = 0 is not drawn. q = 1 to 7 use `density.level-1` … `density.level-7`, pre-blended `meter.safe` over `bg-plot` at q/7 (#102728, #16423E, #1C5C53, #227768, #28917D, #2EAC93, #34C6A8).
+- **Rects:** consecutive rows with the same q merge into one rect of the track width. One `fillRectList` per level for all channels together: at most 7 lists.
+- **Zone rail:** a 3 px strip along the inner left edge of each track in the zone colours (safe, warm, hot) of the mode, part of the cached static image. It keeps the zones readable, because the density uses one hue.
+- **Current level:** two 4 × 2 px notches in `text-primary`, at the left and right inner edges of the track, at `level + bias` (one list).
+- **Hold tick:** the 2 px hold tick of §17.10.4 (one list).
+- Clip lamps and letters as Bars.
+- **Not in loudness modes:** the density is a level histogram, so in LUFS and LU modes the bar shows the loudness bar of §17.10.3; the Style control keeps "Density" selected, shown in `state-warn`, with the tooltip "Effective Bars: density is not available in loudness modes."
+- Paint: at most 7 density lists + 1 notch list + 1 hold list + the lamps (2 lists, or the cached image) = **≤ 11 `fillRectList` calls** per meter paint, never a path.
+
+#### 17.10.6 Section hiding
+
+- Four sections: **level bars**, **statistics** (the table), **loudness**, **correlation**. State: `ViewState.meterSections`, bit 0 bars, bit 1 statistics, bit 2 loudness, bit 3 correlation; default 0b1111.
+- **Control:** the four icon toggles in header row 2 (§17.10.1): `icon-section-bars-16`, `icon-section-table-16`, `icon-section-loudness-16`, `icon-section-correlation-16`. Shown: `accent-tint` fill, `accent` icon. Hidden: transparent, `text-tertiary` icon with a 1 px diagonal slash from the top-left to the bottom-right of the 16 px icon box. Click toggles at once; there is no double-click reset (a double-click toggles twice). The same four are On/Off fields in Settings > Meters. Tooltips: "Show the level bars", "Show the statistics table", "Show the loudness readouts", "Show correlation and balance", each ending "Click to show or hide."
+- **Re-flow** (strip-relative; content top Y0 = 86, content height HRC = SH − 98):
+  - **Columns:** with the bars shown, the bars column is (12, 86, 80, HRC) and the right column (108, 86, 176, HRC). With the bars hidden, the right column is (12, 86, 272, HRC). With the right column empty, the bars column is (12, 86, 272, HRC).
+  - **Bars inside a column of width CW:** bar width `bw = floor ((CW − 36) / 2)`; L at x 30 … 30 + bw, R at CW − bw … CW; mono and the loudness bar as §17.10.3 (mono: one bar of width bw centred at `30 + (CW − 30 − bw) / 2`). CW = 80 gives the M3b 22 px bars; CW = 272 gives 118 px bars.
+  - **Right column:** the visible sections, in the order statistics, loudness, correlation, are stacked from the top. Heights: statistics `16 + 9 × rowH`, loudness 98, correlation 68. With n visible sections and `others` the summed height of the visible loudness and correlation blocks: `rowH = clamp (floor ((HRC − 16 − others − 16 × (n − 1)) / 9), 20, 28)`; `gap = max (12, (HRC − Σ heights) / (n − 1))` for n ≥ 2. So with two or three sections the last one ends at the bottom (SH − 12), as the correlation block does in M3b. A 1 px `border` divider is centred in each gap. With all three, this equals the M3b formula except that rowH may go down to 20 (it was 22), which the shorter content area needs at 920 × 540.
+  - **Width-dependent parts:** the table's label column is `CWr − 96` (80 or 176 px); the loudness block's three columns share CWr; the correlation bar is CWr wide with its ticks at ±0.5 of it.
+- **All four hidden:** the strip behaves as collapsed (MS = 0) and the header Meters toggle shows its collapsed state. Clicking the Meters toggle then sets `meterSections` to all four and shows the strip; its tooltip in that state is "All meter sections are hidden. Click to show them."
+- **The Meters toggle** (`metersCollapsed`) hides the whole strip whatever the sections, and showing it again restores the sections as they were.
+
+#### 17.10.7 Statistics and loudness text per mode
+
+- **RMS row unit** follows the mode: "dBFS" in dBFS, dBFS 30 and dBFS 15; "dBFS+3" in dBFS+3 (value + 3.0103); "K-20", "K-14", "K-12" in the K and cal modes (value as §8.3); "dBFS" in the loudness modes (the RMS stays a level statistic; loudness is in the loudness block). The row still uses `rmsWindow`.
+- **Loudness block in LU modes:** the title unit reads "LU" and M, S, I, M max and S max show `LUFS + 23`, signed with 1 decimal ("+2.4", "−5.0", "0.0"). LRA is unchanged. In every other mode the block is as §8.4.
+- **Peak row** shows the hold-tick value (§17.10.4), or the peak part when `meterPeakHold` = 0.
+
+### 17.11 Reference slots
+
+#### 17.11.1 The curves panel
+
+The header Refs button opens the **curves panel**, a popover with two tabs: **References** (this section) and **Colours** (§17.14). It is anchored like Settings at (W − 572, 48), **560 × 320**, with the popover fill, border, radius and cached shadow. Settings and the curves panel are mutually exclusive: opening one closes the other. Settings > Display "Curve colours: Edit…" opens this panel on the Colours tab.
+
+Panel-relative layout:
+
+| Item | Rect | Content |
+|---|---|---|
+| Tab "References" | (12, 4, 96, 28) | `body`; selected: `text-primary` with a 2 px `accent` line at the bottom of the tab; unselected: `text-secondary` |
+| Tab "Colours" | (112, 4, 72, 28) | same |
+| "Export curves…" | (372, 4, 148, 28) | Text button, References tab only (§17.12) |
+| Close | (528, 4, 28, 28) | as Settings |
+| Title divider | (0, 36, 560, 1) | `border` |
+| Column header | y 44, 16 high | `caps`, `text-tertiary`: "SHOW" at x 12, "NAME" at 66, "OFFSET" at 202, "CAPTURE" at 284, "FILE" at 406 |
+| Slot k (k = 0 … 3) | row y = 64 + 52k | controls below, 24 high, at y |
+| Status line | (12, 284, 536, 20) | §17.12.4 |
+
+Slot row controls (x, width; all 24 high):
+
+| Control | x, w | Behaviour |
+|---|---|---|
+| Visibility | 12, 24 | Icon toggle `icon-eye-16` / `icon-eye-off-16`; On shows the curve. Disabled (`text-disabled`) while the slot is empty. |
+| Colour swatch | 42, 16 (10 high, at y + 7; hit area 38 … 62 × 24) | The slot's dash pattern in its role colour. Click opens the Colours tab with this role selected. |
+| Name | 66, 128 | Text field, at most 16 characters, same rules as the input labels (§17.5); empty commits "Ref k+1" |
+| Offset | 202, 76 | Inline float chip, "+0.0 dB" (§6.3) |
+| Take | 284, 48 | Text button "Take": store the primary curve |
+| Take 2nd | 336, 62 | Text button "Take 2nd": store the secondary curve of the primary. Disabled while `secondary` = Off, tooltip "Turn on a secondary curve first." |
+| Load | 406, 44 | "Load": CSV into this slot (§17.12) |
+| Save | 454, 44 | "Save": this slot to CSV. Disabled while empty. |
+| Clear | 502, 46 | "Clear": two-step (below). Disabled while empty. |
+| Info line | 66, y + 28, 482 × 14 | `body-sm`, `text-tertiary` |
+
+- **Info line text:** "Taken 14:32 · 48 kHz · 4096 · Hann · 4× · 1/12 oct · Align off · Mid" (from the capture's settings; "· frozen" is appended when taken while frozen; the time is local hh:mm), "From mix-ref.csv · 812 rows · 20.0 Hz … 20.0 kHz", or "Empty. Take the current curve or load a CSV file."
+- **Take** requests a capture (plan [12]) and stores the chosen curve when it arrives (≤ 20 ms). While frozen it stores the frozen data. The slot becomes visible. If the slot held data, it is replaced without asking (Take is the slot's main action; Clear is the destructive one). The status line confirms: "Ref 2: took the primary curve."
+- **Clear, two-step:** the first click turns the button into "Sure?" with a 1 px `state-error` border and `state-error` text for **3000 ms**; a second click inside that time clears the slot (data, visibility off, the name kept). Otherwise it reverts.
+- **Button style:** text buttons are 24 high, radius 4, `body` in `text-secondary`, transparent; hover `surface-3` and `text-primary`; pressed `surface-3` with a 1 px `accent` border; disabled `text-disabled`.
+- **Persistence:** the slots are part of the session (`ViewState` child `ReferenceSlots`), not of settings presets.
+
+#### 17.11.2 Reference curves on the plot
+
+- Style per §17.4 (dashed column spans, role colour, no fill), drawn through the current view mapping, plus the current slope and the slot offset (the stored data has no slope). Grid points marked "no data" are not drawn (a gap).
+- They are drawn above the fills and below every stroke (order 4 in §17.4), so the live lines stay on top.
+- The legend and the hover card show visible slots by name (§17.5).
+- References do not follow Freeze, the channel or any analysis setting: they are fixed data.
+
+### 17.12 CSV import and export, file dialogs, messages
+
+#### 17.12.1 Actions
+
+| Action | Where | Result |
+|---|---|---|
+| Export curves | Curves panel, References tab title bar | Requests a capture at the click (so the file holds what was on screen at the click), then opens a save dialog. Default file name "Investigate curves 2026-10-04 1432.csv". Columns: `frequency_hz` plus one per visible live curve, named after the legend (for example `main_mid_db`, `main_side_db`, `rt_max_db`, `kick_db`). |
+| Save (slot) | Slot row | Save dialog, default name "{slot name}.csv". Columns `frequency_hz,level_db`. |
+| Load (slot) | Slot row | Open dialog, filters "*.csv;*.txt". On success the slot's data is replaced and the slot shown. If the slot name is still the default ("Ref k"), it becomes the file name without extension, truncated to 16 characters. |
+
+Header lines, separator and decimal point as the plan ([13]).
+
+#### 17.12.2 Asynchronous dialog flow (T-044 Q5)
+
+- Dialogs use `juce::FileChooser::launchAsync` with the native box, the chooser held as an editor member. Only **one** dialog can be pending.
+- **While pending:** every Load, Save and Export button is disabled, and the status line shows "Waiting for the file dialog… It may be behind the host window." with a "Cancel" text button at its right end (480, 284, 56, 20). Cancel destroys the chooser, which closes the dialog, and the status line clears.
+- The curves panel may be closed meanwhile; the result then shows as a toast (§17.12.4). Reopening the panel shows the pending state.
+- Closing the editor cancels the chooser (no result is applied).
+- The slot changes only when a load completes successfully, never on cancel or error. If the user took or cleared the slot while the dialog was open, a successful load still replaces it (the last action wins).
+- No modal loop, no blocking wait. Writing a file happens on the message thread after the dialog returns (65,536 rows ≤ 200 ms, plan budget).
+
+#### 17.12.3 Import rules and messages
+
+Parsing follows the plan ([13]) and T-043 R18: comma, semicolon or tab; a decimal comma with semicolons; `#` lines and leading non-numeric lines skipped; rows with a frequency not above 0 Hz skipped and counted; unsorted rows sorted; at most 65,536 rows read.
+
+| Case | Kind | Message (the file name is shortened to 24 characters with "…" in the middle) |
+|---|---|---|
+| Loaded | success | "Ref 2: loaded mix-ref.csv (812 rows)." Appends " 3 rows at 0 Hz or below skipped." when any were skipped. |
+| More than 65,536 rows | warning | "Ref 2: loaded the first 65,536 rows of big.csv. The rest was ignored." |
+| Cannot open or read | error | "Ref 2 unchanged. mix.csv could not be read." |
+| Empty file, or only comment and header lines | error | "Ref 2 unchanged. mix.csv contains no data rows." |
+| A non-numeric value after the data started | error | "Ref 2 unchanged. mix.csv, line 37: "abc" is not a number." |
+| A row with fewer than 2 columns | error | "Ref 2 unchanged. mix.csv, line 37: expected a frequency and a level." |
+| Fewer than 2 usable rows | error | "Ref 2 unchanged. mix.csv has fewer than 2 usable rows." |
+| No overlap with 1 Hz … 48 kHz | error | "Ref 2 unchanged. mix.csv has no data between 1 Hz and 48 kHz." |
+| Saved | success | "Saved Ref 1 to ref1.csv." / "Saved 4 curves to Investigate curves 2026-10-04 1432.csv." |
+| Write failed | error | "Could not write ref1.csv. Check that the folder is writable." |
+
+Line numbers are 1-based physical lines of the file, counting comment lines.
+
+#### 17.12.4 Where messages appear
+
+- **Curves panel open:** the status line (12, 284, 536, 20): a 16 px icon (none for success, `icon-warning-16` in `state-warn` for a warning, `icon-warning-16` in `state-error` for an error) and the text in `body-sm`, `text-primary`. It stays until the next action or **6000 ms** for success, and until the next action for errors and warnings.
+- **Curves panel closed:** a toast centred at the top of the data rect (the reset-toast position and panel rule of §5.9.7). Style: the §5.6 toast, with a 1 px `accent` border (success), `state-warn` border and icon (warning) or `state-error` border and icon (error). Duration: 2500 ms for success, **5000 ms** for warnings and errors, each fading over the last 200 ms. Width at most data.w − 16; longer text wraps to a second line.
+- Contrast: `text-primary` on `surface-3` 11.8 : 1; the icons are 3 : 1 or more on `surface-3` (`state-warn` 8.6 : 1, `state-error` 4.4 : 1).
+
+### 17.13 Settings presets
+
+#### 17.13.1 Presets button
+
+- Rect per §17.2; fill `surface-2`, radius 6. Text: the current preset name in `body`, `text-primary`, at x + 10, followed directly by a **"*"** in `accent` when `isModified()` (the asterisk is a shape cue, not only colour). A `icon-chevron-down-16` in `text-secondary` sits at the right end (x + w − 20). The name is truncated with "…" to fit `w − 10 − 26`.
+- States: hover `surface-3`; open: `accent-tint` fill, 1 px `accent` border at 50 %.
+- Tooltip: "Settings preset: {name}{, modified}. A preset stores every analysis and meter setting. It never changes colours, input labels, references or the window size."
+- Accessible name "Settings preset", value "{name}" or "{name}, modified".
+
+#### 17.13.2 Menu (a `juce::PopupMenu` in the §7.1 style, opened below the button)
+
+1. "Default" (the current-item dot when current).
+2. A separator, then the user presets sorted by name (case-insensitive), each with the current-item dot when current. With none: one inert item "No saved presets" in `text-tertiary`.
+3. A separator, then "Save as…", "Overwrite "{name}"", "Delete "{name}"…". Overwrite and Delete are disabled while the current preset is Default.
+4. A separator, then "Open presets folder" (opens `…\Presets\Settings\` in the file manager, creating it first).
+
+Choosing a preset loads it at once (no confirmation; a load is a set of host gestures that hosts with undo can revert). Loading never changes colours, `ViewState`, the reference slots or the zoom (plan [14]).
+
+#### 17.13.3 Save as (inline name entry)
+
+A small popover below the Presets button, at (452, 40), **280 × 112**, with the popover style:
+
+| Item | Rect (popover-relative) | Content |
+|---|---|---|
+| Title | (12, 8, 256, 16) | "Save preset as", `body` weight 600 |
+| Name field | (12, 30, 256, 24) | Text field (§17.5 style), pre-filled with the current name ("" for Default), fully selected, focused |
+| Message | (12, 58, 256, 14) | `body-sm`; validation message (below) |
+| Cancel | (132, 80, 64, 24) | Text button |
+| Save / Replace | (204, 80, 64, 24) | Primary button: `accent` fill, `text-on-accent`, weight 600. Disabled (`surface-2`, `text-disabled`) while the name is invalid |
+
+Validation runs on every keystroke (the texts map PresetStore's reasons, §15 question 9):
+
+| Name | Message (colour) | Button |
+|---|---|---|
+| empty (after trimming) | "Enter a name." (`text-tertiary`) | disabled |
+| longer than 64 characters | "Use at most 64 characters." (`state-error`) | disabled |
+| contains \ / : * ? " < > \| or a control character | "Remove these characters: \ / : * ? " < > \|" (`state-error`) | disabled |
+| ends with a dot or a space | "A name cannot end with a dot or a space." (`state-error`) | disabled |
+| CON, PRN, AUX, NUL, COM1 to COM9 or LPT1 to LPT9 (any case) | "This name is reserved by Windows." (`state-error`) | disabled |
+| "Default" (any case) | "Default is built in. Choose another name." (`state-error`) | disabled |
+| an existing preset (case-insensitive) | "A preset with this name exists. Replace it?" (`state-warn`) | "Replace" |
+| valid | (empty) | "Save" |
+
+Enter acts as the button when enabled; Esc or a click outside cancels. On success the popover closes, the preset becomes current (not modified), and a toast "Saved preset "{name}"." appears for 2500 ms. A write error keeps the popover open with the message "Could not save. Check that the presets folder is writable." in `state-error`.
+
+#### 17.13.4 Overwrite and Delete confirmations
+
+The same popover frame, **280 × 96**: a message in `body` (12, 10, 256, 40, wrapping), and Cancel (132, 64, 64, 24) and the action button (204, 64, 64, 24).
+- Overwrite: "Replace "{name}" with the current settings?" with the primary button "Replace".
+- Delete: "Delete "{name}"? This cannot be undone." with a destructive button "Delete": `state-error` fill, `text-on-accent` text (6.1 : 1).
+- After a delete the current preset becomes "Default" with the modified mark if the parameters differ from the defaults.
+
+### 17.14 Colour editor and colour presets
+
+#### 17.14.1 Choice of the colour wheel
+
+**Own component** `source/gui/ColourWheel` (gui-engineer), not `juce::ColourSelector` and not reFX/ColourSelector:
+- The design wants a circular hue ring with a saturation and value square inside, a hex field and presets. `juce::ColourSelector` has a square HSV field and RGB sliders, no ring, hex field or presets (T-044 Q7), so it would need the hex field and presets added anyway and still look unlike the rest of the UI.
+- reFX/ColourSelector is MIT-licensed, but whether it has a round wheel is undocumented, and it would add a third-party dependency, a licence entry and a build-engineer task for one small control.
+- An own component is about 200 lines of plain JUCE, draws with the project's tokens and the T-029 rules (cached images), and needs no licence check.
+
+#### 17.14.2 Colours tab layout (curves panel, panel-relative)
+
+| Item | Rect | Content |
+|---|---|---|
+| Role list | (12, 44, 224, 224) | 8 rows of 28: Primary, Underlay, Sidechain 1 ({label1}), Sidechain 2 ({label2}), then the four slot names. Each row: the role's legend swatch (24 × 12) at x + 8, the name (`body`, `text-secondary`) at x + 40, the hex value (`readout` 11 px, `text-tertiary`) right-aligned at x + 216. Selected row: `surface-3` fill, a 2 px `accent` bar at its left edge, name in `text-primary`. |
+| Hue ring and square | (252, 44, 176, 176) | Ring: outer radius 88, inner radius 72, centred at (340, 132). Square: (292, 84, 96, 96). |
+| Preview | (444, 44, 104, 32) | `bg-plot` fill, radius 4, with a sample of the role's curve style in the edited colour (a short line, fill, hatch or dash) |
+| Hex field | (444, 84, 104, 24) | Text field, `value` font, "#62D6F0" |
+| Contrast | (444, 114, 104, 32) | Two lines, `body-sm`: "11.5 : 1" (`text-primary`) and "on the plot" (`text-tertiary`). Below 3 : 1: `icon-warning-16` + "2.4 : 1" in `state-warn`, second line "Hard to see" |
+| Secondary tone | (444, 152, 104, 16) | Primary and Underlay only: a 24 × 2 px line in the derived secondary colour and "2nd curve" (`body-sm`, `text-tertiary`) |
+| Reset role | (444, 176, 104, 24) | Text button "Reset role": the selected role to its default |
+| Preset label | (12, 280, 104, 28) | "COLOUR PRESET" (`caps`, `text-tertiary`), vertically centred |
+| Preset button | (120, 280, 200, 28) | As the Presets button (§17.13.1): the current colour preset name, "*" when the colours differ from it, chevron; opens the colour-preset menu |
+| Reset all | (420, 280, 128, 28) | Text button "Reset all colours": every role to its default; the preset becomes "Default colours" |
+
+#### 17.14.3 Wheel behaviour
+
+- **Ring:** hue angle, 0° (red) at the top, increasing clockwise. Press and drag anywhere in the ring (radius 72 to 88, plus 4 px tolerance each side) sets the hue from the pointer angle. The square's hue follows.
+- **Square:** x is saturation (0 left, 1 right), y is value (1 top, 0 bottom). Press and drag sets both; the pointer is clamped to the square.
+- **Shift while dragging:** the change from the press point is scaled by 0.25 (fine).
+- **Wheel:** over the ring, hue ±2° per notch (Shift ±0.5°); over the square, value ±0.02 (Shift ±0.005).
+- **Keyboard** (the wheel component is focusable, in the panel's Tab order): Left/Right saturation ±0.01, Up/Down value ±0.01, PageUp/PageDown hue ±5°, Shift for a quarter of each step.
+- **Markers:** ring: a circle of radius 6 on the ring's centre line, 2 px `#FFFFFF` stroke with a 1 px `#000000` outer stroke; square: a circle of radius 5, same strokes. Black and white keep the markers visible on every hue.
+- **Hex field:** accepts "#RRGGBB", "RRGGBB" and "#RGB", case-insensitive; Enter or focus loss applies; invalid text reverts with the 300 ms `state-error` flash. Alpha is not accepted.
+- **Contrast warning:** the WCAG ratio of the role colour against `bg-plot` (#0A0D13), updated live. Below 3.0 : 1 the warning shows; the colour is still applied.
+- **Live update:** every change applies at once to the role in this editor and, through `GlobalSettings`, to every open editor in the process in the same editor update. Writes to the preference file are debounced to at most 2 per second, with a final write 500 ms after the last change.
+- **Rendering:** the ring is a cached image per size and display scale (built once with `Colour::fromHSV` per pixel); the square is a cached image rebuilt when the hue changes, at most once per editor update during a ring drag. The markers are drawn per repaint. Only the wheel bounds repaint during a drag.
+- **Accessible names:** "Hue", "Saturation and value", "Hex colour", with values "191 degrees", "saturation 59 %, value 94 %", "#62D6F0".
+
+#### 17.14.4 Colour presets
+
+- Files `*.invcolours` in `…\Presets\Colours\` (plan [8]); a name and one ARGB value per role.
+- The menu mirrors §17.13.2: "Default colours" (built in), the user colour presets, "Save as…", "Overwrite "{name}"", "Delete "{name}"…", "Open colours folder". Save as, Overwrite and Delete use the dialogs of §17.13.3 and §17.13.4, anchored below the preset button, with the title "Save colour preset as" and the same validation (with "Default colours" as the reserved name).
+- Loading a colour preset sets all eight roles at once (live update as above). The current colour preset name and its modified state are stored in `GlobalSettings` with the colours.
+- Colours never enter the session state or settings presets.
+
+### 17.15 Display preferences
+
+Global preferences in `GlobalSettings` (every instance and launch on the machine), edited in Settings > Display (§17.16):
+
+| Preference | Control | Format | Default | Notes |
+|---|---|---|---|---|
+| `frameRate` | Float field 128 × 24 | "60 fps", integers 30 to 144 | 60 | Drag 240 px over 30 … 144 (1 fps snap). Wheel steps along the ladder 30, 48, 50, 60, 72, 75, 90, 100, 120, 144; Shift ±1 fps. Text entry "75", "75 fps", "75 hz". The editor's update limiter caps all updates at `min (frameRate, display refresh)`. When the measured vblank rate is lower than the set value by more than 2, the value shows in `state-warn` with "Effective 60 fps: limited by the display (60 Hz)." |
+| `adaptivePacing` | On/Off field | "On" / "Off" | On | Tooltip: "Halves the spectrum's frame rate (never below 30 fps) for very large windows or many curves, to save CPU." (§17.18) |
+| `antiAlias` | On/Off field | "On" / "Off" | On | Tooltip: "Smooth curve edges. Off draws crisper, pixel-aligned curves." Drawing only (T-043 R16). |
+| Curve colours | Text button "Edit…" (128 × 24) | | | Opens the curves panel on the Colours tab |
+
+A note under the rows (`body-sm`, `text-tertiary`, wrapping in 256 px): "These settings apply to every Investigate window on this computer. Frame rates above 60 fps use more CPU."
+
+These preferences are not parameters: no host gesture, no undo, no external-change dot. Double-click and Alt+click still reset them to their defaults (the chip conventions of §7.1).
+
+### 17.16 Settings popover
+
+From M3c the popover (§6.1) has **tabs**, at the same anchor (W − 572, 48), **560 × 400** for every tab (no resize when switching tabs, so the cached shadow is rendered once per open). The About view stays 560 × 440 (§6.2).
+
+| Item | Rect (popover-relative) | Content |
+|---|---|---|
+| Title bar | (0, 0, 560, 36) | "Settings", About button and Close as §6.1 |
+| Tabs | y 37, 28 high: "Analysis" (16, 37, 80, 28), "Inputs" (100, 37, 64, 28), "Meters" (168, 37, 68, 28), "Display" (240, 37, 72, 28) | Tab style of §17.11.1 |
+| Tab divider | (0, 68, 560, 1) | `border` |
+| Column 1 | x 16, from y 80, 256 wide | Section titles 20 high, rows 28 high (label left, 128 × 24 field right), as §6.1 |
+| Column 2 | x 288, from y 80, 256 wide | same |
+
+| Tab | Column 1 | Column 2 |
+|---|---|---|
+| **Analysis** | "SPECTRUM": Channel, Underlay, Block size, Overlap, Window, Average time, Smoothing, Slope, Secondary curve (9 rows, ends y 352) | "DISPLAY RANGE": Frequency low, Frequency high, Range low, Range high; "LEVEL AND SOLO": Align 0 dB, Solo width (ends y 288) |
+| **Inputs** | "SIDECHAINS": Sidechain 1 trace, Sidechain 1 input (status text), Sidechain 2 trace, Sidechain 2 input (status text) | "LABELS": Main input, Sidechain 1, Sidechain 2 (text fields 160 × 24, so their labels have 96 px), then the note "At most 16 characters. An empty label restores the default." (`body-sm`, `text-tertiary`) |
+| **Meters** | "METERING": Metering, Style, Integration, Release, Peak hold, RMS window (6 rows), then the note "Integration below about 50 ms follows the peaks of low frequencies. The cal modes fix integration and release at 600 ms." | "SECTIONS": Level bars, Statistics, Loudness, Correlation (On/Off fields) |
+| **Display** | "ALL INSTANCES": Frame rate, Adaptive pacing, Anti-alias, Curve colours, then the note of §17.15 | (empty) |
+
+- In the Analysis tab, Channel is a choice field over its five values (Mid, Side, Left, Right, Stereo) showing the effective primary; Underlay as §17.3.
+- The Settings dot rule (§4.3) is unchanged: hidden control-bar groups are all in the Analysis tab.
+- The popover opens on the tab that was last shown in this editor session (Analysis at first). Tab switching: click, or Ctrl+Tab / Ctrl+Shift+Tab while focus is inside the popover.
+- **Focus:** Tab cycles the About button, the tabs, the current tab's fields in column order, then Close, trapped as §6.1.
+- Height check: at 920 × 540 the popover ends at y = 448, inside the editor.
+
+### 17.17 Resolved layouts
+
+#### 17.17.1 Header
+
+| Item | 1200 × 700 (full) | 920 × 540 (compact) |
+|---|---|---|
+| Wordmark | 16 … 97 | 16 … 97 |
+| Channel | 116 … 308 (Mid 118, Side 158, L 198, R 226, Stereo 254 … 306) | same |
+| Underlay | 316 … 440 | same |
+| Presets | 452 … 612 (Pw 160) | 452 … 548 (Pw 96) |
+| Sample rate | 654 … 714 | 562 … 622 |
+| Sidechain pair | 730 … 814 (segments 756, 784) | 638 … 722 (segments 664, 692) |
+| Refs | 820 … 892 | 728 … 756 |
+| Freeze | 898 … 982 | 762 … 790 |
+| Reset curves | 988 … 1104 | 796 … 824 |
+| Divider | 1116 | 836 |
+| Meters | 1128 … 1156 | 848 … 876 |
+| Settings | 1160 … 1188 | 880 … 908 |
+
+The header does not depend on the meters: the same with meters collapsed. Smallest clear gaps: 42 px (Presets to sample rate) at 1200, 14 px at 920. Nothing overlaps.
+
+#### 17.17.2 Control bar and plot
+
+Unchanged from §4.3 and §4.1 at both sizes, meters shown or collapsed. The data rect is (48, 56, 840, 564) at 1200 × 700, (48, 56, 560, 404) at 920 × 540, (48, 56, 1136, 564) at 1200 × 700 with meters collapsed.
+
+#### 17.17.3 Meter strip (editor coordinates; strip x = W − 296, so 904 at 1200 and 624 at 920)
+
+Header rows: Metering (916, 56, 128, 28), Style (1050, 56, 92, 28), Reset (1160, 56, 28, 28), Integration (916, 90, 160, 28), Sections (1082, 90, 106, 28) at 1200; at 920 subtract 280 from each x. Content: y 130 … 688 at 1200 (HRC 558), y 130 … 528 at 920 (HRC 398).
+
+Bars column with the bars shown: tracks y 144 … 672 (528 px) at 1200 and 144 … 512 (368 px) at 920. Columns (x, editor): bars 916 … 996 and right column 1012 … 1188 at 1200; 636 … 716 and 732 … 908 at 920. Bars hidden: right column 916 … 1188 / 636 … 908. Right column empty: bars 916 … 1188 / 636 … 908 with 118 px bars.
+
+Right column, for each set of visible sections (editor y; "d" = divider y):
+
+| Visible | 1200 × 700 | 920 × 540 |
+|---|---|---|
+| Statistics, loudness, correlation | rowH 28; table 130 … 398; d 429; loudness 460 … 558; d 589; correlation 620 … 688 | rowH 20; table 130 … 326; d 335; loudness 344 … 442; d 451; correlation 460 … 528 |
+| Statistics, loudness | rowH 28; table 130 … 398; d 494; loudness 590 … 688 | rowH 28; table 130 … 398; d 414; loudness 430 … 528 |
+| Statistics, correlation | rowH 28; table 130 … 398; d 509; correlation 620 … 688 | rowH 28; table 130 … 398; d 429; correlation 460 … 528 |
+| Loudness, correlation | loudness 130 … 228; d 424; correlation 620 … 688 | loudness 130 … 228; d 344; correlation 460 … 528 |
+| Statistics | rowH 28; table 130 … 398 | the same |
+| Loudness | 130 … 228 | the same |
+| Correlation | 130 … 198 | the same |
+| none | right column empty: wide bars (above) | the same |
+
+With the bars hidden as well, each case keeps its y values and uses x 916 … 1188 (636 … 908). With every section hidden the strip is collapsed (§17.10.6). All 16 combinations at both sizes are therefore: 8 right-column cases × bars shown or hidden; no section overlaps another or the header rows (the smallest gap is 12 px, the header ends at y 118 and the content starts at y 130).
+
+Tick steps on the resolved tracks: dBFS, dBFS+3, LUFS and LU 6 dB (528 px: 8.0 px/dB; 368 px: 5.6 px/dB); dBFS 30 2 dB (17.6 and 12.3 px/dB); dBFS 15 1 dB (35.2 and 24.5 px/dB); K and cal modes 4 K.
+
+#### 17.17.4 Legend widths
+
+Estimates with Inter 500 11 px (about 6.0 px per character), each entry 21 px plus its name, 10 px between entries, 16 px padding:
+
+| Case | Row widths | 1200 × 700 limit | 920 × 540 limit |
+|---|---|---|---|
+| Default (primary, RT max, Sidechain 1 "SC 1") | 1 row, about 211 px | 824 (606 with the zoom panel, 374 with the FROZEN badge in row 0) | 536 (336 with the panel, 234 with the badge) |
+| Widest live: "Main · Stereo", "Main · Right", "All-time max", two 16-character labels | about 563 px: 1 row at 1200 without the panel; 2 rows with the panel or the badge; at 920: 2 rows (3 with the badge) | | |
+| Everything: the widest live set, four 16-character references and the ALIGN tag | 2 rows at 1200, up to 5 rows at 920 with the badge (row 0 alone limited to 234 px) | | |
+
+The deepest legend (5 rows) ends at y = 64 + 4 × 22 + 20 = 172 at 920 × 540, clear of the hint line (y 436). It stays left of the zoom panel and of the badge by the width rule.
+
+#### 17.17.5 Popovers
+
+| Popover | 1200 × 700 | 920 × 540 |
+|---|---|---|
+| Settings (560 × 400) | (628, 48) … (1188, 448) | (348, 48) … (908, 448) |
+| About (560 × 440) | (628, 48) … (1188, 488) | (348, 48) … (908, 488) |
+| Curves panel (560 × 320) | (628, 48) … (1188, 368) | (348, 48) … (908, 368) |
+| Save as (280 × 112) | (452, 40) … (732, 152) | (452, 40) … (732, 152) |
+| Confirmations (280 × 96) | (452, 40) … (732, 136) | same |
+| Colour-preset dialogs (280 × 112 or 96), below the colour preset button | panel x + 120, panel y + 312 | the same (fits: 368 + 112 = 480 at 920 × 540) |
+
+### 17.18 Performance (M3c)
+
+Everything here follows the T-029 rules (§12, §12.1): no polygons per frame beyond the existing strokes, one `fillRectList` per colour, cached static parts, only what is under the clip.
+
+- **Curve layers.** A layer is one curve drawing operation in a frame: the primary fill, the primary stroke, the underlay stroke, each secondary stroke, each sidechain fill (solid or hatched), each sidechain edge, and each visible reference. The maximum is 13 (2 + 1 + 2 + 2 + 2 + 4). The band tint and edges are not layers (≤ 2 + 2 rects).
+- **Adaptive pacing** (on): the spectrum repaints at `max (30, cap / 2)` fps when the physical data rect exceeds 2.0 Mpx or when the layer count is at least `pacing.layerThreshold` (**7**, the T-029 value, which equals the old seven-layer worst case). T-054 and T-055 measure the M3c worst cases and may raise the threshold; the measured value goes into `tokens.json` and this paragraph. **Off:** no halving; the cap alone applies. Hover, gestures, the band and toasts always respond within one editor update.
+- **Frame-rate cap:** the editor's update limiter runs at `min (frameRate, measured display refresh)`. The numeric meter text stays at 10 Hz at every cap. Budgets are gated at 60 fps; higher caps are measured and reported (plan).
+- **Sidechain 2 hatch:** one `fillRectList` of one-logical-pixel bars at every 3rd column, built only under the clip; cheaper than the solid fill.
+- **References:** each visible slot is one `fillRectList` of column spans (§17.4 thickness, its dash pattern applied by skipping columns), built only under the clip from the slot's grid data mapped through the view. No path, no cache needed.
+- **Anti-alias off:** every stroke (primary, underlay, secondaries, sidechain edges) is drawn as pixel-snapped column spans: per physical column, one rect from `min (y, yPrev)` to `max (y, yPrev)` plus the stroke thickness `max (1, round (width × scale))` physical px, one `fillRectList` per colour. Fills are unchanged.
+- **Band solo:** the tint (≤ 2 alpha rects, one list) and the edges (≤ 2 rects solid, or dash rects, one list) repaint with the plot. When only the band moves (the pointer moves, the frame does not), repaint the union of the old and new band edges and tint boundary columns plus the hover card, not the whole data rect.
+- **Hover card:** up to 18 strings (band block 3, frequency 2, up to 9 rows of name and value). Names and the band tag come from the label-image cache; values are drawn with `drawText` (≤ 12 per frame), within the §12.1 per-frame text rule.
+- **Meters:** Density ≤ 11 rect lists per paint (§17.10.5); the zone rail, scale, ticks and lamp backgrounds are in the cached static image, rebuilt on mode, size, section or scale-factor change. The meter repaint follows the T-029 rule of repainting only when a bar's physical pixel value changes.
+- **Colour wheel:** cached ring and square images (§17.14.3); a colour change re-derives the curve colours once and repaints the plot once per editor update.
+
+### 17.19 Accessibility (M3c)
+
+See also §10.4.
+- **Text contrast:** every new text uses existing token pairs from §10.1 and §10.2a. New pairs: the SOLO tag `text-on-accent` on #E8ECF3 16.4 : 1; the BAND tag `text-secondary` on `surface-3` 6.3 : 1; the primary button `text-on-accent` on `accent` 11.5 : 1; the Delete button `text-on-accent` on `state-error` 6.1 : 1; the status line `text-primary` on `surface` 14.9 : 1; the info line and notes `text-tertiary` on `surface` 4.5 : 1; the ALIGN legend tag `text-secondary` on the legend fill (`bg-plot` at 85 %) at least 7.7 : 1; the warn-state values `state-warn` on `surface-2` 9.8 : 1.
+- **Non-text contrast** (≥ 3 : 1 on `bg-plot`): every default role colour (§17.4 table, 7.2 to 13.9); the sidechain edges 4.0 and 6.0; the derived secondaries 5.2 and 5.1 (and ≥ 3.0 by the derivation rule for user colours); the band edges 16.4 (solo) and 6.3 (preview, 60 %); the current-level notches 16.4. The density levels carry information by relative brightness and are read against the scale labels, like a heat map; the low levels are deliberately dim, so no contrast minimum applies to them. Section-toggle icons: `accent` on `accent-tint` 8.0 : 1 (shown), `text-tertiary` on `surface-2` 4.1 : 1 (hidden, plus the slash).
+- **Colour-vision:** §17.4. Every curve type differs by style; the solo state by text, line style and tint strength; section toggles by the slash; the modified preset by "*"; the warn and error messages by their icon and text.
+- **Hit targets** (≥ 24 × 24): Channel segments 28 to 52 × 24; Sidechain segments 28 × 24; Style segments 36 and 52 × 24; section toggles 24 × 24; Reset statistics 28 × 28; icon-only header buttons 28 × 28; Presets 96 to 160 × 28; panel buttons ≥ 44 × 24; the visibility toggle 24 × 24; the colour swatch's hit area 24 × 24; tabs ≥ 64 × 28; the hue ring 16 px thick plus 8 px tolerance; the square 96 × 96.
+- **Accessible names** (`setTitle`) for the new controls: "Channel", "Underlay", "Settings preset", "Sidechain 1 trace", "Sidechain 2 trace", "Reference spectra and curve colours" (Refs), "Freeze display", "Reset spectrum curves" (also when icon-only), "Metering", "Meter style", "Integration time", "Release time", "Peak hold time", "RMS window", "Show level bars", "Show statistics", "Show loudness", "Show correlation", "Reset statistics", "Align 0 dB", "Solo width", "Frame rate", "Adaptive pacing", "Anti-alias", "Edit curve colours", "Main input label", "Sidechain 1 label", "Sidechain 2 label", the tabs by their text; per slot k: "Reference k visible", "Reference k colour", "Reference k name", "Reference k offset", "Take primary curve into reference k", "Take secondary curve into reference k", "Load CSV into reference k", "Save reference k as CSV", "Clear reference k"; "Export curves", "Cancel file dialog"; the colour editor names of §17.14.3, "Colour role", "Reset role colour", "Colour preset", "Reset all colours". Values are the formatted display strings.
+
+### 17.20 What the mockup simplifies (M3c)
+
+- **Audio:** the mockup has no audio. The band solo shows its visual states only; "Solo" means the plugin would play the band.
+- **Ctrl in a browser:** the mockup reads Ctrl from key and pointer events (a browser cannot poll keys) and cancels the page zoom of Ctrl+wheel over the plot. A dev-bar checkbox "Hold Ctrl (for touch or laptops)" simulates a held Ctrl.
+- **Inputs:** Sidechain 1 is a simulated full mix, Sidechain 2 a simulated kick-and-bass track. Dev-bar checkboxes connect or disconnect each input.
+- **Meters:** the snapshot is simulated; `level`, the density histogram and the loudness values are approximations driven by the same fake music.
+- **Files:** "Load" uses the browser's file picker and the real import rules; "Save" and "Export curves" download a file. The asynchronous dialog states are shown, but the browser picker cannot fall behind a window. A dev button "Load a broken CSV" feeds a sample file with an error on line 37.
+- **Presets and colour presets** live in memory for the page session; "Open presets folder" shows a toast.
+- **Frame rate:** the mockup honours the cap by skipping redraws of the spectrum, up to the monitor's rate. Anti-alias off is drawn with column spans as specified.
+- **Rendering:** Canvas 2D and DOM, as §5.9.11.
+
+### 17.21 Changes from the plan
+
+| # | Plan | This spec | Reason |
+|---|---|---|---|
+| 1 | Metering mode names dBFS.30, dBFS.15, K-20 C, LUFS ML, LUFS SL, LU ML, LU SL | Chip values "dBFS 30", "dBFS 15", "K-20 cal", "LUFS M", "LUFS S", "LU M", "LU S"; menu texts spelled out ("LUFS momentary", "K-20 calibration (600 ms)") | Investigate's own wording (T-043 IP note prefers the standard words); short enough for a 128 px chip. §15 question 8 asks T-051 to use the same choice texts. |
+| 2 | LUFS and LU bars show the programme loudness | One merged programme bar, single colour, no peak part and no zones, "M" or "S" under it | User decision (one value) and the request that it must not look like an L/R pair; loudness zones would imply a delivery target that the user did not choose. |
+| 3 | The RMS row unit follows the mode | It does for the level modes; in the loudness modes it stays "dBFS" | The RMS row is a level statistic; loudness has its own block. The LU modes show the loudness block in LU instead (T-043 R4, partly adopted). |
+| 4 | Density in every mode | Not in loudness modes; the Style control shows the warn state | The histogram is of the level, not of loudness, so it would show a different quantity than the scale. |
+| 5 | Density "as brightness" | 7 quantised brightness levels of one hue, a zone rail, level notches | Fits the T-029 rule (≤ 11 rect lists) and keeps the zones visible. |
+| 6 | Release applies to the peak part and the hold tick | Also to the TP row's hold; peak hold 0 means no tick | One consistent ballistics model; "0 ms hold" has no visible meaning otherwise. |
+| 7 | Controls for the metering parameters (location open) | Metering, Style and Integration in the strip; Release, Peak hold and the RMS window in Settings > Meters | The strip is 296 px wide; Integration is the one the user must find (user decision). The RMS window leaves the strip, which changes the approved T-010 strip. |
+| 8 | Section-hiding control (open) | Four icon toggles in the strip's second header row, plus Settings fields | Visible, one click, no context menu (§5.6). |
+| 9 | Every section hidden: behaves as collapsed | And the Meters toggle then restores all four | Otherwise the user could not get the sections back from the header. |
+| 10 | Header Mode becomes Channel plus Underlay | Plus a compact header mode below 1174 px with icon-only Refs, Freeze and Reset curves | The new items do not fit at 920 px otherwise. |
+| 11 | Colour editor entry (open) | In the curves panel (Refs button) next to the references, and from Settings > Display | One header entry for both curve features; the header has no room for two more buttons at 920 px. |
+| 12 | Secondary curves "a darker tone" | HSV value × 0.68, with the default tokens kept exactly when the role is at its default, and a 3 : 1 floor | Keeps the first launch pixel-identical (T-054 acceptance) and the secondaries visible for user colours. |
+| 13 | Reference curves "line style with no fill" | Dashed column spans with one dash pattern per slot | The only line style that differs from every live curve without hue, and drawable without polygons. T-043 R17's global fill switch is not adopted. |
+| 14 | Align 0 dB control (open) | Settings > Analysis plus an "ALIGN 0 dB" legend tag | The control bar is full at the default size (§4.3). |
+| 15 | `soloWidth` step (open) | An 11-value ladder, Shift for continuous steps | Musically useful widths in few notches. |
+| 16 | Band edges clamped at 10 Hz … 0.45 fs (plan) and centre clamped at 20 Hz … 0.45 fs (T-044) | The editor draws whatever the shared DSP function returns | The two sources differ; the drawing must match the audio (§15 question 7). |
+| 17 | Legacy pair written "on the next user edit" | Written as one gesture group: `underlay`, then `channelMode` | Undo reverts the whole edit in one step (T-055 acceptance). |
+| 18 | Labels in the legend (format open) | "Main · Mid" for the main input's curves; the plain label for sidechains | The main label needs a place, and the channel name stays visible. |
+| 19 | Note names below C0 (format open) | Negative octaves down to C−1, "below C−1" under 7.94 Hz | MIDI note 0 is a common lower bound; lower names have no musical use. |
+| 20 | Reference slot panel (layout open) | A 560 × 320 popover shared with the colour editor; Clear needs a second click | Same popover family as Settings; Clear is the only destructive slot action. |
+

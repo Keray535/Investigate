@@ -2,7 +2,7 @@
 - Owner: gui-engineer
 - Milestone: M3b
 - Status: TODO
-- Depends on: T-037, T-042
+- Depends on: T-037, T-042, T-064 (build order)
 
 ## Goal
 Add the two remaining navigation aids from ui-spec §5.9:
@@ -44,3 +44,6 @@ Add the two remaining navigation aids from ui-spec §5.9:
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/spectrum-zoom-pan.md`.
 - 2026-10-03 vst-architect: Box zoom moved from Ctrl+left-drag to **Alt+left-drag** by user decision (M3c planning). Ctrl gestures are reserved for the band solo. Follow the spec as amended by T-042. Validation: record whether releasing Alt after an Alt+drag activates a host menu, in the Standalone and in FL Studio if available (Risk 17).
+- 2026-10-06 vst-architect: Build order changed by the M3 review triage (`docs/plans/m3-review-spectrum-slots.md`): this task runs after the M3d fixes T-062, T-063 and T-064, which change the mapper (curve interpolation, smoothing up to 3 octaves), the level-range rule (bottom ≥ 1 dB below the top; minimum level view span `min (6 dB, home span)`), and the default level range (−18 to −72 dB). Read their logs first.
+  - The box zoom must respect the new minimum level span.
+  - Do not add tooltips: review #18 removes every tooltip except the hover readout, and T-066 removes the existing ones.

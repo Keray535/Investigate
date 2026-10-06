@@ -56,3 +56,13 @@ Validate all 14 M3c items together, as a host and a user would meet them, before
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`. M4 (T-015, T-016, T-017) depends on this task.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`.** The gate also covers:
+  - **Slots.** Every slot works with each of the three sources (Main, SC1, SC2) and each channel. Link on and off behave as specified. The default slots reproduce the pre-M3c look.
+  - **Compatibility.** Version-1 states load with slot 2 as the old secondary curve and slot 3 as the old sidechain trace, and legacy L/R and M/S display as Left and Mid.
+  - **Sidechain meters.** On identical input they equal the main meter. They appear and disappear with the bus.
+  - **Other features.** Offset (Normalize, Center, Spectrum 2 to 4, including the inactive state), Fill, the 96 kHz axis at 48 and 192 kHz, and the Max crest readout.
+  - **Compact layout and size.** The compact layout below 600 px wide, and the new minimum size, including the small-window glitch check in FL Studio (#16).
+  - **A/B.** A round trip through the session, switch time ≤ 50 ms, and A and B independent.
+  - **M3d fixes still hold:** a smooth low-frequency curve at every Smooth setting, no block-size stutter, no tooltips except the hover readout.
+  - **Revised budgets:** `processBlock` mean ≤ 40 µs and p99 ≤ 90 µs with three banks; analysis ≤ 4 % at the defaults and ≤ 20 % in the worst case; re-map ≤ 2.0 ms; the whole editor ≤ 25 %.
+  - **The user's M3c checklist** in the M3c plan is extended with these items before the gate.

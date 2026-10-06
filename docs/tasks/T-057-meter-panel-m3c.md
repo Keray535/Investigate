@@ -55,3 +55,18 @@ Bring the meter strip to the M3c design:
 
 ## Log
 - 2026-10-03 vst-architect: Created from `docs/plans/m3c-feature-expansion.md`.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (review findings #12 and #13; the layout follows T-065 §18):
+  - **Sidechain meters (#12, user decision).**
+    - For each connected sidechain input (`isMeterInputActive (1)` and `(2)`, T-052), draw its level bars **next to the main bars**, using its slot colour (the slot whose source is that input; if none, the default SC1 or SC2 colour).
+    - Draw its statistics, loudness and correlation rows **below the main rows**, at the lower opacity that T-065 specifies, so they cannot be confused with the main values.
+    - Read the values from `getMeterSnapshot (1)` and `(2)`.
+    - A disconnected sidechain hides its bars and rows, and the layout re-flows.
+    - The section toggles ([3]) apply to the sidechain rows of the same section.
+    - The metering mode, style and ballistics are shared with the main meter.
+  - **Max crest factor (#13, read-only).** Show the main input's `crestMax` (T-049) in the control bar, to the left of the frequency range controls, per T-065. The sidechain values appear in their statistics rows. Reset clears every value.
+  - **No tooltips (review #18).**
+  - **More criteria:**
+    - with identical signals on Main, SC1 and SC2, the three bar sets and rows show identical values;
+    - connecting and disconnecting a sidechain at runtime shows and hides its meters within one editor update, with no layout overlap at 1200×700 or at the new minimum size;
+    - the sidechain rows render at the specified opacity (pixel check);
+    - the whole-editor budget criterion includes both sidechain meter sets.

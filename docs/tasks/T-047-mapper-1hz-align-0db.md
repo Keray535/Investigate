@@ -1,4 +1,4 @@
-# T-047: Spectrum mapper: 1 Hz range and Align 0 dB
+# T-047: Spectrum mapper: 1 Hz range, 96 kHz axis and Align 0 dB
 - Owner: dsp-engineer
 - Milestone: M3c
 - Status: TODO
@@ -46,3 +46,11 @@ Make the display mapping correct down to 1 Hz, and add SPAN's "Align 0 dB" optio
   - With Align off, the frames stay bit-identical to today.
   - Use the report's 10-group test signal set for the criteria. The researcher has not run or tested the method; if it fails a criterion, record the evidence and return BLOCKED with it rather than tuning tolerances.
   - SPAN confirms only that Align exists, not its exact maths, so the plan's numeric criterion is the reference.
+- 2026-10-06 vst-architect: **Amended by `docs/plans/m3-review-spectrum-slots.md`** (M3 review triage):
+  - **96 kHz axis (review #3).** The `freqHigh` parameter will reach 96000 Hz in T-051.
+    - The mapper and `DisplayRange` accept a home range whose top lies above the Nyquist frequency. The axis spans to `freqHigh`, the data ends at `min(freqHigh, sampleRate / 2)`, and the points above Nyquist carry the "no data" sentinel (not NaN), so the editor draws nothing there.
+    - Update the effective-range formulas and their comments, and keep `fLoEff = min(freqLow, fHiEff / 2)` meaningful.
+    - Add criteria: no NaN or infinity at any sample rate from 44.1 to 192 kHz with `freqHigh` = 96 kHz. At 48 kHz, every point above 24 kHz is "no data". At 192 kHz, a 90 kHz sine reads its level within ±1 dB at block 4096 or larger.
+  - **Per slot.** T-046 introduces per-slot mapping. 1 Hz, the 96 kHz axis and Align apply to every slot with that slot's own `binHz`, block size, window and smoothing. The Align offset is computed per distinct analysis configuration.
+  - **Smoothing.** T-062 adds smoothing up to 3 octaves and the M3d curve interpolation. Align must hold for the new smoothing modes; extend the 1 kHz criterion to cover them.
+  - **Budget.** The worst-case re-map budget becomes ≤ 2.0 ms for all four slots (it was 1.0 ms for the old curve set).

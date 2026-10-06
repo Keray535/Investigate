@@ -2,6 +2,16 @@
 
 Created: 2026-10-03 by vst-architect. Linked from `docs/roadmap.md` (Scope, Milestones, Decisions, Status).
 
+> **Amendment of 2026-10-06.** The M3 hands-on review changed this plan. The amendment lives in `docs/plans/m3-review-spectrum-slots.md`, and **where the two plans differ, that plan wins**. In short:
+> - **[4] is replaced by four identical spectrum slots.** The underlay and the dual-curve display are removed; the legacy L/R and M/S values resolve to Left and Mid.
+> - **The sidechain parts of [7] become slots 3 and 4.** The input labels become slot names, and the curve colour roles become slot colours.
+> - **Today's secondary curve becomes slot 2.** Its `secondary` parameter is now slot 2's Type.
+> - **The meters measure every connected input**, not the main input only, with sidechain meters next to and below the main meter.
+> - **New items:** Offset, Fill, a 96 kHz axis, a Max crest factor readout, a compact layout, and A/B comparison. A/B moves from out of scope into v1.
+> - **New tasks:** T-065, T-067, T-068, T-069 and T-070.
+> - **Amended tasks:** T-045 to T-049, T-051, T-052, T-055 and T-057 to T-059. Each carries a dated architect entry in its log.
+> - **Budgets:** the `processBlock`, analysis-thread and re-map budgets are revised.
+
 ## Vision
 
 On 2026-10-03 the user asked for 14 additions that bring Investigate closer to a complete mixing and mastering analyser.
@@ -76,7 +86,7 @@ The numbers in brackets are the user's item numbers from the request of 2026-10-
 - Sharing spectra between plugin instances (SPAN Plus-style routing). The comparison works through sidechain buses only.
 - More than two sidechain inputs, and surround.
 - A full preset browser with tags, search or factory banks, and the VST3 program list. A simple Presets menu is in scope.
-- A/B comparison and undo, Match EQ, and the spectrogram (v2).
+- Undo, Match EQ, and the spectrogram (v2). A/B comparison moved into v1 on 2026-10-06 (T-068, T-058).
 - Recolouring the whole theme. Only the spectrum curves change colour; the background, grid and meter colours stay the design tokens.
 - Exporting meter statistics to CSV.
 - Saving the band-solo state, or automating it. The solo is a held gesture, not a parameter.
@@ -323,11 +333,11 @@ Editor (message thread):
 | ID | Name | Type | Range / choices | Default | Unit | Skew | Change |
 |---|---|---|---|---|---|---|---|
 | `channelMode` | Channel | choice | Mid, Side, Left, Right, Stereo (L+R power mean), L/R (legacy), M/S (legacy) | Mid | – | – | ID and indices kept. The editor offers the first five. The last two stay valid aliases (see [4]). Display texts may change. |
-| `underlay` | Underlay | choice | Off, Mid, Side, Left, Right, Stereo | Off | – | – | new; ignored while `channelMode` holds a legacy dual value |
+| ~~`underlay`~~ | – | – | – | – | – | – | **dropped on 2026-10-06**; replaced by the spectrum slots (`docs/plans/m3-review-spectrum-slots.md`, which also lists the slot parameters, `offsetMode`, and the new ranges of `freqHigh`, `dbLow`, `dbHigh` and `smoothing`) |
 | `freqLow` | Frequency low | float | 1 to 1000 | 20 | Hz | log (centre 31.6 Hz) | range was 10 to 1000 |
 | `align0dB` | Align 0 dB | bool | off / on | off | – | – | new |
 | `showSidechain` | Sidechain 1 trace | bool | off / on | on | – | – | display name only |
-| `showSidechain2` | Sidechain 2 trace | bool | off / on | on | – | – | new |
+| `showSidechain2` | Slot 4 Visible (amended 2026-10-06; was "Sidechain 2 trace") | bool | off / on | on | – | – | new |
 | `meterScale` | Metering | choice | dBFS, K-20, K-14, K-12, then appended: dBFS.30, dBFS.15, dBFS+3, K-20 C, K-14 C, K-12 C, LUFS ML, LUFS SL, LU ML, LU SL | dBFS | – | – | ID and the first four indices kept; ten modes appended |
 | `meterStyle` | Meter style | choice | Bars, Density | Bars | – | – | new |
 | `meterIntegration` | Integration time | float | 0.1 to 3000 | 1.00 | ms | log (centre 30 ms) | new |
@@ -415,8 +425,22 @@ Measured as in the roadmap: Release build on the development machine, 48 kHz, 12
 | T-057 | Meter panel: metering modes, styles, ballistics, section hiding | gui-engineer | T-056 |
 | T-058 | Presets menu, reference slots, CSV import and export | gui-engineer | T-057 |
 | T-059 | M3c gate validation | plugin-validator | T-058 |
+| T-065 | UI spec §18 and mockup: review items and spectrum slots (2026-10-06) | ui-ux-designer | T-045 |
+| T-067 | Spectrum engine: offset modes (2026-10-06) | dsp-engineer | T-047 |
+| T-068 | A/B state store (2026-10-06) | plugin-engineer | T-053 |
+| T-069 | Slot settings window (2026-10-06) | gui-engineer | T-055 |
+| T-070 | Compact layout and smaller minimum size (2026-10-06) | gui-engineer | T-057 |
 
-Order:
+**Order from 2026-10-06** (supersedes the list below):
+1. T-037;
+2. M3d: T-062, T-063, T-064;
+3. T-038, then T-066;
+4. T-046, T-047, T-067, T-048, T-049, T-050, T-051, T-052, T-053, T-068;
+5. T-054, after the user approves the combined T-045 and T-065 mockup;
+6. T-055, T-069, T-056, T-057, T-070, T-058;
+7. T-059.
+
+Original order:
 - **Documentation tasks run in parallel with C++.** T-042, T-043 and T-044 start now, next to T-041. T-045 runs after them, in parallel with T-037 and T-038.
 - **C++ tasks run one at a time, in number order:** T-041, T-037 (after T-042), T-038, T-046 to T-058, then T-059.
 - **The DSP tasks (T-046 to T-050) are additive.** Existing APIs, frame fields and settings keep working with their current meaning, so the processor and the editor build and pass unchanged after each of them.
@@ -462,6 +486,7 @@ These continue the roadmap's numbering.
 | 2026-10-03 | Settings presets hold the parameter values only. The new directory `source/presets/` is owned by plugin-engineer. The VST3 program list stays unused. | User choice. The preset store is host-facing state, which plugin-engineer already owns. |
 | 2026-10-03 | Architect defaults, open to change at the T-045 review: `channelMode` Mid, `underlay` Off, `soloWidth` 1 octave (1/12 to 4), LUFS and LU bars showing the programme loudness, anti-alias on, Align off. | Keeps today's behaviour as the default wherever possible. |
 | 2026-10-04 | User decisions after T-043 and T-044:<br>• keep Alt for the zoom gestures, with an Alt key-up guard in T-037 and a hands-on test; a fallback is chosen only if the test fails;<br>• dBFS.30 spans −24 to +6 dBFS and dBFS.15 spans −9 to +6 dBFS;<br>• the integration default stays 1.00 ms, so the level part reacts like a peak meter by default (release 750 ms, peak hold 1000 ms);<br>• the LUFS and LU bars show one programme loudness value. | SPAN documents none of these values. The user confirmed the stated ballistics after being told that 1.00 ms reads like a peak meter. |
+| 2026-10-06 | The plan is amended by `docs/plans/m3-review-spectrum-slots.md` (the M3 review triage), which wins where the two differ: four spectrum slots replace [4] and the sidechain curves of [7]; sidechain meters; Offset; Fill; 96 kHz; max crest; compact layout; A/B in v1. | User decisions of 2026-10-06. |
 | 2026-10-04 | Architect decisions after T-043 and T-044:<br>• Align 0 dB uses T-043's calibration method: a 0 dBFS 1 kHz sine is modelled through the real mapper on the analysis thread, and the offset is recomputed when its inputs change. Its test signal set goes to T-047.<br>• The band solo uses two cascaded TPT/Simper state-variable band-passes, with a unity-peak output, edges at fc·2^(±W/2), Q = 0.6436 / (2^(W/2) − 2^(−W/2)), log-domain smoothing, coefficient updates every 16 to 32 samples, and 10 ms crossfades. A Linkwitz-Riley pair is rejected: it loses 11 dB at 1/12 octave.<br>• The shared preference file uses `PropertiesFile`, an `InterProcessLock` and `SharedResourcePointer`, with a lock, reload, change, save, unlock write cycle, and a reload when the editor opens.<br>• File dialogs use `launchAsync` only, with the chooser held as a member and cancelled when the editor closes.<br>• The colour wheel choice (an own wheel component, `juce::ColourSelector` plus a hex field, or the MIT-licensed reFX/ColourSelector) is made in T-045. Any third-party code goes through build-engineer.<br>• The sidechain bus declaration defect (a disabled default layout) is fixed now, in T-060, before T-037. | Research findings with sources (`docs/research/T-043-*.md`, `docs/research/T-044-*.md`). |
 
 ## Status
@@ -486,8 +511,21 @@ These continue the roadmap's numbering.
 | T-057 | gui-engineer | TODO |
 | T-058 | gui-engineer | TODO |
 | T-059 | plugin-validator | TODO |
+| T-065 | ui-ux-designer | TODO |
+| T-067 | dsp-engineer | TODO |
+| T-068 | plugin-engineer | TODO |
+| T-069 | gui-engineer | TODO |
+| T-070 | gui-engineer | TODO |
 
 ## User hands-on checklist (at the M3c gate)
+
+> Amended on 2026-10-06. T-059 extends this checklist with the review items before the gate:
+> - the spectrum slots and the slot settings window;
+> - the sidechain meters;
+> - Offset, Fill and the 96 kHz axis;
+> - the Max crest readout;
+> - the compact layout;
+> - A/B.
 
 Use the Release build, in a DAW (FL Studio, plus Reaper if available) and in the Standalone, with music playing.
 

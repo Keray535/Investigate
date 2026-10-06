@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <title>Loudness</title>
+  <path d="M2.5 6.5H5L8.5 3.5V12.5L5 9.5H2.5Z" fill="currentColor" fill-opacity="0.35" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M11 5.5C12.3 6.8 12.3 9.2 11 10.5M12.75 3.75C15 6 15 10 12.75 12.25" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+</svg>
