@@ -39,3 +39,4 @@ Implement the compact layout and the smaller minimum editor size from review fin
 
 ## Log
 - 2026-10-06 vst-architect: Created from the M3 review triage. The user specified a width-only trigger at 50 % of the default width (1200 px, so 600 px), and asked for a lower minimum height than 920×540 allows.
+- 2026-10-06 vst-architect: T-061 (section #16) recommends lowering the minimum size, and making `computeRegions`, `ControlBar`, `MeterPanel` and `SpectrumView` valid at every size down to the new minimum. That is this task's scope. T-066 adds the clamping guard for sizes imposed below the minimum. Verify in FL Studio with both resize handles if the user can run it. Making the editor non-resizable in FL Studio only is a last resort, and needs the architect's approval.

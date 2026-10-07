@@ -322,7 +322,7 @@ Measured on the development machine in a Release build, at 48 kHz, 128-sample bl
 | `processBlock`, stereo main plus two stereo sidechains, three meter banks, analysis active, solo engaged (2026-10-06; supersedes the two `processBlock` rows above for this configuration) | mean ≤ 40 µs, p99 ≤ 90 µs per block |
 | Analysis thread with four spectrum slots (2026-10-06; supersedes the M3c analysis row) | ≤ 4 % at the defaults with every slot active; ≤ 20 % in the worst case (four unlinked slots at 65536 points, 8x overlap, 192 kHz) |
 | One re-map of every slot, worst case (2026-10-06; supersedes the zoom re-map row when slots differ) | ≤ 2.0 ms on the analysis thread |
-| Block-size change (M3d, T-063) | the last frame stays on screen until the new size produces its first frame, which arrives within one hop of the new size plus 50 ms |
+| Block-size change (M3d, T-063; amended 2026-10-06 after T-061) | the last frame stays on screen until the new size produces its first frame. With enough input history, that frame arrives within 50 ms of the change; otherwise within the remaining fill time plus 50 ms. Afterwards, frames are at most `hopCap` = 2048 · fs / 48000 samples apart (about 23 fps or more) |
 | A/B switch (M3c, T-068) | ≤ 50 ms on the message thread |
 
 ## Milestones
@@ -382,6 +382,25 @@ The next session continues with:
    5. T-059 and the user's M3c checklist.
 4. Then M4 (T-033, T-014 to T-017) and M5 (T-018 and T-019).
 5. **If T-061 finds that #2 lives in the editor's path drawing** rather than in the mapper, re-route T-062 to gui-engineer, keeping the same acceptance criteria, before dispatching it.
+
+Progress in the follow-up session of 2026-10-06:
+- Step 1 is done: commit `a1807f8`, pushed to `origin main`.
+- T-061 is DONE. T-062 stays with dsp-engineer, so item 5 above does not apply. T-062, T-063, T-066 and T-070 carry the findings in their logs. The user decided the analysis hop cap (see Decisions).
+- T-045 is DONE (narrowed scope, 2026-10-07). Its mockup was never opened in a browser. After T-065, build-engineer smoke-tests `mockup.html` in headless Edge for console errors, before the user reviews the combined mockup.
+- In flight: T-037 (gui-engineer, the only C++ task) and T-065 (ui-ux-designer). Next: T-062 after T-037.
+- 2026-10-07: both sessions stopped at the API usage limit (HTTP 429). T-037 had finished its round 1 code (logged, no QA yet). T-065 had written nothing. Both were re-dispatched from their task files: T-037 to repair and verify the tree, then the tester loop; T-065 from the start.
+- Later on 2026-10-07:
+  - T-065 delivered §18, tokens 1.3.0, 5 SVGs and the mockup (IN_REVIEW). §18.1 is ready for T-066.
+  - T-037: `docs/qa/T-037-unit.md` is PASS (491 of 491 tests). Its deviations and open questions are logged.
+  - The usage limit hit again (resets 08:20 Europe/Istanbul). The T-037 session and the headless-Edge smoke test of the mockup were cut off before plugin-validator ran and before the smoke test reported.
+  - New: T-072 and T-071 (defect D-1), see Decisions.
+- **Resume here, in order:**
+  1. build-engineer: check for leftover build processes, then re-run the headless-Edge smoke test of `docs/design/mockup.html` (read-only; report console errors and screenshots at 1200×700 and 560×400). Errors go back to ui-ux-designer as a small fix under T-065.
+  2. plugin-validator directly (the coder session is not needed): `docs/qa/T-037-validation.md`, with the CPU harness (median of 3, both sizes, continuous pan), the no-allocation check, pluginval, and the Alt key-up and touchpad manual checks. Any defect goes to gui-engineer.
+  3. After step 1 passes, the combined mockup review with the user. The architect decides spec §15 questions 7 to 10, 18 and 19 (technical) as recommended, and asks the user about 11 to 14, 16, 17 and 20 to 25, together with the approval.
+  4. Commit (build-engineer, explicit paths): every document change since `a1807f8`, the T-045 and T-065 design deliverables and their new SVGs, the T-061 report, and the T-037 source, tests and unit report once validation passes.
+  5. The C++ chain continues: T-072, T-071, then T-062, T-063, T-064, T-038, T-066, and the M3c chain as listed above.
+- Uncommitted: the document updates of this session (this roadmap, T-061 to T-063, T-065, T-066, T-070), the T-061 report, and the T-045 deliverables (`ui-spec.md`, `mockup.html`, `tokens.json`, the T-045 task file).
 
 M3c rules for every dispatch:
 - The spectrum slot model in `docs/plans/m3-review-spectrum-slots.md` replaces the underlay, the secondary curve and the fixed sidechain traces. Where the M3c plan and that plan differ, that plan wins.
@@ -568,6 +587,11 @@ Open user decisions:
 | 2026-10-06 | **Offset** (`offsetMode`): Off, Normalize, Center, Spectrum 2, Spectrum 3 or Spectrum 4. It is applied to slot 1 only, time-smoothed, and eases to 0 dB when its target is missing. **Max crest factor** is a read-only readout using SPAN's definition (50 ms windows, maximum since reset). This reverses the 2026-09-28 divergence. | User decisions on #8 and #13. |
 | 2026-10-06 | **A/B comparison is in v1** (T-068, T-058): two full parameter states, saved in the session, with an A→B copy. **#21 is cancelled** (factory presets, the "User" label and panel visibility in presets); the M3c user settings presets stay. | User decisions. |
 | 2026-10-06 | Parameter and default changes from the review: the Standalone starts with output monitoring off (the analyser still receives the input; the plugin is unaffected); the M3c reference grid reaches 96 kHz; `smoothing` gains 1/2 to 3 octaves; `dbLow` and `dbHigh` both range from −150 to +30 dB, with defaults of −72 and −18 dB; the effective level rule becomes 1 dB; `freqHigh` reaches 96 kHz; the spectrum grid uses 3 dB steps; tooltips are removed except the hover readout. | User requests #1 and #3 to #6, #18. Renormalised automation is accepted before the first public release. |
+| 2026-10-06 | **T-061 verdicts.** #2: the cause is in the mapper (linear power-domain interpolation between sparse bins), so T-062 stays with dsp-engineer and uses monotone cubic (PCHIP) interpolation of the bin levels in dB. #15: the stutter is the analysis latency, so T-063 adds an input history ring sized for the maximum block size, which a size change does not clear. #16: triggered by the host and visible in the plugin, not confirmed; T-066 adds a clamping guard to the layout, T-070 lowers the minimum size, and the user checks it in FL Studio at the M3d re-check. | `docs/research/T-061-review-bug-diagnosis.md`. |
+| 2026-10-07 | **Combined mockup review, first answers** (user). Accepted as recommended: spec §15 questions 11, 12, 13, 16, 21, 22, 24 and 25, and question 20 (minimum size 560×400; the meter strip is 120 px below 600 px wide; the compact header below 900 px; icon buttons below 1060 px). **Sidechain meters, changed:** each sidechain keeps one bar, but its rows show **every statistic the main input shows**, not the reduced set of question 23. Where a short window has no room, they follow the existing fit ladder. The mockup approval itself is pending: the user reviews the mockup first. | User decisions. |
+| 2026-10-07 | **Technical questions decided by the architect as recommended** (spec §15): 7, one shared `BandSoloMath::resolve` for the filter and the drawing (T-050); 8, host-visible choice texts match the UI names (T-051); 9, `PresetStore` returns reason codes, not texts (T-053); 10, the display refresh rate is the median VBlank interval (T-054); 18, `DisplayRange` returns `fHiEff = freqHigh`, and frames carry `nyquistHz` (T-047); 19, `MeterSnapshot` gains a per-channel `maxCrest[ch]` for all three inputs (T-049, T-052). Question 14 (a CSV file from another analyser) is asked of the user before T-058. Question 15 is recorded by T-037. | None of them changes what the user sees. Each follows the designer's recommendation. |
+| 2026-10-07 | **New tasks T-072 (ASan preset, build-engineer) and T-071 (analysis-thread safe stop, plugin-engineer)**, inserted in the C++ chain after T-037 and before T-062. | Defect D-1 (`docs/qa/T-037-unit.md`): on an unprepared processor, a settings change stalls the analysis thread, `stopThread (50)` kills it, and the heap is corrupted. A crash in a pass-through analyser outranks the display fixes. |
+| 2026-10-06 | **Analysis hop cap** (user decision): the hop between analyses is at most 2048 samples at 48 kHz, scaled with the sample rate (about 42.7 ms, at least 23 fps). Overlap becomes a minimum overlap for large block sizes. The parameter and its indices are unchanged. If the measured four-slot worst case exceeds the 20 % analysis budget, the architect brings it back to the user. | At 65536 and Overlap 4 the display updated only 2.9 times per second, and the curve jumped. |
 ## Status
 
 | Task | Title | Owner | Milestone | Depends on | Status |
@@ -603,17 +627,19 @@ Open user decisions:
 | T-041 | Processor: request the visible point count, not the frame capacity | plugin-engineer | M3b | T-039 | DONE (`docs/qa/T-041-unit.md` PASS in round 1; ctest 395 of 395, /W4 clean, no behaviour change) |
 | T-042 | Zoom modifiers: Alt+wheel level zoom, Alt+drag box zoom, Ctrl reserved for band solo (spec and mockup) | ui-ux-designer | M3b | none | DONE (2026-10-04; spec and mockup on Alt, new rows G22 and G23 for the reserved Ctrl gestures; a second pass follows only if T-044 confirms the Alt-release risk) |
 | T-060 | Sidechain bus declaration: a stereo default layout, inactive by default | plugin-engineer | M3b | T-041 | DONE (`docs/qa/T-060-unit.md` and `docs/qa/T-060-validation.md` PASS in round 1; ctest 399 of 399 in Release and Debug, no jassert, pluginval strictness 10 including the bus-layout tests) |
-| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041, T-042, T-060 (build order) | IN_PROGRESS (dispatched 2026-10-04, but no code was written; re-dispatch; includes the Alt key-up guard) |
+| T-037 | SpectrumView: zoom, pan, Fit, indicator and deep-zoom grid | gui-engineer | M3b | T-034 (mockup approved), T-036, T-039, T-041, T-042, T-060 (build order) | IN_REVIEW (2026-10-07: `docs/qa/T-037-unit.md` PASS; validation not run yet) |
 | T-038 | SpectrumView: overview strip and box zoom | gui-engineer | M3b | T-037, T-042, T-064 (build order) | TODO |
-| T-061 | Diagnosis: low-frequency curve, block-size stutter, small-window glitch | researcher | M3d | none | TODO |
-| T-062 | Spectrum mapper: smooth low-frequency curve and wider smoothing | dsp-engineer | M3d | T-061, T-037 (build order) | TODO (high priority) |
+| T-061 | Diagnosis: low-frequency curve, block-size stutter, small-window glitch | researcher | M3d | none | DONE (2026-10-06; report `docs/research/T-061-review-bug-diagnosis.md`) |
+| T-072 | AddressSanitizer build preset | build-engineer | M3d | T-037 (build order) | TODO |
+| T-071 | Analysis thread: safe stop, and settings changes on an unprepared processor (defect D-1) | plugin-engineer | M3d | T-037, T-072 | TODO (crash fix) |
+| T-062 | Spectrum mapper: smooth low-frequency curve and wider smoothing | dsp-engineer | M3d | T-061, T-071 (build order) | TODO (high priority) |
 | T-063 | Engine continuity on block-size change, and the 1 dB level-range rule | dsp-engineer | M3d | T-061, T-062 | TODO |
 | T-064 | M3d parameters and the Standalone mute default | plugin-engineer | M3d | T-062, T-063 | TODO |
 | T-066 | Editor review fixes | gui-engineer | M3d | T-064, T-065, T-038 (build order) | TODO |
 | T-043 | SPAN reference for M3c | researcher | M3c | none | DONE (`docs/research/T-043-span-m3c-reference.md`; R1 to R20 for M3c; three user questions open: the dBFS.30/.15 bar ends, the ballistics defaults, programme loudness for the LUFS/LU bars) |
 | T-044 | Host and platform constraints, band-solo filter references | researcher | M3c | none | DONE (`docs/research/T-044-host-platform-constraints.md`; Risk 17 plausible but unproven, Alt key-up mitigation exists; found a sidechain bus declaration defect; band solo = two cascaded TPT SVF band-passes) |
-| T-045 | M3c UI spec addendum, tokens, assets and mockup | ui-ux-designer | M3c | T-042, T-043, T-044 | IN_PROGRESS (stopped part-way on 2026-10-04: spec §17, tokens 1.2.0 and the SVGs are written, not committed; scope narrowed on 2026-10-06; resume steps in the task log) |
-| T-065 | UI spec §18 and mockup: review items and spectrum slots | ui-ux-designer | M3c | T-045 | TODO |
+| T-045 | M3c UI spec addendum, tokens, assets and mockup | ui-ux-designer | M3c | T-042, T-043, T-044 | DONE (2026-10-07, narrowed scope; tokens 1.2.1; user approval pending the combined mockup after T-065) |
+| T-065 | UI spec §18 and mockup: review items and spectrum slots | ui-ux-designer | M3c | T-045 | IN_REVIEW (2026-10-07: §18, tokens 1.3.0, 5 SVGs and the mockup delivered; legend fix and the full sidechain-statistics revision done; headless Edge render clean (no console errors, no overlap at 5 sizes × 3 sidechain states); the user's combined approval and §15 question 26 are pending) |
 | T-046 | Spectrum engine: spectrum slots and a second sidechain input (additive; amended 2026-10-06) | dsp-engineer | M3c | T-043, T-063, T-066 (build order) | TODO |
 | T-047 | Spectrum mapper: 1 Hz range, 96 kHz axis and Align 0 dB | dsp-engineer | M3c | T-043, T-046 | TODO |
 | T-067 | Spectrum engine: offset modes | dsp-engineer | M3c | T-047 | TODO |

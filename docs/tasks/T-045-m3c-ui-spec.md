@@ -1,7 +1,7 @@
 # T-045: M3c UI spec addendum, design tokens, assets and mockup
 - Owner: ui-ux-designer
 - Milestone: M3c
-- Status: IN_PROGRESS
+- Status: DONE
 - Depends on: T-042, T-043, T-044
 
 ## Goal
@@ -141,3 +141,42 @@ Write a new spec section (for example §17 "M3c additions"), update every affect
     - the R1 to R20 disposition.
   - **Approval.** It moves: the user approves **one combined mockup after T-065**, so set this task to DONE (not IN_REVIEW) when the narrowed scope is delivered, and note in the log that the approval is pending T-065.
   - **Scope.** Do not add the M3d review items (tooltips, the "SC" text, the 48 kHz label, All Settings duplicates, the 3 dB grid) here. T-065 covers them.
+- 2026-10-07 ui-ux-designer: **Narrowed scope delivered. Status DONE. The user's approval is still pending: the user approves one combined mockup after T-065 (§18), before T-054 starts.** Nothing is committed.
+  - **Superseded parts marked** (old text kept, each with a "Superseded by §18 (T-065, spectrum slots)" pointer): §17.3 and §17.6 in full; §17.2 (Channel, Underlay, Sidechain pair, compact breakpoint), §17.4 (underlay and `sc2` roles, secondary of the underlay), §17.5 (input labels), §17.14.2 (Underlay and Sidechain 2 rows), §17.16 (Underlay row, Inputs tab) and §6.3 (the affected rows) in part. §17 intro and the §17.1 scope map point to §18.
+  - **Mockup** (`docs/design/mockup.html`), for the remaining §17 items:
+    - band solo: Ctrl preview, Ctrl+click-and-hold solo, 45 % / 65 % tint, dashed and solid edges, 2 × 8 px stubs, BAND / SOLO block in the hover card, hint texts, both band cursors, Ctrl+wheel ladder with the 500 ms accumulator, Ctrl+Shift fine steps, release rules (button, Ctrl, leaving the editor, focus loss), "Band solo on/off" announcements, and a dev-bar "Hold Ctrl" checkbox;
+    - meter strip: two-row header, the 14 metering modes in menu order with separators, scales, ticks and zones per mode, Bars and Density (7 levels, zone rail, level notches), the LUFS / LU programme bar, the RMS-row unit and the LU loudness block, the Integration chip with its warn state, and Release, Peak hold and RMS window in Settings > Meters with the §17.10.4 formulas;
+    - section hiding with every re-flow case and the all-hidden rule on the Meters toggle;
+    - 1 Hz axis (formats below 10 Hz, note names below C0, "below C−1"), Align 0 dB with its legend tag, anti-alias off as column spans, frame-rate cap with measured display rate and Adaptive pacing (dev-bar readout);
+    - colour wheel (ring, S/V square, Shift fine, wheel, keyboard, hex entry, contrast warning, derived secondary tone, live update) and colour presets, on six generic roles (Primary, Sidechain, Ref 1 to Ref 4);
+    - reference slots (eye, swatch, name, offset, Take, Take 2nd, Load, Save, two-step Clear, info line), dashed reference curves in legend and hover card, Export curves, the pending-dialog state with Cancel, the real CSV import rules, and the CSV error message in the status line or as a toast (dev buttons load a valid sample, a sample broken on line 37, and take Ref 3);
+    - settings presets menu, Save as with live validation, Overwrite and Delete confirmations, toasts;
+    - tabbed Settings popover (Analysis, Inputs as a §18 pointer, Meters, Display) and the compact header below 1174 px.
+    - Not mocked, by instruction: the superseded items above. The header keeps the approved M3b Mode control and SC toggle in their place; a dev-bar line says so. §17.20 lists every simplification.
+    - **Not run in a browser by this session:** this agent has no browser or shell, so the mockup was checked by reading the code only. Open it once in Chrome or Edge before the combined review (or at the start of T-065) and fix any runtime error found.
+  - **Cursor mismatch fixed in the spec, not the asset:** §11, §17.9.2 and §17.9.7 now describe `cursor-band-solo.svg` as drawn (the band between the brackets filled white, the centre line black across it). The filled band reads better at 24 px than "sound marks", and it keeps the preview and solo cursors the same shape apart from the fill. `assets/ui/` is unchanged.
+  - **Token and SVG check of §17:** every §17 rect, colour and duration matches `tokens.json` (header, strip, popovers, curves panel, colour tab, solo, density, meter modes, display, toasts), and the 12 new SVGs are clean (`viewBox`, `<title>`, no raster, scripts or external references). Fixed: the §17.17.5 colour-preset dialog sum (now (748, 360) … (1028, 472) at 1200 × 700, ending at y 472 at 920 × 540); the §11 descriptions of the loudness icon (two arcs) and the correlation icon; the `fill-opacity` note. Added: the histogram decay (R11) and the exact warn look of the Style control in §17.10.5, and the Colours-tab message routing in §17.12.4. `tokens.json` 1.2.1 changes no value; it marks the M3b-only ballistics tokens and the superseded M3c tokens.
+  - **T-043 R1 to R20, final disposition** (the R15 contradiction is resolved: R15 concerns the DSP only):
+    - R1 adopted: dBFS 30 = −24 … +6 and dBFS 15 = −9 … +6 (user decision), §17.10.2.
+    - R2 adopted: dBFS+3 adds 3.0103 dB to the level and the RMS row, peaks unchanged, dBFS labels.
+    - R3 adopted: only the cal modes fix integration and release at 600 ms; the fields show the warn state.
+    - R4 partly adopted: the RMS-row unit follows the level modes; in the loudness modes integrated loudness stays in the loudness block (in LU in the LU modes) and the RMS row stays dBFS (§17.21 row 3). The K-weighted max crest factor is not designed here; the max crest readout is now plan item [20], so T-065 takes this note.
+    - R5 adopted: one programme-loudness bar, designed so it cannot read as an L/R pair.
+    - R6 adopted: 0 LU = −23 LUFS.
+    - R7 adopted: defaults 1.00 ms / 750 ms / 1000 ms (user decision), plan ranges, and the own-words hint that integration below about 50 ms follows low-frequency peaks.
+    - R8 not applicable to the UI: the integration definition is T-049's; the display formulas (§17.10.4) agree with it, since integration does not touch the peak part.
+    - R9 adopted on the editor side: release also drives the peak part, the hold tick and the TP hold (§17.10.4); the `MeterBank` side is T-049's.
+    - R10 adopted: after the hold time the tick falls at the release rate.
+    - R11 adopted: the histogram decays with `meterPeakHold` (now in §17.10.5); computed in `MeterBank`.
+    - R12 adopted: Stereo is the L+R power mean (the definition carries into the slot Channel setting of §18).
+    - R13 adopted, then superseded: the underlay is dropped by the slot model (§18).
+    - R14 adopted: meters measure the inputs, never Mid/Side. §18 adds per-input sidechain meters (user decision); still no M/S meters.
+    - R15 not applicable to the UI: the calibration method and its test set belong to T-047 and T-051. The UI side of Align 0 dB (toggle, legend tag, tooltip) comes from plan [6]. The 2026-10-04 draft listed R15 as adopted by mistake.
+    - R16 adopted: anti-alias is a drawing preference only.
+    - R17 rejected: no global fill switch for references; references stay line-only, each slot with its own dash pattern, so they differ from every live curve without hue. §18 adds Fill per spectrum slot (#7), not for references; T-065 may revisit this with the user.
+    - R18 adopted: tolerant CSV import, rows at 0 Hz or below skipped and counted, line numbers in errors. A real CSV from the user is still §15 question 14.
+    - R19 adopted: Ctrl+left-drag solo and Ctrl+wheel width; the Ctrl-only preview is Investigate's addition.
+    - R20 adopted: roles, darker secondary tone, machine-wide colours, immediate update in open instances, colour presets as files; T-065 maps the roles to slot colours.
+  - **Handed to T-065** (no change made here): the CSV "no data between 1 Hz and 48 kHz" message and the 48 kHz reference range follow the 96 kHz grid decision of 2026-10-06; the K-weighted max crest note (R4); merging the 1174 px compact header with the compact layout below 600 px; the M3d items (tooltips, the "SC" text, the 48 kHz label, All Settings duplicates, the 3 dB grid).
+  - **Acceptance criteria:** left unticked on purpose. The items that concern the channel and underlay controls and the two sidechains with labels moved to T-065; the rest are demonstrated as listed above; the approval gate stays open until the combined review.
+  - Files: `docs/design/ui-spec.md`, `docs/design/mockup.html`, `docs/design/tokens.json` (1.2.1), this task file.

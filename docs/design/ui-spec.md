@@ -3,6 +3,7 @@
 - Task: T-010. Author: ui-ux-designer. Date: 2026-09-28. Status: final. The user approved `mockup.html` without changes on 2026-09-28. The layout and visual design are frozen for T-011 to T-013. The final pass reconciled the spec with the roadmap Decisions dated 2026-09-28, finalised the fonts (§3.2) and added the About view (§6.2).
 - Addendum T-034 (2026-10-03, milestone M3b): spectrum zoom and pan, new §5.9, with updates to §4.1, §5.3, §5.5 to §5.7, §6, §7.2, §10, §11, §12, §13.3 and §15. The updated mockup awaits the user's approval; T-037 does not start before it. All changes are listed in §16.
 - Addendum T-045 (2026-10-04, milestone M3c): every M3c change is in the new §17, with marked "M3c" notes in the sections it supersedes, a new §6.3 control inventory, §10.4, §12.2 and §13.4. The M3b behaviour that T-037 implements is unchanged. The updated mockup awaits the user's approval; T-054 to T-058 do not start before it. Changes are listed in §16 and §17.21.
+- Addendum T-065 (2026-10-07, milestones M3d and M3c): the user's M3 review and the four spectrum slots are in the new §18. §18.1 (M3d) is self-contained for T-066; §18.2 onwards replaces the superseded parts of §17 (list in §18.14). The combined mockup (T-045 plus T-065) awaits the user's approval before T-054. Changes are listed in §16.
 - Companion files: `docs/design/tokens.json` (the source of truth for every value named `token.*` below), `docs/design/mockup.html` (interactive preview), `assets/ui/*.svg`.
 - All sizes are logical pixels at 100 % scale. "x, y, w, h" rectangles are in editor coordinates, with the origin at the top-left of the editor, unless a rectangle is marked as relative to a parent.
 - Minus signs in displayed text are U+2212 (−), never ASCII hyphen. Multiplication signs are U+00D7 (×).
@@ -879,6 +880,8 @@ The Block tooltip is dynamic: "FFT block size: 4096 samples, 85.3 ms, 11.7 Hz bi
 
 ### 6.3 M3c control inventory (T-045)
 
+> **Rows superseded by §18 (T-065, spectrum slots):** `channelMode` (header Channel control), `underlay` (dropped), `showSidechain` and `showSidechain2` (now slot 3 and slot 4 Visible), `inputLabel0` to `2` (now `slotName1` to `4`), and the eight role colours (now slot colours plus the reference roles). The other rows stay valid.
+
 Every new or changed parameter, `ViewState` property and global preference of the M3c plan. "Wheel" is one notch; "Fine" means Shift. Chip behaviours (250 ms click defer, double-click and Alt+click reset, external-change dot, error flash) are those of §7.1 unless a row says otherwise. Stores: P = APVTS parameter (session and settings presets), V = `ViewState` (session only), G = `GlobalSettings` (machine-wide).
 
 | Item (store) | Control and location | Size | Label | Display format | Default | Drag | Wheel (Fine) | Text entry |
@@ -1226,12 +1229,17 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
 | `icon-eye-16.svg`, `icon-eye-off-16.svg` (T-045) | 16 | Reference slot visibility | Open eye; eye with a slash |
 | `icon-section-bars-16.svg` (T-045) | 16 | Section toggle: level bars | Two vertical bars of different heights |
 | `icon-section-table-16.svg` (T-045) | 16 | Section toggle: statistics | A table with three rows |
-| `icon-section-loudness-16.svg` (T-045) | 16 | Section toggle: loudness | A speaker with one sound arc |
-| `icon-section-correlation-16.svg` (T-045) | 16 | Section toggle: correlation | A horizontal scale with a centre tick and a marker |
+| `icon-section-loudness-16.svg` (T-045) | 16 | Section toggle: loudness | A speaker with two sound arcs |
+| `icon-section-correlation-16.svg` (T-045) | 16 | Section toggle: correlation | A horizontal scale with end and centre ticks and a triangular marker above it |
 | `icon-warning-16.svg` (T-045) | 16 | Contrast warning, CSV warnings and errors | A triangle with an exclamation mark |
 | `icon-chevron-down-16.svg` (T-045) | 16 | Presets and colour-preset buttons | A downward chevron |
 | `cursor-band.svg` (T-045) | 0 0 24 24 | Band preview (G24) | A centre line between two open brackets; hotspot (12, 12). Black and white, never recoloured |
-| `cursor-band-solo.svg` (T-045) | 0 0 24 24 | Band solo (G23-M3c) | Filled brackets and two sound marks; hotspot (12, 12) |
+| `cursor-band-solo.svg` (T-045) | 0 0 24 24 | Band solo (G23-M3c) | The same brackets with the band between them filled white (8 × 10 at (8, 7), 1 px black outline) and the centre line drawn black across the fill; hotspot (12, 12). Black and white, never recoloured |
+| `icon-spectra-16.svg` (T-065) | 16 | Compact Spectra list button (§18.3.1) | Three list rows: a filled, a half-filled and an open square, each with a line |
+| `icon-presets-16.svg` (T-065) | 16 | Compact Presets button (§18.9.2) | Two stacked cards with folded corners, `fill-opacity` 0.35 on the front card |
+| `icon-copy-ab-16.svg` (T-065) | 16 | Compact A/B Copy button (§18.13) | A filled square, an arrow, a dashed square |
+| `icon-lock-16.svg` (T-065) | 16 | Locked slot 1 fields (§18.3.2, §18.4) | A padlock, `fill-opacity` 0.35 on the body |
+| `icon-link-16.svg` (T-065) | 16 | Linked analysis fields in the slot window (§18.4) | Two interlocked rounded links |
 
 - **Cursor exception (T-034; T-045 adds the two band cursors):** the cursor SVGs use a fixed `#FFFFFF` fill with a 1 px `#000000` outline instead of `currentColor`, which is the OS cursor convention and keeps them visible on any background. They are rendered to images (§5.9.4) and never recoloured. They are otherwise clean: a `viewBox`, a `<title>`, no raster images, scripts or external references.
 - The Fit button is text-only, so there is no Fit icon.
@@ -1240,7 +1248,7 @@ Non-text graphics (WCAG 1.4.11, at least 3 : 1):
   - The 24-grid icons use 2-unit strokes on integer coordinates, so they are pixel-exact at 24 px and 48 px.
   - The 16-grid variants use 1-unit strokes on half-integer coordinates, so they are pixel-exact at 16 px and 32 px.
   - Use `-16` at 16 px and 32 px (32 px is 200 % of the 16 px header icons), and the 24 set at 24 px.
-- **SVG hygiene:** every file uses `currentColor` only (the sidechain icon adds `fill-opacity`), has a `viewBox` and a `<title>`, and contains no raster images, scripts or external references.
+- **SVG hygiene:** every file uses `currentColor` only (the sidechain, level-bars and loudness icons add `fill-opacity` 0.35), has a `viewBox` and a `<title>`, and contains no raster images, scripts or external references.
 - **Colour at runtime:** the colour is applied by replacing `currentColor` with the state's token colour at load time (one `Drawable` per state colour, cached).
 - **Resize grip:** drawn in code (§2).
 
@@ -1469,16 +1477,29 @@ The M3c rendering rules are in §17.18. In short:
 5. **Curve margin while panning (dsp-engineer, T-035; T-034):** a frame carries curves only over the view it was mapped for. During a continuous pan, or right after a zoom-out step, the editor has no points for the newly exposed margin until the re-mapped frame arrives (up to one editor frame; p95 ≤ 10 ms). In a fast pan this shows as an empty strip flickering at the leading edge. **Recommended answer:** the mapper also maps a margin of 25 % of the visible log-frequency span on each side (clamped to the home range) at the same point density, so at most 1.5 × 2048 = 3072 points per curve, and the frame's view range records the mapped range. 25 % covers one zoom-out notch (12.5 % per side) and a pan of a quarter of the view per frame. If this is declined, §12.1 applies as written and the margin stays empty for that frame.
 6. **Bin spacing in the frame (dsp-engineer, T-035; T-034):** the bin-spacing row (§5.9.6) needs the bin spacing of the data on screen. That differs from `sampleRate / fftSize` while frozen, and for one frame after a Block change. **Recommended answer:** add `float binHz` to `SpectrumFrame`; the freeze snapshot already stores it (plan, "Changes per module"). Until it exists, the editor uses `sampleRate / fftSize`, captured at the moment of freezing while frozen.
 
-**M3c (T-045), open:**
-7. **Band-solo edge function (dsp-engineer, T-050):** the plan clamps the band edges at 10 Hz … 0.45 fs, T-044 clamps the centre at 20 Hz … 0.45 fs. The editor must draw what is played (§17.9.3). **Recommended answer:** T-050 exposes one header-only function, for example `BandSoloMath::resolve (pointerHz, widthOct, sampleRate) → { fc, fLo, fHi }`, used by both the filter and the editor, and documents its clamps.
-8. **Choice texts (plugin-engineer, T-051):** the host-visible choice texts of `meterScale`, `channelMode` and `underlay` should match the UI names (§17.10.2, §17.3): "dBFS 30", "dBFS 15", "dBFS+3", "K-20 cal", "LUFS M", "LUFS S", "LU M", "LU S"; channel "Stereo"; legacy "L/R (legacy)" and "M/S (legacy)". The indices are unchanged.
-9. **Preset name validation (plugin-engineer, T-053):** `PresetStore` should return a reason code (empty, too long, invalid character, trailing dot or space, reserved device name, reserved "Default") rather than text, so the UI shows the texts of §17.13.3 and the colour presets (T-054) reuse the same check.
-10. **Display refresh rate (gui-engineer, T-054):** JUCE does not report the monitor's refresh rate directly. **Recommended answer:** measure the `VBlankAttachment` interval (median of the last 30 callbacks) and use it for the effective frame rate and the `state-warn` rule (§17.15).
-11. **For the user at the mockup review:** the loudness bar has no zones (one colour). Should it mark a target (for example −14 or −23 LUFS)? The spec has none, because a target is a delivery choice.
-12. **For the user:** Release, Peak hold and the RMS window move into Settings > Meters to make room for Integration and the section toggles in the strip. Is that acceptable, or should Release and Peak hold also be in the strip (a third header row, 34 px less bar height)?
-13. **For the user:** the default colours of Sidechain 2 (green) and References 1 to 4 (pink, yellow, blue, silver), §17.4.
-14. **CSV sample (user, from T-043 R18):** a CSV file exported by the user's other analyser would confirm the import rules before T-058.
-15. **Touchpad pinch (T-037, Risk 18):** whether a pinch arrives with Ctrl decides whether it changes the solo width or zooms (§17.9.5). T-037 records the result; the M3c checklist text follows it. No design change either way.
+**M3c (T-045).** Answered on 2026-10-07 (roadmap Decisions of 2026-10-07, T-065 log): 7, 8, 9 and 10 decided by the architect as recommended; 11, 12 and 13 accepted by the user as recommended. 14 and 15 stay open. The question texts are kept for reference.
+7. **Resolved (architect, as recommended).** **Band-solo edge function (dsp-engineer, T-050):** the plan clamps the band edges at 10 Hz … 0.45 fs, T-044 clamps the centre at 20 Hz … 0.45 fs. The editor must draw what is played (§17.9.3). **Recommended answer:** T-050 exposes one header-only function, for example `BandSoloMath::resolve (pointerHz, widthOct, sampleRate) → { fc, fLo, fHi }`, used by both the filter and the editor, and documents its clamps.
+8. **Resolved (architect, as recommended).** **Choice texts (plugin-engineer, T-051):** the host-visible choice texts of `meterScale`, `channelMode` and `underlay` should match the UI names (§17.10.2, §17.3): "dBFS 30", "dBFS 15", "dBFS+3", "K-20 cal", "LUFS M", "LUFS S", "LU M", "LU S"; channel "Stereo"; legacy "L/R (legacy)" and "M/S (legacy)". The indices are unchanged.
+9. **Resolved (architect, as recommended).** **Preset name validation (plugin-engineer, T-053):** `PresetStore` should return a reason code (empty, too long, invalid character, trailing dot or space, reserved device name, reserved "Default") rather than text, so the UI shows the texts of §17.13.3 and the colour presets (T-054) reuse the same check.
+10. **Resolved (architect, as recommended).** **Display refresh rate (gui-engineer, T-054):** JUCE does not report the monitor's refresh rate directly. **Recommended answer:** measure the `VBlankAttachment` interval (median of the last 30 callbacks) and use it for the effective frame rate and the `state-warn` rule (§17.15).
+11. **Resolved (user, accepted as recommended): no target mark.** The loudness bar has no zones (one colour). Should it mark a target (for example −14 or −23 LUFS)? The spec has none, because a target is a delivery choice.
+12. **Resolved (user, accepted as recommended): they stay in Settings > Meters.** Release, Peak hold and the RMS window move into Settings > Meters to make room for Integration and the section toggles in the strip. Is that acceptable, or should Release and Peak hold also be in the strip (a third header row, 34 px less bar height)?
+13. **Resolved (user, accepted as specified).** The default colours of Sidechain 2 (green) and References 1 to 4 (pink, yellow, blue, silver), §17.4.
+14. **Open.** **CSV sample (user, from T-043 R18):** a CSV file exported by the user's other analyser would confirm the import rules before T-058.
+15. **Open.** **Touchpad pinch (T-037, Risk 18):** whether a pinch arrives with Ctrl decides whether it changes the solo width or zooms (§17.9.5). T-037 records the result; the M3c checklist text follows it. No design change either way.
+
+**M3 review and spectrum slots (T-065).** Answered on 2026-10-07 (roadmap Decisions of 2026-10-07, T-065 log): 16, 20, 21, 22, 24 and 25 accepted by the user as recommended; 18 and 19 decided by the architect as recommended; 17 and 23 answered by the user with a change to the sidechain metrics, now built into §18.10. The combined mockup approval (T-045 plus T-065) is still pending. New: question 26.
+16. **Resolved (user, accepted): the hint line stays.** **For the user (#18):** the hint line at the bottom-right of the spectrum (gesture help, no delay) is kept as part of the hover readout, and the gutters gain "Scroll: zoom level" and "Scroll: zoom frequency". **Recommended:** keep it; it is the only place the spectrum gestures are written down. The alternative is to remove it too.
+17. **Resolved (user, 2026-10-07): one bar per sidechain is kept**, with the main bars at 21 px (one sidechain) or 13 px (two) at the default size (§18.10.2). The user's change concerns the rows (question 23). **For the user (#12):** each connected sidechain gets one bar (its louder channel) next to the main bars; with two sidechains the main bars narrow from 22 to 13 px at the default size. **Recommended:** accept. The alternative, a strip that grows by 32 px per sidechain, would hide the Frequency, Level and Max crest controls at 1200 × 700 whenever a sidechain connects.
+18. **Resolved (architect, as recommended).** **dsp-engineer (T-047):** from M3c the display axis runs to `freqHigh` above Nyquist (§18.8): `DisplayRange.h` should return `fHiEff = freqHigh` (keeping the one-octave rule), while the mapper still stops at Nyquist and the frame says where. **Recommended:** add a `nyquistHz` to the frame next to the per-slot `binHz` (T-046).
+19. **Resolved (architect, as recommended).** **dsp-engineer and plugin-engineer (T-049, T-052):** the Max crest readout and the sidechain blocks need per-channel `maxCrest[ch]` in `MeterSnapshot`, for every input. **Recommended:** add it to the struct that all three banks publish.
+20. **Resolved (user, accepted).** **For the user (#14):** the minimum size becomes 560 × 400; below 600 px wide the meter strip is 120 px with bars and correlation only, and the header is compact below 900 px (icons, Offset in the Spectra panel). **Recommended:** accept.
+21. **Resolved (user, accepted).** **For the user (#8):** the Offset options read "Match {slot name}" (by default "Match Spectrum 2", "Match SC 1", "Match SC 2") instead of "Spectrum 2, 3, 4". **Recommended:** accept; the default "Match SC 1" is the user's "Sidechain" option.
+22. **Resolved (user, accepted).** **For the user (#22):** Copy (A→B) acts at once with a toast, without a confirmation. **Recommended:** accept; a two-step confirmation would slow the common "copy, then tweak B" workflow.
+23. **Resolved by the user with a change (2026-10-07):** each sidechain shows **every statistic the main input shows**, with the same rows and units (Peak, Peak max, TP, TP max, Headroom, RMS, Crest, Max crest, Clips, TP clips, the loudness block, correlation with balance), at `meter.sc-opacity`; where a short window has no room the fit ladder applies (rows shrink, then give way to a note). Built into §18.10.3 (the sidechain table, three forms) and §18.10.4 (the eight-step ladder, resolved at 1200 × 700, 920 × 540, 600 × 400 and 560 × 400 with zero, one and two sidechains); §18.14 change 2 is revised. The original proposal was: a sidechain's metrics are Peak max, TP max, RMS, Crest max, short-term and integrated loudness, correlation and balance (not the full nine-row table), and they shrink or give way to a note when the window is too short.
+24. **Resolved (user, accepted): slot 1 is always shown.** **For the user:** slot 1 (Main) has no visibility toggle, because it can never be off and the parameter table has no slot 1 Visible parameter. **Recommended:** keep it always shown. If the user wants to hide it, plugin-engineer adds `s1Visible` (T-051) and the lock cell becomes an eye toggle.
+25. **Resolved (user, accepted).** **For the user:** with the slot names, the default legend reads "Main · Mid", "Spectrum 2 · RT max", "SC 1" instead of today's "Mid", "RT max", "Sidechain". The curves themselves are unchanged. **Recommended:** accept.
+26. **Open, for the user at the mockup review (follows from question 23):** at the default 1200 × 700, two sidechains with every section shown do not fit in full. The ladder (§18.10.4) keeps both sidechains' ten statistics rows side by side and lets their loudness and correlation rows give way to a note ("SC loudness and correlation need more height."); everything shows from H = 760. **Recommended:** accept, because the pair form compares SC 1 and SC 2 row by row and the per-channel rows are the larger part. **Alternative:** keep SC 1 complete (form A) and let SC 2's rows give way, which fits at 1200 × 700 with main rows of 16 px. A third option is for the user to hide the Loudness section when comparing two sidechains, which frees the room with no ladder step (§18.10.4 example). At 920 × 540 and below, any sidechain table gives way to the note in both variants.
 
 ## 16. Change log
 
@@ -1488,11 +1509,14 @@ The M3c rendering rules are in §17.18. In short:
 | 2026-10-03 | T-034 | **Spectrum zoom and pan (M3b).** New §5.9: view model, view arithmetic, gestures G1 to G21 with exact numbers, cursors, hover behaviour during gestures, zoom panel (indicator, Fit button, bin-spacing row, overview strip) with geometry at four sizes, collision rules, deep-zoom grid rules with worked examples, Fit and no-op cases, changes from the plan, mockup simplifications. Updated: §4.1 (gutters as wheel targets, panel position); §5.3 (view mapping, cache rule); §5.5 (view-based frequency formula, 4-figure zoom precision, hover-card candidates around the panel, new hint-line texts and fit rule); §5.6 (interaction table replaced, clipboard precision); §5.7 (freeze plus zoom, freeze epoch); §6 (Fit view action, deferred click reset); §7.2 (no zoom keys, Esc during a box drag); §10 (new §10.2a contrast tables, names, hit targets); §11 (three cursor SVGs); §12.1 (rendering and budgets for zoom and pan); §13.3 (view state not persisted, new frame fields); §15 (questions 5 and 6). `tokens.json` 1.1.0 adds the groups `zoom`, `zoomLayout`, `zoomInteraction`, `deepGrid` and `cursor`. New assets: `cursor-hand-open.svg`, `cursor-hand-grab.svg`, `cursor-zoom-box.svg`. `mockup.html` implements every gesture and no longer loads web fonts, so it opens from the file system with no network access. |
 | 2026-10-03 | T-034 (fold-in) | Two stale points that T-011 had overridden in its task file (roadmap Decision 2026-10-01) are folded in: the font files and license texts live in `third_party/fonts/` and the `InvestigateAssets` binary-data target, not in `assets/ui/fonts/` (§3.2, §6.2, §11, and the font file paths in `tokens.json`); and the old §15 open questions 1 to 3 are closed (§15). |
 | 2026-10-04 | T-042 | **Zoom modifier remap**, from the user decision of 2026-10-03 (Ctrl is kept free for the M3c band solo). Level zoom moves from Ctrl+wheel to **Alt+wheel** (G3) and box zoom from Ctrl+left-drag to **Alt+left-drag** (G13), with the same factors, Shift fine steps, 4 px cancel rule and Esc cancel. Ctrl+wheel and a Ctrl+left press, click, double-click or drag over the data rect are reserved for the band solo and do nothing until M3c (new rows G22, G23; the other G numbers are unchanged); a Windows touchpad pinch, which arrives as Ctrl+wheel, is therefore inert over the data rect until M3c and changes the solo width from M3c (this replaces the old "pinch zooms level" note, plan risk Z4). An Alt+click on the data rect does nothing; the chip Alt+click reset (§7.1) is unchanged. Updated: §5.5 hint line, §5.6, §5.9.3 (G1 to G7, G11 to G14, G21 to G23, modifier precedence, a pointer to T-044 for Risk 17), §5.9.4 cursors, §5.9.6 tooltip, §5.9.10 rows 5 and 12, §5.9.11, §7.1, §10.3 description, §11, §12.1, §13.3, and the `cursor-zoom-box.svg` title. `tokens.json` has no gesture references and is unchanged. `mockup.html` handlers use Alt, and the Ctrl variants are inert. |
-| 2026-10-04 | T-045 | **M3c addendum** (awaits the user's mockup approval; T-054 to T-058 do not start before it). New §17 with every M3c design: header with Channel, Underlay, Presets, Sidechain 1 and 2 and Refs, and a compact mode below 1174 px; curve roles, styles and the colour derivation rule; legend and hover card with input labels; sidechain host support; the 1 Hz axis and note names below C0; Align 0 dB; band solo; the two-row meter-strip header, the 14 metering modes, Density, ballistics and section hiding with re-flow; reference slots; CSV flows; settings presets; the colour editor and colour presets; display preferences; the tabbed Settings popover; resolved layouts; performance and accessibility rules. New §6.3 (control inventory), §10.4, §12.2 and §13.4. Marked M3c additions (the M3b behaviour is unchanged for T-037) in §4.1, §4.2, §4.4, §5.1, §5.2, §5.5, §5.6, §5.9.3 (rows G22-M3c, G23-M3c, G24), §5.9.4, §6.1, §7.2, §8, §9, §11 and §14. New questions 7 to 15 in §15. `tokens.json` 1.2.0 adds the groups `curveRole`, `solo`, `meterModes`, `density`, `headerM3c`, `stripM3c`, `popoverM3c`, `display` and `toastM3c`. New assets: `icon-refs.svg`, `icon-refs-16.svg`, `icon-eye-16.svg`, `icon-eye-off-16.svg`, four `icon-section-*-16.svg`, `icon-warning-16.svg`, `icon-chevron-down-16.svg`, `cursor-band.svg`, `cursor-band-solo.svg`. `mockup.html` demonstrates every M3c item. |
+| 2026-10-04 | T-045 | **M3c addendum** (awaits the user's mockup approval; T-054 to T-058 do not start before it). New §17 with every M3c design: header with Channel, Underlay, Presets, Sidechain 1 and 2 and Refs, and a compact mode below 1174 px; curve roles, styles and the colour derivation rule; legend and hover card with input labels; sidechain host support; the 1 Hz axis and note names below C0; Align 0 dB; band solo; the two-row meter-strip header, the 14 metering modes, Density, ballistics and section hiding with re-flow; reference slots; CSV flows; settings presets; the colour editor and colour presets; display preferences; the tabbed Settings popover; resolved layouts; performance and accessibility rules. New §6.3 (control inventory), §10.4, §12.2 and §13.4. Marked M3c additions (the M3b behaviour is unchanged for T-037) in §4.1, §4.2, §4.4, §5.1, §5.2, §5.5, §5.6, §5.9.3 (rows G22-M3c, G23-M3c, G24), §5.9.4, §6.1, §7.2, §8, §9, §11 and §14. New questions 7 to 15 in §15. `tokens.json` 1.2.0 adds the groups `curveRole`, `solo`, `meterModes`, `density`, `headerM3c`, `stripM3c`, `popoverM3c`, `display` and `toastM3c`. New assets: `icon-refs.svg`, `icon-refs-16.svg`, `icon-eye-16.svg`, `icon-eye-off-16.svg`, four `icon-section-*-16.svg`, `icon-warning-16.svg`, `icon-chevron-down-16.svg`, `cursor-band.svg`, `cursor-band-solo.svg`. The mockup was extended in the 2026-10-07 row. |
+| 2026-10-07 | T-045 (narrowed) | **Superseded parts marked** after the M3 review triage (`docs/plans/m3-review-spectrum-slots.md`): §17.3 (Channel and underlay) and §17.6 (Sidechain pair) in full; §17.2, §17.4, §17.5, §17.14.2, §17.16 and §6.3 in part, each with a "Superseded by §18 (T-065, spectrum slots)" pointer and the old text kept. **Fixes:** §11 and §17.9.2 now describe `cursor-band-solo.svg` as drawn (a filled band between the brackets, the centre line black across it; the file is unchanged) and §17.9.7 says "an open band or a filled band"; §11 describes the loudness and correlation icons as drawn and lists every icon with `fill-opacity`; §17.17.5 gives the colour-preset dialog rects (the old "368 + 112" sum was wrong); §17.10.5 adds the histogram decay (T-043 R11) and the exact warn look of the Style control; §17.12.4 routes messages to a toast while the Colours tab is shown; §17.20 lists what the mockup simplifies or leaves out. `tokens.json` 1.2.1 marks the M3b-only ballistics tokens and the superseded M3c tokens. **`mockup.html`** now demonstrates the band solo (preview, solo, tint, edges, stubs, band block, hint, cursors, Ctrl+wheel ladder and fine steps), the 14 metering modes with Bars and Density, the ballistics parameters, section hiding with re-flow and the all-hidden rule, the 1 Hz axis and note names below C0, Align 0 dB, anti-alias off, the frame-rate cap and Adaptive pacing, the colour wheel and colour presets on generic roles, the reference slots with Take, Load, Save, Clear and Export, the CSV error toast and status line, the settings presets menu with its dialogs, the tabbed Settings popover and the compact header. Approval: one combined mockup after T-065. |
+| 2026-10-07 | T-065 | **M3 review and spectrum slots**, new §18. §18.1 (M3d, for T-066): every tooltip removed (texts become accessible descriptions; Block menu hints and gutter hints replace the only information they carried), the sample-rate label removed, the SC toggle icon-only and teal when on, Settings without duplicates of the main window, effective values in `state-warn` with an underline (#5), the 3 dB level-grid ladder, Smooth to 3 oct and Level −72 … −18 dB. §18.2 to §18.13 (M3c): the four-slot model with default colours, the Spectra header group and panel, the slot window with Link, slot styles and Fill, the legend collision rule (fixes the 23.5 px legend and FROZEN overlap measured by T-037), Offset, the 96 kHz axis with the shaded region above Nyquist, the minimum size 560 × 400 with breakpoints 1060, 900 and 600, the compact layout, sidechain bars and metrics with the fit ladder, the Max crest readout, 520-wide popovers, A/B. §18.14 lists every superseded section and the changes from the plan. §15 gains questions 16 to 25. `tokens.json` 1.3.0. New assets: `icon-spectra-16.svg`, `icon-presets-16.svg`, `icon-copy-ab-16.svg`, `icon-lock-16.svg`, `icon-link-16.svg`. `mockup.html` shows the combined M3c design (§18.15). |
+| 2026-10-07 | T-065 (revision) | **User answers to §15** (roadmap Decisions of 2026-10-07). **Sidechain metrics (questions 17 and 23):** one bar per sidechain is kept; its rows now show every statistic the main input shows (ten per-channel rows including Max crest, the six loudness values, correlation and balance) at `meter.sc-opacity`. §18.10.1 to §18.10.4 rewritten: one sidechain table at full strip width below the main sections in three forms (one sidechain with Statistics on or off, two sidechains as a pair table); the bars column ends above it; alarm cells keep full strength; an eight-step fit ladder (SC rows 16, main rows 18 then 16, SC loudness and correlation give way, the table gives way, then the main short forms) resolved at 1200 × 700, 920 × 540, 600 × 400 and 560 × 400 with zero, one and two sidechains. §18.9.5: two compact lines per sidechain (correlation and balance), Hc = 68 + 32 × nSC. §18.11 and §18.14 change 2 updated; §18.15, §18.17 and §18.18 adjusted. §15: questions 7 to 13 and 16 to 25 marked resolved (accepted, decided as recommended, or changed); 14 and 15 stay open; new question 26 (two sidechains at 1200 × 700). `tokens.json` `stripSidechain` revised (still 1.3.0, not yet approved). `mockup.html`: full sidechain statistics simulated, the three table forms, the new ladder and notes, two compact lines per sidechain, a 1200 × 780 size button. |
 
 ## 17. M3c additions (T-045)
 
-Source: `docs/plans/m3c-feature-expansion.md` (the plan), `docs/research/T-043-span-m3c-reference.md` (R1 to R20), `docs/research/T-044-host-platform-constraints.md`, and the user decisions of 2026-10-04. Every value named `token.*` here is in `tokens.json` 1.2.0. Everything in this section is **M3c** and is implemented by T-054 to T-058; the M3b behaviour of §5.5 to §5.9 that T-037 implements is unchanged. Where an older section is superseded from M3c, it says so with a pointer here.
+Source: `docs/plans/m3c-feature-expansion.md` (the plan), `docs/research/T-043-span-m3c-reference.md` (R1 to R20), `docs/research/T-044-host-platform-constraints.md`, and the user decisions of 2026-10-04. Every value named `token.*` here is in `tokens.json` 1.2.1. Parts of this section are superseded by §18 (T-065, spectrum slots); each such subsection starts with a pointer. Everything in this section is **M3c** and is implemented by T-054 to T-058; the M3b behaviour of §5.5 to §5.9 that T-037 implements is unchanged. Where an older section is superseded from M3c, it says so with a pointer here.
 
 ### 17.1 Scope map
 
@@ -1514,7 +1538,11 @@ Source: `docs/plans/m3c-feature-expansion.md` (the plan), `docs/research/T-043-s
 | [14] Settings presets | Header menu, Save as, Overwrite, Delete, folder | 17.13 |
 | Coverage, accessibility, performance | | 13.4, 17.19 (and 10.4), 17.18 (and 12.2) |
 
+Rows [4], [7] and [11], and the underlay and Sidechain 2 roles of [8], are superseded by §18 (T-065, spectrum slots), which replaces them with plan items [15] to [22] of `docs/plans/m3-review-spectrum-slots.md`.
+
 ### 17.2 Header
+
+> **Partly superseded by §18 (T-065, spectrum slots):** the Channel and Underlay items and the Sidechain pair are replaced by the slot controls of §18; T-065 also merges the compact-header breakpoint below into one set of width breakpoints. The Presets, Refs, Freeze, Reset curves, Meters and Settings rows and the compact rule stay valid until §18 restates them. The text below is kept for history.
 
 The M3b Mode control (two segmented groups) is replaced by a **Channel** segmented control and an **Underlay** chip. A **Presets** button, a **Sidechain** toggle pair and a **Refs** button are added. The header stays 44 high.
 
@@ -1541,6 +1569,8 @@ Icon-only buttons keep the 28 × 28 hit target, the hover fill and the states of
 
 ### 17.3 Channel and underlay
 
+> **Superseded by §18 (T-065, spectrum slots).** The Channel plus Underlay header control and the underlay are replaced by the per-slot Channel setting; the legacy L/R and M/S values resolve to Left and Mid for slot 1 (`docs/plans/m3-review-spectrum-slots.md`, Legacy values). Not mocked. The text below is kept for history.
+
 **Channel segmented control** (bound to `channelMode` indices 0 to 4):
 - Segment texts: "Mid", "Side", "L", "R", "Stereo". "Stereo" is index 4 (the L+R power mean); the plan keeps the definition (T-043 R12).
 - Behaviour as the M3b Mode control (§7.1): click selects, wheel steps ±1 over the five segments (clamped), double-click or Alt+click resets to Mid, arrows step and Delete resets when focused.
@@ -1561,6 +1591,8 @@ Icon-only buttons keep the 28 × 28 hit target, the hover fill and the states of
 **Auto-unfreeze** (§5.7) fires when the *effective* pair changes, from any source. Changing the set `underlay` while it is ignored (legacy value) does not unfreeze.
 
 ### 17.4 Curve roles, styles and colours
+
+> **Partly superseded by §18 (T-065, spectrum slots):** the colour roles tied to the old Primary B (`underlay`, "Secondary of the underlay", the `Underlay` row) and the `sc2` role tied to the Sidechain 2 trace become slot colours in §18. Still valid: the primary, Sidechain 1 and reference styles, the reference dash patterns, the derivation rule for secondary tones and fills, and the opaque-colour rule. The mockup demonstrates the colour editor on the generic roles Primary, Sidechain and Ref 1 to Ref 4. The text below is kept for history.
 
 This table replaces the §5.1 table from M3c. Draw order 1 is at the back.
 
@@ -1609,6 +1641,8 @@ Colours apply only to curves. The background, grid, meters, text and accent stay
 
 ### 17.5 Legend, hover card and input labels
 
+> **Partly superseded by §18 (T-065, spectrum slots):** the per-input labels (`inputLabel0` to `inputLabel2`) are replaced by the slot names `slotName1` to `slotName4`, and the legend and hover names follow the slots. Still valid: the legend flow into rows, the reference and ALIGN 0 dB entries, and the hover-card order with the band block first. The 16-character text-field rules are reused by the reference-slot names (§17.11.1). The text below is kept for history.
+
 **Input labels** (`ViewState.inputLabel0`, `inputLabel1`, `inputLabel2`; defaults "Main", "SC 1", "SC 2"):
 - Edited in Settings > Inputs (§17.16) in three text fields of 160 × 24.
 - At most **16 characters**: the field refuses further typing (the character is dropped and the field outline flashes `state-error` for 300 ms). Any printable character is allowed; control characters are removed. Leading and trailing spaces are trimmed on commit. An empty field commits the default.
@@ -1637,6 +1671,8 @@ Each entry is a 16 × 10 swatch in the curve's style (the hatched swatch for Sid
 - Name strings come from the label-image cache (§12.1) because they change rarely; only values are drawn per frame.
 
 ### 17.6 Sidechain inputs and host support
+
+> **Superseded by §18 (T-065, spectrum slots):** the Sidechain pair and the Sidechain 2 trace toggle are replaced by the slot list (slot 4 Visible is `showSidechain2`), and a missing input is shown per slot. The host-support facts in this section (Live and Bitwig offer one sidechain; an absent and an unconnected bus look the same) remain inputs to §18. Not mocked. The text below is kept for history.
 
 **Sidechain pair** (header, §17.2): track `surface-2`, radius 6. The 16 px sidechain icon at (x + 6, 14) in `text-secondary`, then two toggle segments of 28 × 24 at (x + 26, 10) and (x + 54, 10), showing "1" and "2" in `body` weight 600.
 - Segment 1 is bound to `showSidechain`, segment 2 to `showSidechain2`. Each toggles on click, resets to On on double-click or Alt+click, and steps with the wheel (up = On) as the M3b SC toggle (§7.1).
@@ -1692,7 +1728,7 @@ Settings > Inputs shows a read-only status row per sidechain: "Stereo", "Mono" o
 
 - Ctrl is read with `juce::ModifierKeys::getCurrentModifiersRealtime()` on every editor update while the pointer is over the editor (T-044 Q3), and from mouse events. The editor never needs keyboard focus for it.
 - Shift with Ctrl is still Preview or Solo (Shift only selects fine width steps). Ctrl with Alt (or AltGr, which JUCE reports as Alt without Ctrl) follows the §5.9.3 precedence: Ctrl first.
-- **Cursors:** Preview `assets/ui/cursor-band.svg` (a centre line between two brackets), Solo `assets/ui/cursor-band-solo.svg` (the same with filled brackets and sound marks), both hotspot (12, 12) on the centre line, rendered as §5.9.4. The cursor changes in the first update after Ctrl goes down, also without a mouse move.
+- **Cursors:** Preview `assets/ui/cursor-band.svg` (a centre line between two brackets), Solo `assets/ui/cursor-band-solo.svg` (the same brackets with the band between them filled white and the centre line drawn black across the fill), both hotspot (12, 12) on the centre line, rendered as §5.9.4. The cursor changes in the first update after Ctrl goes down, also without a mouse move.
 
 #### 17.9.3 The band on the plot
 
@@ -1742,7 +1778,7 @@ A 1 px `border` separator follows, then the usual frequency and note lines (the 
 
 #### 17.9.7 Accessibility of the solo
 
-- The state is shown without colour by: the tag text ("BAND" or "SOLO"), the edge style (dashed or solid, 1 or 2 px), the tint strength (45 % or 65 %), the cursor shape (open or filled brackets), and the hint text.
+- The state is shown without colour by: the tag text ("BAND" or "SOLO"), the edge style (dashed or solid, 1 or 2 px), the tint strength (45 % or 65 %), the cursor shape (an open band or a filled band between the brackets), and the hint text.
 - On entering Solo the spectrum's accessibility handler posts the announcement "Band solo on, 1.25 kHz, 1 octave" (low priority); on leaving it posts "Band solo off". Width changes during a solo are not announced.
 - The spectrum description (§10.3) gains: "Hold Ctrl to preview a band; hold Ctrl and the mouse button to listen to it; Ctrl+scroll sets the band width."
 
@@ -1816,7 +1852,8 @@ Density shows how often the level stays at each value, as brightness along the t
 - **Current level:** two 4 × 2 px notches in `text-primary`, at the left and right inner edges of the track, at `level + bias` (one list).
 - **Hold tick:** the 2 px hold tick of §17.10.4 (one list).
 - Clip lamps and letters as Bars.
-- **Not in loudness modes:** the density is a level histogram, so in LUFS and LU modes the bar shows the loudness bar of §17.10.3; the Style control keeps "Density" selected, shown in `state-warn`, with the tooltip "Effective Bars: density is not available in loudness modes."
+- **Histogram decay:** `MeterBank` decays the histogram with a time constant of `meterPeakHold` (T-043 R11; 50 ms when the hold is 0); the editor draws the normalised snapshot as it arrives and adds no smoothing of its own.
+- **Not in loudness modes:** the density is a level histogram, so in LUFS and LU modes the bar shows the loudness bar of §17.10.3; the Style control keeps "Density" selected, shown in `state-warn` (the selected segment is drawn with a `surface-3` fill and `state-warn` text instead of the `accent` fill, 8.6 : 1), with the tooltip "Effective Bars: density is not available in loudness modes."
 - Paint: at most 7 density lists + 1 notch list + 1 hold list + the lamps (2 lists, or the cached image) = **≤ 11 `fillRectList` calls** per meter paint, never a path.
 
 #### 17.10.6 Section hiding
@@ -1926,8 +1963,8 @@ Line numbers are 1-based physical lines of the file, counting comment lines.
 
 #### 17.12.4 Where messages appear
 
-- **Curves panel open:** the status line (12, 284, 536, 20): a 16 px icon (none for success, `icon-warning-16` in `state-warn` for a warning, `icon-warning-16` in `state-error` for an error) and the text in `body-sm`, `text-primary`. It stays until the next action or **6000 ms** for success, and until the next action for errors and warnings.
-- **Curves panel closed:** a toast centred at the top of the data rect (the reset-toast position and panel rule of §5.9.7). Style: the §5.6 toast, with a 1 px `accent` border (success), `state-warn` border and icon (warning) or `state-error` border and icon (error). Duration: 2500 ms for success, **5000 ms** for warnings and errors, each fading over the last 200 ms. Width at most data.w − 16; longer text wraps to a second line.
+- **Curves panel open on the References tab:** the status line (12, 284, 536, 20): a 16 px icon (none for success, `icon-warning-16` in `state-warn` for a warning, `icon-warning-16` in `state-error` for an error) and the text in `body-sm`, `text-primary`. It stays until the next action or **6000 ms** for success, and until the next action for errors and warnings.
+- **Curves panel closed, or open on the Colours tab:** a toast centred at the top of the data rect (the reset-toast position and panel rule of §5.9.7). Style: the §5.6 toast, with a 1 px `accent` border (success), `state-warn` border and icon (warning) or `state-error` border and icon (error). Duration: 2500 ms for success, **5000 ms** for warnings and errors, each fading over the last 200 ms. Width at most data.w − 16; longer text wraps to a second line.
 - Contrast: `text-primary` on `surface-3` 11.8 : 1; the icons are 3 : 1 or more on `surface-3` (`state-warn` 8.6 : 1, `state-error` 4.4 : 1).
 
 ### 17.13 Settings presets
@@ -1993,6 +2030,8 @@ The same popover frame, **280 × 96**: a message in `body` (12, 10, 256, 40, wra
 
 #### 17.14.2 Colours tab layout (curves panel, panel-relative)
 
+> **Role list partly superseded by §18 (T-065, spectrum slots):** the Underlay and Sidechain 2 rows (roles tied to the old Primary B and to the Sidechain 2 trace) become slot colours. The layout, the wheel, the hex field, the contrast warning and the colour presets stay valid; the mockup shows six generic rows (Primary, Sidechain, Ref 1 to Ref 4).
+
 | Item | Rect | Content |
 |---|---|---|
 | Role list | (12, 44, 224, 224) | 8 rows of 28: Primary, Underlay, Sidechain 1 ({label1}), Sidechain 2 ({label2}), then the four slot names. Each row: the role's legend swatch (24 × 12) at x + 8, the name (`body`, `text-secondary`) at x + 40, the hex value (`readout` 11 px, `text-tertiary`) right-aligned at x + 216. Selected row: `surface-3` fill, a 2 px `accent` bar at its left edge, name in `text-primary`. |
@@ -2043,6 +2082,8 @@ A note under the rows (`body-sm`, `text-tertiary`, wrapping in 256 px): "These s
 These preferences are not parameters: no host gesture, no undo, no external-change dot. Double-click and Alt+click still reset them to their defaults (the chip conventions of §7.1).
 
 ### 17.16 Settings popover
+
+> **Partly superseded by §18 (T-065, spectrum slots):** the Underlay row of the Analysis tab and the whole Inputs tab (sidechain traces, Sidechain 2 trace, input labels) are replaced by the slot settings window of §18. The Analysis (other rows), Meters and Display tabs stay valid. The text below is kept for history.
 
 From M3c the popover (§6.1) has **tabs**, at the same anchor (W − 572, 48), **560 × 400** for every tab (no resize when switching tabs, so the cached shadow is rendered once per open). The About view stays 560 × 440 (§6.2).
 
@@ -2136,7 +2177,7 @@ The deepest legend (5 rows) ends at y = 64 + 4 × 22 + 20 = 172 at 920 × 540, c
 | Curves panel (560 × 320) | (628, 48) … (1188, 368) | (348, 48) … (908, 368) |
 | Save as (280 × 112) | (452, 40) … (732, 152) | (452, 40) … (732, 152) |
 | Confirmations (280 × 96) | (452, 40) … (732, 136) | same |
-| Colour-preset dialogs (280 × 112 or 96), below the colour preset button | panel x + 120, panel y + 312 | the same (fits: 368 + 112 = 480 at 920 × 540) |
+| Colour-preset dialogs (280 × 112 or 96), below the colour preset button | panel x + 120, panel y + 312: (748, 360) … (1028, 472) | (468, 360) … (748, 472) (fits: 48 + 312 + 112 = 472 ≤ 540) |
 
 ### 17.18 Performance (M3c)
 
@@ -2164,13 +2205,18 @@ See also §10.4.
 
 ### 17.20 What the mockup simplifies (M3c)
 
-- **Audio:** the mockup has no audio. The band solo shows its visual states only; "Solo" means the plugin would play the band.
-- **Ctrl in a browser:** the mockup reads Ctrl from key and pointer events (a browser cannot poll keys) and cancels the page zoom of Ctrl+wheel over the plot. A dev-bar checkbox "Hold Ctrl (for touch or laptops)" simulates a held Ctrl.
-- **Inputs:** Sidechain 1 is a simulated full mix, Sidechain 2 a simulated kick-and-bass track. Dev-bar checkboxes connect or disconnect each input.
-- **Meters:** the snapshot is simulated; `level`, the density histogram and the loudness values are approximations driven by the same fake music.
-- **Files:** "Load" uses the browser's file picker and the real import rules; "Save" and "Export curves" download a file. The asynchronous dialog states are shown, but the browser picker cannot fall behind a window. A dev button "Load a broken CSV" feeds a sample file with an error on line 37.
-- **Presets and colour presets** live in memory for the page session; "Open presets folder" shows a toast.
-- **Frame rate:** the mockup honours the cap by skipping redraws of the spectrum, up to the monitor's rate. Anti-alias off is drawn with column spans as specified.
+- **Not mocked (superseded by §18, T-065):** the Channel plus Underlay header control, the underlay curve, the per-input labels, the Sidechain 2 trace and its striped style, and the role colours tied to the underlay. The header keeps the approved M3b Mode control and the M3b SC toggle in their place (the SC toggle sits in the Sidechain-pair slot, 84 wide), and the Settings Inputs tab shows a pointer to §18. A dev-bar line says so.
+- **Audio:** the mockup has no audio. The band solo shows its visual states only; "Solo" means the plugin would play the band. The band edges use a stand-in for the shared edge function (centre 20 Hz … 0.45 fs, edges 10 Hz … 0.45 fs; §15 question 7).
+- **Ctrl in a browser:** the mockup reads Ctrl from key and pointer events (a browser cannot poll keys) and cancels the page zoom of Ctrl+wheel over the plot. A dev-bar checkbox "Hold Ctrl (for touch or laptops)" simulates a held Ctrl. The editor-bounds rule is checked on pointer moves; window blur stands in for focus loss.
+- **Inputs:** one simulated sidechain (the approved M3b trace). A dev-bar checkbox connects or disconnects it.
+- **Meters:** the snapshot is simulated. `level` is a stand-in for `MeterBank` (short integration follows the peaks, long integration approaches the RMS; rise with τ = T / ln 100, fall 20 dB per release time); the density histogram, its decay and the loudness values are approximations driven by the same fake music. The ballistics display formulas of §17.10.4 are implemented as written.
+- **Align 0 dB:** the toggle and the legend tag work; the simulated spectrum is already sine-calibrated, so the curve does not move.
+- **Files:** "Load" uses the browser's file picker and the real import rules of §17.12.3; "Save" and "Export curves" download a file after a 700 ms stand-in for the native save dialog, during which the pending state and Cancel are shown. The browser picker cannot fall behind a window. Dev buttons load a valid 812-row sample into Ref 1, a sample with an error on line 37 into Ref 2, and take the current curve into Ref 3. Messages go to the status line while the References tab is open and to a toast otherwise (§17.12.4).
+- **Colour roles:** six generic roles (Primary, Sidechain, Ref 1 to Ref 4) instead of eight; T-065 maps them to slot colours. The wheel, hex field, contrast warning, derived secondary tone, live update and colour presets work as specified.
+- **Presets and colour presets** live in memory for the page session; "Open presets folder" and "Open colours folder" show a toast.
+- **Frame rate:** the mockup measures the display rate from `requestAnimationFrame` (median of 30 intervals, §15 question 10), caps the spectrum at `min (frameRate, display rate)`, applies Adaptive pacing (2.0 Mpx or 7 layers), and repaints at once for hover, gestures, the band and toasts. A dev-bar readout shows the effective rate, the cap, the display rate and the layer count. Anti-alias off is drawn with column spans as specified.
+- **Minimum size:** the mockup keeps 920 × 540; T-065 sets the smaller minimum and the compact layout.
+- **Tooltips:** the mockup still shows tooltips; their removal (M3d review item #18) is specified by T-065.
 - **Rendering:** Canvas 2D and DOM, as §5.9.11.
 
 ### 17.21 Changes from the plan
@@ -2197,4 +2243,766 @@ See also §10.4.
 | 18 | Labels in the legend (format open) | "Main · Mid" for the main input's curves; the plain label for sidechains | The main label needs a place, and the channel name stays visible. |
 | 19 | Note names below C0 (format open) | Negative octaves down to C−1, "below C−1" under 7.94 Hz | MIDI note 0 is a common lower bound; lower names have no musical use. |
 | 20 | Reference slot panel (layout open) | A 560 × 320 popover shared with the colour editor; Clear needs a second click | Same popover family as Settings; Clear is the only destructive slot action. |
+
+## 18. M3 review and spectrum slots (T-065)
+
+Source: `docs/plans/m3-review-spectrum-slots.md` (the source of truth for behaviour; "the slot plan" below), `docs/plans/m3-user-review-findings.md` (findings #1 to #22, quoted as "#n"), `docs/research/T-061-review-bug-diagnosis.md` §3 (#16), `docs/research/T-043-span-m3c-reference.md`, and the user decisions of 2026-10-06. Values named `token.*` are in `tokens.json` 1.3.0.
+
+- **§18.1 is milestone M3d** and is implemented by T-066 on the current editor (the M3b layout of §4 to §9). It is self-contained: T-066 needs nothing else from §18.
+- **§18.2 onwards is milestone M3c** (T-054 to T-058, T-069, T-070). Where §18 and §17 disagree, §18 wins. Every §17 subsection marked "Superseded by §18" is replaced here; §18.14 lists each replacement.
+
+### 18.1 M3d visual fixes (T-066)
+
+Applies to the current editor. Reference sizes: **1200 × 700** (default) and **920 × 540** (the minimum until T-070; the M3c minimum of §18.9 is also resolved where a rule depends on size). Nothing here changes a parameter definition; the M3d parameter changes (`dbLow`, `dbHigh`, `smoothing`) are T-064's.
+
+#### 18.1.1 Tooltips removed (#18)
+
+**Rule.** The editor shows no tooltips. No `juce::TooltipWindow` is created and no component calls `setTooltip`. Nothing appears after the pointer rests on a control.
+
+**Kept:** the spectrum hover readout of §5.5: the crosshair, the markers, the hover card and the hint line. The hint line is part of the readout: it has no delay, belongs to the plot rather than to a control, and is the only place the spectrum gestures are written down (§15 question 16 asks the user to confirm this).
+
+**Accessible descriptions.** Every removed text that explains a control becomes that control's accessible description (`setDescription`), so a screen-reader user still hears it. It is never drawn.
+
+**Removed tooltips, and what replaces information that only a tooltip carried:**
+
+| Where | Removed (spec section) | Information only the tooltip carried | Replacement |
+|---|---|---|---|
+| Control-bar chips Block, Overlap, Window, Avg time, Smooth, Slope, 2nd curve | Description and the how-to line (§6 "Tooltips") | Block: the unit (samples), the block duration and the bin spacing at the current sample rate | The Block menu shows them per item: "4096" followed by the hint "85.3 ms · 11.7 Hz" in `text-tertiary` (§7.1 menu hint style, 6 px after the value), computed at the current sample rate with the §5.5 frequency format and ms with 1 decimal. The how-to lines need no replacement: every chip behaves the same (§7.1). |
+| Frequency and Level chip halves, and their Settings fields | Description and the "Effective …" lines (§5.4) | The effective value and its reason | §18.1.5: the half shows the effective value in `state-warn` with an underline; the reason goes into the accessible value. |
+| Header Mode segments | Channel definitions (§17.3 texts, M3b `MODE_TIPS`) | none (standard terms) | none |
+| SC toggle | Description; no-input text "No sidechain input is connected. Route a track …" (§9) | The no-input state | The no-input look of §18.1.3 (dim icon and hollow ring) |
+| Freeze, Reset curves, Meters toggle | Descriptions | Meters toggle: "all sections hidden" (M3c, §17.10.6) | The toggle's collapsed look already shows the state. |
+| Settings button | "All settings" / "Some controls … are only here" | What the accent dot means | The dot keeps one meaning: the popover holds at least one setting (§18.1.4). |
+| Meter strip: Scale chip, RMS chip, Reset statistics | Descriptions | none | none |
+| Correlation block | Window lengths (500 ms, 3 s); mono text "Correlation and balance need two channels." (§8.5, §8.6) | The mono reason | Mono already shows "—" and draws the block at 40 % (§8.6). |
+| Zoom panel: Fit, range rows, bin-spacing row, overview strip | Gesture help (§5.9.6 "Tooltips") | Alt+scroll zooms level: it was only in this tooltip (§5.5 hint line) | Gutter hints (below). |
+| Settings popover fields | Descriptions | none | none |
+| Every M3c control of §17 | All §17 tooltip texts | Each is listed with its replacement in §18.14 | — |
+
+**Gutter hints** (new, replace the zoom-panel gesture help): while the pointer is over the dB gutter (§5.9.3), the hint line shows "Scroll: zoom level"; over the frequency gutter it shows "Scroll: zoom frequency". Same style and position as the §5.5 hint line (bottom-right of the data rect). It hides when the pointer leaves the gutter. At Fit and while zoomed the gutter texts are the same.
+
+**Tokens and sections made void:** `motion.tooltipDelayMs` is deprecated (tokens 1.3.0); `surface-3` loses its "tooltip fill" role and `body-sm` its "tooltips" use. The tooltip texts in §5.4, §5.9.6, §6, §7.1 (hover column), §8.5, §8.6, §9 and §17 no longer describe drawn text; where they say "the tooltip starts with the effective value", §18.1.5 applies.
+
+#### 18.1.2 Sample-rate label removed (#19)
+
+- The header text "48 kHz" (§4.2 row "Sample rate text", §8.8) is removed. Nothing moves into its place in M3d; §18.1.3 moves the SC toggle right by 32 px.
+- **The sample rate is not shown as a live label anywhere.** It still drives the Nyquist limit (§5.4, §18.1.5), the Block menu hints (§18.1.1) and the bin-spacing row of the zoom panel (§5.9.6), and it is part of a stored reference's info line from M3c ("Taken 14:32 · 48 kHz · …", §17.11.1), which describes a capture, not the session. The About view does not show it.
+- `MeterSnapshot.sampleRate` keeps every other use (§13.2 row "sampleRate": "Header text" is void).
+
+#### 18.1.3 Sidechain button (#10, #11)
+
+- **Rect:** (W − 336, 8, 28, 28), an icon-only toggle: `icon-sidechain-16` centred, at (W − 330, 14). It sits 6 px before Freeze (W − 302). The "SC" text and the 60 px width are gone. Resolved x: 864 at 1200 × 700, 584 at 920 × 540.
+- **Colour:** when on, the button uses the level-meter turquoise (`meter.safe`, #34C6A8) instead of `accent`. Tokens: `toggle-teal` #34C6A8 and `toggle-teal-tint` #142F30 (`toggle-teal` at 16 % over `bg-app`, pre-blended).
+
+| State | Fill | Border | Icon |
+|---|---|---|---|
+| Off | transparent | none | `text-secondary` |
+| Off, hover | `surface-3` | none | `text-primary` |
+| On | `toggle-teal-tint` | 1 px `toggle-teal` at 50 % | `toggle-teal` |
+| On, hover | `surface-3` | 1 px `toggle-teal` at 50 % | `toggle-teal` |
+| Pressed (either) | `surface-3` | as the state | as the state |
+| No input, Off | transparent | none | `text-disabled`, plus a 6 px hollow ring (1 px `text-disabled` stroke) at (x + 19, y + 3, 6, 6) |
+| No input, On | transparent | 1 px `border` | `text-disabled`, plus the ring |
+| Keyboard focus | as the state | plus the 2 px `accent` focus ring (§7.2) | |
+
+- **Behaviour** is unchanged (§7.1): click toggles, double-click or Alt+click resets to On, wheel up = On, down = Off, Space or Enter toggles when focused. The no-input states stay clickable and keep the setting.
+- **Accessible name** "Sidechain trace" (the button has no text), value "On" or "Off", description "No sidechain input is connected." while the bus is inactive.
+- **Contrast:** `toggle-teal` on `toggle-teal-tint` 6.6 : 1, on `surface-3` 6.5 : 1, on `bg-app` 8.8 : 1 (all ≥ 3 : 1 for icons). Colour is not the only cue: the On state also has the border and the fill.
+- **From M3c** the SC toggle is replaced by the slot list, and the slot visibility toggles follow the same teal rule (§18.3.2).
+
+#### 18.1.4 All Settings without duplicates (#20)
+
+**Rule:** a setting appears in the Settings popover only while its control on the main window is not on screen. Nothing appears in both places, and every setting stays reachable at every size.
+
+| Setting | Control on the main window | In Settings when |
+|---|---|---|
+| Channel mode | Header Mode control | never |
+| Sidechain trace | Header SC toggle | never |
+| Block size, Overlap, Window, Average time, Smoothing | Control-bar group A | never in M3d (group A always fits: at 920 × 540, avail = 600 ≥ 376) |
+| Slope, Secondary curve | Group B | group B is hidden (avail < 592; never in M3d at the sizes allowed) |
+| Frequency low, Frequency high, Range low, Range high | Group C | group C is hidden (avail < 880) |
+| Meter scale, RMS window | Meter strip | the meters are collapsed |
+
+`avail = (W − MS) − 24` as in §4.3.
+
+**Layout** (replaces the body of §6.1; frame, title bar, About button and Close are unchanged):
+- Sections, in this order: "SPECTRUM", "DISPLAY RANGE", "METERS". A section is shown only when it has at least one row. Rows keep the §6.1 labels and 128 × 24 fields.
+- The first non-empty section goes in column 1 (x 16); the others stack in column 2 (x 288), 8 px apart. A section is 20 (title) + 28 per row.
+- **Height** = 36 (title bar) + 12 + the taller column + 16. With no rows, the body is one line, "Every setting is on the main window at this size.", in `body-sm` / `text-tertiary` at (16, 48, 528, 20), and the height is **84**.
+- The popover is re-laid out at once when the window is resized or the meters are toggled while it is open (the cached shadow is rendered once per change).
+
+| Size | Rows shown | Popover rect |
+|---|---|---|
+| 1200 × 700, meters shown | none (message) | (628, 48, 560, 84) |
+| 1200 × 700, meters collapsed | METERS: Meter scale, RMS window | (628, 48, 560, 140) |
+| 920 × 540, meters shown | DISPLAY RANGE: Frequency low, Frequency high, Range low, Range high | (348, 48, 560, 196) |
+| 920 × 540, meters collapsed | METERS: Meter scale, RMS window (group C fits again: avail 896) | (348, 48, 560, 140) |
+
+- **Settings dot** (§4.2): shown exactly while the popover holds at least one setting, so it now also shows while the meters are collapsed.
+- **Focus order:** About, the fields in column order, Close (§6.1). The About view (§6.2) is unchanged.
+- From M3c, §18.12 gives the list for the tabbed popover.
+
+#### 18.1.5 Effective values without tooltips (#5; replaces the tooltip rule of §5.4)
+
+When a set value differs from its effective value (§5.4, `DisplayRange.h`), the control shows the **effective** value, so what the plot shows and what the chip shows always agree.
+- **Look:** the value text in `state-warn` and a 1 px `state-warn` underline, 2 px below the text baseline, as wide as the number (not the unit). The underline is the non-colour cue.
+- **Cases in M3d:**
+  - `freqHigh` above Nyquist: effective `sampleRate / 2`;
+  - `freqLow` above `fHiEff / 2` (the one-octave rule);
+  - `dbLow` at or above `dbHigh − 1` (#5): effective `dbHigh − 1`. The top half is never changed; `dbHigh` always applies.
+- **Editing a clamped half:** a drag, wheel step or arrow key starts from the effective value, so the first step moves the value visibly (no dead zone). Text entry opens pre-filled with the **set** value, so the user sees what is stored. Double-click resets to the default as usual.
+- **Accessible value:** the effective value, then the set value and the reason, for example "−19 dB, effective. Set to −10 dB; the bottom stays at least 1 dB below the top." The other reasons: "limited by Nyquist (24.0 kHz)" and "the range must span at least one octave".
+- **Example (#5):** Level set to −10 (bottom) and −18 (top): the chip reads "−19 … −18 dB", with "−19" in `state-warn` and underlined; the grid spans −19 to −18 dB.
+- **Width check:** the widest Level text, "−150 … −149 dB" (both halves 4 characters, possible now that both ranges are −150 to +30 dB), needs about 123 px in the 120 px chip. When both halves have 4 characters, the high half drops its "dB" unit (the accessible value keeps it). Every other combination fits.
+- The Settings fields of the four range rows follow the same rule.
+
+#### 18.1.6 Spectrum level grid (#4; replaces the dB step rules of §5.3 and §5.9.8)
+
+The level-meter grid is unchanged. The frequency grid is unchanged.
+
+- **Line step** `s`: the smallest value in **{0.1, 0.2, 0.5, 1, 3, 6, 12, 24} dB** with `s ≥ span / 24` and `s × pxPerDb ≥ 12`, where `span` is the visible dB span (the home span at Fit) and `pxPerDb = data.h / span`. 2 dB is no longer a step, so the default range uses 3 dB, as the user asked.
+- **Lines** at every multiple of `s` (k × s, rounded to 6 decimals). The 0 dB line uses `grid-major`, all others `grid-minor`.
+- **Labels:** on every line when `s × pxPerDb ≥ 20`; otherwise only on lines at multiples of `2s` (these are then at least 24 px apart). Format as §5.9.8: signed integers for `s ≥ 1` ("−21", "0", "+6"), 1 decimal below 1 dB ("−12.4"). The 6 px edge-skip rule of §5.9.8 is unchanged.
+- Tokens: `deepGrid.dbSteps` [0.1, 0.2, 0.5, 1, 3, 6, 12, 24], `deepGrid.dbMaxLines` 24, `deepGrid.dbLineMinPx` 12, `deepGrid.dbLabelMinPx` 20 (replaces `dbStepMinPx`).
+
+Resolved (data heights 564 at 1200 × 700, 404 at 920 × 540, 264 at the M3c minimum 560 × 400 of §18.9):
+
+| Span (example) | 1200 × 700 | 920 × 540 | 560 × 400 |
+|---|---|---|---|
+| 54 dB, the new default −72 … −18 | 3 dB, 31.3 px, all labelled (19 lines) | 3 dB, 22.4 px, all labelled | 3 dB, 14.7 px; labels every 6 dB (29.3 px) |
+| 96 dB, −90 … +6 (the old default) | 6 dB, 35.3 px, all labelled | 6 dB, 25.3 px, all labelled | 6 dB, 16.5 px; labels every 12 dB |
+| 180 dB, −150 … +30 (widest) | 12 dB, 37.6 px, all labelled | 12 dB, 26.9 px, all labelled | 12 dB, 17.6 px; labels every 24 dB |
+| 24 dB, −42 … −18 | 1 dB, 23.5 px, all labelled | 1 dB, 16.8 px; labels every 2 dB | 3 dB, 33.0 px, all labelled (1 dB is 11 px) |
+| 12 dB | 0.5 dB, 23.5 px, all labelled | 0.5 dB, 16.8 px; labels every 1 dB | 1 dB, 22.0 px, all labelled |
+| 6 dB (the minimum level-zoom span) | 0.5 dB, 47.0 px | 0.5 dB, 33.7 px | 0.5 dB, 22.0 px |
+| 1 dB (the smallest home span, #5) | 0.1 dB, 56.4 px | 0.1 dB, 40.4 px | 0.1 dB, 26.4 px |
+
+Guarantees: at most 25 lines; lines at least 12 px apart; labels at least 20 px apart. The 12 px floor holds at every span from 1 to 180 dB and every height from 264 px, because 24 dB lines at 180 dB are at least 35 px apart there. T-066 updates the `ZoomMath` grid test to sweep spans 1 to 180 dB at heights 264, 404 and 564 and to assert these three guarantees.
+
+#### 18.1.7 Smoothing and level range texts (T-064 parameters)
+
+- **Smooth** chip and menu: "Off", "1/48", "1/24", "1/12", "1/6", "1/3", "1/2", "1", "2", "3", each followed by the unit "oct" except Off (#6). The widest value is still "1/48 oct", so the 68 px chip is unchanged. The menu's "default" mark stays on 1/12.
+- **Level** chip: default "−72 … −18 dB" (#4). Both halves range over −150 to +30 dB: 240 px drag for the full range, Shift × 0.1, wheel ±1 dB, text entry as §6. Double-click resets the low half to −72 and the high half to −18.
+
+#### 18.1.8 Summary for T-066
+
+1. Remove every tooltip; move the texts into accessible descriptions; add the gutter hints (§18.1.1).
+2. Remove the header sample-rate text (§18.1.2).
+3. SC toggle: icon only at (W − 336, 8, 28, 28), teal when on, states as §18.1.3.
+4. Settings popover: only settings not on the main window, sections and height as §18.1.4; the Settings dot follows it.
+5. Effective values in `state-warn` with an underline, editing from the effective value (§18.1.5).
+6. The level grid rule of §18.1.6 (and the `ZoomMath` test sweep).
+7. Smooth and Level texts (§18.1.7).
+8. Tokens: `toggle-teal`, `toggle-teal-tint`, the `deepGrid` changes and the deprecated `motion.tooltipDelayMs` (tokens 1.3.0).
+
+The mockup shows every item in its default state (§18.15).
+
+### 18.2 Spectrum slots: model, defaults and colours (M3c)
+
+Four identical slots (the slot plan, "Spectrum slot model"). Slot 1 is the main spectrum. The bottom control bar keeps controlling slot 1's analysis. Every slot, including slot 1, is edited in the same slot window (§18.4).
+
+| Slot | Parameters (the slot plan's table) | Default name (`slotNameN`) | Default colour | Default source, channel, type | Visible |
+|---|---|---|---|---|---|
+| 1 | `channelMode`, `fftSize`, `overlap`, `window`, `avgTime`, `smoothing`, `slope`, `s1Fill` | "Main" | #62D6F0 (today's primary) | Main (locked), Mid, Real-time (locked) | always (slot 1 has no visibility parameter) |
+| 2 | `s2Source`, `s2Channel`, `secondary` (Type), `s2Link`, `s2FftSize` … `s2Slope`, `s2Fill`, `s2Visible` | "Spectrum 2" | #3E8FA3 (today's secondary tone) | Main, Mid, RT max, linked | on |
+| 3 | `s3Source`, `s3Channel`, `s3Type`, `s3Link`, `s3…`, `s3Fill`, `showSidechain` (Visible) | "SC 1" | #A58BFF (today's sidechain) | Sidechain 1, Stereo, Real-time, linked | on |
+| 4 | `s4Source`, `s4Channel`, `s4Type`, `s4Link`, `s4…`, `s4Fill`, `showSidechain2` (Visible) | "SC 2" | #8FD96B (the §17.4 Sidechain 2 colour) | Sidechain 2, Stereo, Real-time, linked | on |
+
+- **Colours** are global preferences (`GlobalSettings`), edited in the curves panel's Colours tab (§17.14), whose role list now has eight rows: Spectrum 1 to 4 (labelled with the slot names) and Ref 1 to 4. They replace the roles `primary`, `underlay`, `sc1` and `sc2` of §17.4. The derived secondary tone of §17.4 is no longer used for live curves (a held type is drawn in the slot colour, §18.5); the colour editor's "Secondary tone" line is removed.
+- **Defaults look like today:** slot 1 is the aqua line with its gradient, slot 2 is the thin dark RT max line, slot 3 is the lavender sidechain silhouette, and slot 4 appears only when a second sidechain is connected (§18.5).
+- **Names** (`ViewState`, at most 16 characters) are edited in the Spectra list (§18.3), with the text-field rules of §17.5: further typing refused with a 300 ms `state-error` flash, control characters removed, spaces trimmed, an empty field restores the default, no host gesture and no undo.
+- **Input state per slot**, used everywhere below:
+  - **active**: Type is not Off and the slot's source is connected (`isSidechainActive` for sidechain sources; Main is always connected);
+  - **off**: Type is Off (slots 2 to 4 only);
+  - **no input**: Type is not Off and the source is a sidechain that is not connected. A host that never offers the bus and an unconnected bus look the same (§17.6).
+- **Drawn** means active, Visible on, and holding data. Only drawn slots have a curve, a legend entry and a hover row.
+
+### 18.3 The Spectra list
+
+#### 18.3.1 Where it lives
+
+The Spectra list has two parts:
+- **A header group** with the list button and a visibility toggle per slot 2 to 4 (§18.9.2 gives its rect per width). It replaces the M3d SC toggle and is the one-click way to show or hide a slot.
+- **The Spectra panel**, a popover opened by the list button. It holds one row per slot with every per-slot control except the analysis settings, which are in the slot window (§18.4).
+
+**Header group (full form, W ≥ 900):** track `surface-2`, radius 6, padding 2, rect (116, 8, 164, 28).
+- List button (118, 10, 76, 24): "Spectra" in `body`, `text-secondary`, at x + 8, and `icon-chevron-down-16` at x + 56. Hover `surface-3` with `text-primary`. While the panel is open: `accent-tint` fill, `accent` text.
+- Visibility toggles for slots 2, 3 and 4 at (196, 10), (224, 10), (252, 10), each 28 × 24. Each shows the slot number in `body` weight 600, centred 2 px above the middle, and a 12 × 2 bar in the slot colour at (x + 8, y + 19).
+
+**Compact form (W < 900):** rect (52, 8, 104, 28). The list button is a 28 × 24 icon segment (54, 10) with `icon-spectra-16`; the toggles are 24 × 24 at x 82, 106 and 130, with the number and a 10 × 2 colour bar at (x + 7, y + 19).
+
+**Toggle states** (the teal rule of §18.1.3, extended):
+
+| State | Fill | Border | Number | Colour bar |
+|---|---|---|---|---|
+| Visible, active | `toggle-teal-tint` | 1 px `toggle-teal` at 50 % | `toggle-teal` | slot colour |
+| Hidden, active | transparent | none | `text-secondary` | slot colour |
+| Hover (either) | `surface-3` | as the state | as the state, or `text-primary` when hidden | slot colour |
+| Off (Type Off) | transparent | none | `text-disabled` | none |
+| No input, visible | transparent | 1 px `border` | `text-disabled` | none; a 4 px hollow ring (1 px `text-disabled`) at the top-right, inset 3 |
+| No input, hidden | transparent | none | `text-disabled` | none; the ring |
+
+Click toggles Visible (`s2Visible`, `showSidechain`, `showSidechain2`); double-click or Alt+click resets to On; wheel up = On, down = Off; Space or Enter toggles when focused. Off and no-input toggles stay clickable and keep the setting. Accessible names "Show {slot name}" with the value "On" or "Off" and the description "Off", "No input" or nothing.
+
+#### 18.3.2 The Spectra panel
+
+A popover in the §6.1 style (fill `surface`, 1 px `border`, radius 8, cached shadow), **480 wide**, at x = clamp (group x, 12, W − 12 − 480), y = 48. It is one of the mutually exclusive popovers (§18.12): opening it closes Settings, the curves panel and the slot window.
+
+Panel-relative layout:
+
+| Item | Rect | Content |
+|---|---|---|
+| Title | (16, 0, 200, 36) | "Spectra", `body` weight 600 |
+| Close | (448, 4, 28, 28) | as Settings |
+| Title divider | (0, 36, 480, 1) | `border` |
+| Column header | y 44, 16 high | `caps`, `text-tertiary`: "SHOW" at x 12, "NAME" at 70, "SOURCE" at 214, "TYPE" at 322 |
+| Slot row k (k = 1 … 4) | y = 64 + 36 (k − 1), controls 24 high | below |
+| Offset row (only while the header does not show the Offset chip, W < 900) | divider (12, 208, 456, 1); label "Offset" (`body`, `text-secondary`) at (12, 220, 96, 24); Offset field (214, 220, 112, 24) | §18.7 |
+
+Height: 208 (rows end at 196, plus 12), or 256 with the Offset row. Resolved: (116, 48, 480, 208) at 1200 × 700; (52, 48, 480, 256) at 560 × 400.
+
+Row controls (x, width; 24 high):
+
+| Control | x, w | Slots 2 to 4 | Slot 1 |
+|---|---|---|---|
+| Visibility | 12, 28 | Icon toggle `icon-eye-16` / `icon-eye-off-16` with the toggle states above (teal when visible) | `icon-lock-16` in `text-tertiary`, not interactive; accessible text "Main is always shown" |
+| Swatch | 44, 20 (drawn 20 × 10 at y + 7; hit area 42 … 66 × 24) | The slot's curve style (§18.5) in the slot colour. Click opens the curves panel on the Colours tab with this slot selected. | same |
+| Name | 70, 136 | Text field (§17.5 rules), placeholder-free; the default name when empty | same |
+| Source | 214, 100 | Choice field: "Main", "Sidechain 1", "Sidechain 2". No input: the value in `state-warn` with the §18.1.5 underline (the set value is shown, because a choice has no other effective value) | "Main" as plain `text-secondary` text with `icon-lock-16` at the right, not interactive |
+| Type | 322, 112 | Choice field: "Off", "RT max", "All-time max", "All-time avg", "Real-time" (parameter order), "default" mark on the slot's default | "Real-time" with the lock, not interactive |
+| Settings | 440, 28 | Icon button `icon-settings-16`: opens the slot window on this slot (§18.4) | same |
+
+Choice fields are the §6.1 inline fields (fill `surface-2`, radius 4, `body`), with the chip conventions of §7.1 (drag, wheel, click opens the menu after the 250 ms defer, double-click resets). Accessible names: "{slot name} visible", "{slot name} colour", "Spectrum k name", "{slot name} source", "{slot name} type", "{slot name} settings".
+
+### 18.4 The slot window
+
+**One component for all four slots**, an in-editor popover, never an OS window. Reasons: plugin-owned top-level windows behave differently per host (focus, z-order, FL Studio's wrapper, T-061 §3), they can fall behind the host window like file dialogs (T-044 Q5), and every other panel of the editor is already a popover. The editor's minimum size holds the window (below).
+
+- **Opening:** the gear of a Spectra-list row (that slot), or the **slot-1 gear** at the left end of the control bar (§18.9.3), which opens it on slot 1. Opening it closes the other popovers.
+- **Frame:** popover style, **520 × 312**, at (W − 532, 48). Resolved: (668, 48) … (1188, 360) at 1200 × 700; (28, 48) … (548, 360) at 560 × 400.
+- **Closing:** Esc, a click outside, Close. The back button returns to the Spectra panel.
+
+Popover-relative layout:
+
+| Item | Rect | Content |
+|---|---|---|
+| Back | (4, 4, 28, 28) | The §6.2 back chevron; opens the Spectra panel |
+| Title | (36, 0, 300, 36) | "Spectrum settings", `body` weight 600 |
+| Close | (488, 4, 28, 28) | as Settings |
+| Slot tabs | y 37, 28 high, at x 16, 140, 264, 388, each 116 wide | A 10 × 10 swatch in the slot colour at x + 4, then "k  {name}" in `body`, truncated with "…". Selected: `text-primary` with the 2 px `accent` bottom line (§17.11.1 tab style); others `text-secondary`. A slot that is off or has no input shows its text in `text-tertiary`. |
+| Tab divider | (0, 68, 520, 1) | `border` |
+| Column 1 | x 16, 236 wide, from y 80 | "INPUT" (section title 20 high), then rows of 28: label (`body`, `text-secondary`) left, 128 × 24 field at x + 108 |
+| Column 2 | x 268, 236 wide, from y 80 | "ANALYSIS", then rows |
+| Note | (16, 248, 236, 48) | `body-sm`, `text-tertiary`, wrapping; text below |
+
+| Row | Column 1 (INPUT) | Column 2 (ANALYSIS) |
+|---|---|---|
+| 1 | Source | Link ("Linked to Main"): On/Off field. Slot 1: the text "Reference for linked spectra" in `text-tertiary` instead of a field |
+| 2 | Channel: "Mid", "Side", "Left", "Right", "Stereo" | Block size |
+| 3 | Type | Overlap |
+| 4 | Show (Visible). Slot 1: "Always" with the lock | Window |
+| 5 | Fill: "On" / "Off" | Average time |
+| 6 | | Smoothing (up to "3 oct", §18.1.7) |
+| 7 | | Slope |
+
+Column 2 ends at y 296; the height is 312. Formats, drag, wheel and text entry of every analysis field are those of the slot-1 chips (§6, §18.1.7); slot 2 to 4 fields bind `sNFftSize` … `sNSlope`.
+
+**Locked fields (slot 1):** Source "Main" and Type "Real-time" are drawn as plain `text-secondary` text with `icon-lock-16` (`text-tertiary`) at the right of the field rect, no fill, not focusable. Their accessible names say "locked".
+
+**Link** (slots 2 to 4):
+- **While on**, the six analysis fields show **slot 1's current values**, live. Linked look: no fill, a 1 px `border` outline, `icon-link-16` in `text-tertiary` at the field's left (x + 4), the value in `text-secondary`. The note reads "Linked to Main: these values follow the main spectrum. Editing one unlinks this spectrum."
+- **Editing a linked field** (a drag past 4 px, a wheel step, an arrow key, a menu choice or a committed text entry) turns Link off first. In one gesture group the editor writes, in this order: `sNLink` = Off; the slot's six analysis parameters set to slot 1's current values; then the edited parameter. So nothing on screen jumps except the edited value, and the fields take the normal look. A click that only opens a menu, and a cancelled text entry, change nothing.
+- **Turning Link on** shows slot 1's values again. The slot's own values are kept for when Link is turned off.
+- **While off**, the fields look like every other field, and the note reads "Not linked: this spectrum uses its own analysis settings."
+- Slot 1's note: "The control bar sets these values too."
+
+**Effective values** (§18.1.5): the Channel field of a slot whose source is mono shows "Mono" in `state-warn` with the underline (accessible: "Mono, effective. Set to Stereo; the source has one channel."). The Source field of a no-input slot shows its set value in `state-warn` with the underline.
+
+**Keyboard:** Tab cycles back, the slot tabs, column 1, column 2, Close; Ctrl+Tab and Ctrl+Shift+Tab switch slots. Focus is trapped as §6.1.
+
+### 18.5 Curve styles, Fill and the no-input state
+
+Line style follows the **type**, fill follows the **source** and **Fill**, and the hatch follows the **slot** (slot 4 only), so every pair of drawn slots differs by at least one non-hue cue, or by name when two slots have the same type and source (as the four references do, §17.4).
+
+| Type and source | Line | Fill off | Fill on |
+|---|---|---|---|
+| Slot 1 (Real-time, Main) | 1.5 px slot colour, round joins | Vertical gradient of the slot colour, 30 % at the data top to 4 % at the bottom (today's look) | Flat slot colour at **40 %** to the data bottom |
+| Real-time, Main source (slots 2 to 4) | 1.5 px slot colour | none | Flat slot colour at 40 % |
+| Real-time, sidechain source | 1 px slot colour at 70 % (the edge) | Flat slot colour at 26 % to the data bottom (the silhouette, today's sidechain) | Flat slot colour at 40 % |
+| RT max, All-time max, All-time avg (any source) | 1 px slot colour, opaque | none | Flat slot colour at 40 % |
+
+- **Slot 4's fills are hatched** instead of flat: a 1 logical px bar at every 3rd logical column (`floor (x − data.x) mod 3 = 0`), at 40 % for the silhouette and 70 % with Fill on (§17.4 hatch). This keeps the default SC 1 and SC 2 silhouettes apart without hue.
+- **Draw order** (back to front): the fills of slots 4, 3, 2, 1; the reference curves (§17.11.2); the lines of slots 4, 3, 2; the slot 1 line. The band tint and the overlays follow §17.9.3.
+- **Defaults** reproduce today: slot 1 aqua line and gradient; slot 2 1 px #3E8FA3 RT max line; slot 3 lavender silhouette; slot 4 a green hatched silhouette when SC 2 is connected.
+- **Swatches** (legend, hover card, Spectra panel, colour list) draw the same style in 16 × 10 (20 × 10 in the panel): a 2 px top line plus the fill below it.
+- **No input, Off, hidden:** nothing is drawn, and there is no legend entry or hover row. The header toggle and the Spectra row show the state (§18.3.1). The DSP decides when a slot is active; the editor draws from the frame's per-slot flags.
+- **Colour vision:** the default slot colours keep the §17.4 values (contrast on `bg-plot` 11.5, 5.2, 7.2 and 11.4 : 1). The cues without hue: slot 1 is the only line with a gradient; real-time Main lines are 1.5 px, held types 1 px; sidechain silhouettes are fills with a dim edge; slot 4 is hatched; references are dashed. Two slots with the same type and source differ by name in the legend and hover card.
+- **T-043 R17** (one fill switch for every reference): per-slot Fill covers the user's request (#7) for every live curve; references stay line-only (§17.4), so they remain the only dashed, unfilled curves. Per-slot Fill therefore covers R17's purpose, and it is not an open question.
+- **Performance:** at most 4 fills (gradient bands for slot 1, one `fillRectList` per other fill; hatches as column lists), 4 lines, 4 references: 12 layers, within the §17.18 count (pacing threshold 7 unchanged until T-054 and T-055 measure).
+
+### 18.6 Legend, hover card and the legend collision rule
+
+**Legend entries** (in order; each only while drawn; flow, pill style and the 25 % fade of §17.5 unchanged):
+1. Slot 1: "{name} · {channel}", for example "Main · Mid"; "Mono" as the channel with a mono main input.
+2. Slots 2 to 4: "{name}", plus " · {type}" when the type is not Real-time, for example "Spectrum 2 · RT max", "SC 1".
+3. References, by slot name (§17.11).
+4. Tags (text only, `caps`, `text-secondary`): "ALIGN 0 dB" (§17.8), then "OFFSET: NORMALIZE", "OFFSET: CENTER" or "OFFSET: {SLOT NAME}" while `offsetMode` is not Off (§18.7).
+
+Default legend: "Main · Mid", "Spectrum 2 · RT max", "SC 1" (about 297 px, one row at 1200 × 700).
+
+**Collision rule** (replaces the row rule of §17.5; it holds at every size from 560 × 400 up):
+- **Obstacles:** the FROZEN badge while frozen, and the zoom panel while zoomed, each inflated by 8 px.
+- **Rows:** row k is the band y = data.y + 8 + 22k to y + 20. Its width limit is from `data.x + 8` to the left edge of the leftmost obstacle that overlaps the band vertically, or to `data.right − 8` if none does.
+- **Placement:** entries flow in order. An entry that does not fit in the rest of the current row starts the next row. **If an entry does not fit even in an empty row, that row is left empty and the entry tries the next row**, so the legend steps down past the badge or the panel instead of running under it. An entry wider than the full data width is truncated with "…".
+- **Limit:** no row may end below `data.bottom − 40` (clear of the hint line). Entries that would need such a row are dropped, and the last visible row ends with "+n" (`caps`), where n is the number of dropped entries.
+- **Badge position:** centred on the data rect as §5.7, except while the zoom panel shows and the badge would intersect it inflated by 8 px: then the badge ends 8 px left of the panel (badge.right = panel.x − 8).
+
+Resolved (badge 63 px wide; zoom panel per §5.9.6):
+
+| Size and state | Badge x | Panel x | Legend rows |
+|---|---|---|---|
+| 1200 × 700, frozen | 436.5 … 499.5 | — | Row 0 limit 428.5 − 56 = 372.5 px; the default legend (297 px) fits in row 0. No overlap. |
+| 1200 × 700, frozen and zoomed | 436.5 … 499.5 | 670 … 880 | as above |
+| 920 × 540, frozen (the T-037 case: 23.5 px overlap today) | 296.5 … 359.5 | — | Row 0 limit 288.5 − 56 = 232.5 px: "Main · Mid" (97 px); adding "Spectrum 2 · RT max" would need 242 px, so it starts row 1 with "SC 1" (206 px). No overlap. |
+| 920 × 540, frozen and zoomed | 296.5 … 359.5 | 400 … 600 | as above (the panel is right of the badge) |
+| 560 × 400 (compact, data 376 px), frozen and zoomed | pushed left: 145 … 208 | 216 … 416 | Row 0 limit 137 − 56 = 81 px: "Main · Mid" (97 px) does not fit, so row 0 stays empty. Rows 1 to 3 are limited by the panel (208 − 56 = 152 px): row 1 "Main · Mid", row 2 "Spectrum 2 · RT max" (151 px), row 3 "SC 1". |
+| 600 × 400 (full layout, data 240 px), zoomed | — | 80 … 280 | Rows 0 to 4 overlap the inflated panel (y 56 … 164) and have a 16 px limit, so they stay empty. Row 5 (y 174): "Main · Mid"; row 6: "Spectrum 2 · RT max", "SC 1". The last row ends at y 238, above the limit of 280. |
+
+T-055 adds a unit test that places the default and the widest legend at 560 × 400, 600 × 400, 920 × 540 and 1200 × 700 with every badge and panel combination, and asserts no intersection.
+
+**Hover card** (rows replace §17.5's; position, style and formats unchanged):
+- The band block first while the band solo shows (§17.9.4).
+- The frequency and note lines. Above the Nyquist frequency (§18.8) the note line reads "Above Nyquist (24.0 kHz)" in `text-tertiary`.
+- One row per drawn slot in slot order, named as the legend, with the level at f. Slot 1's value includes the applied offset (it is what is drawn).
+- Then each visible reference with data at f.
+- **Offset line**, while `offsetMode` is not Off: a 1 px separator, then "Offset" (`body-sm`, `text-secondary`) and the applied offset from the frame, right-aligned in `readout` / `text-primary`, signed with 1 decimal ("−6.2 dB", "0.0 dB"). While the target is missing (§18.7), the value is followed by " · inactive" in `text-tertiary`.
+
+### 18.7 Offset
+
+- **Control:** an inline choice chip "OFFSET" (`ichip` style, label left, value right), bound to `offsetMode`. In the header at (288, 8, 140, 28) while W ≥ 900; in the Spectra panel's Offset row (112 × 24 field) below 900 (§18.3.2). Never in Settings.
+- **Values and texts:**
+
+| Index | Chip value | Menu item |
+|---|---|---|
+| 0 | "Off" | "Off" (default) |
+| 1 | "Normalize" | "Normalize (peak at 0 dB)" |
+| 2 | "Center" | "Center (mean at the middle)" |
+| 3 to 5 | "Match {slot name}", for example "Match SC 1" | "Match {slot name}" |
+
+  Match items name the slot, not "Spectrum N", so the default "Match SC 1" reads as the user's "Sidechain" option (#8). The chip truncates long names with "…" (the value area is 74 px).
+- **Disabled options:** a Match item whose slot is off or has no input is drawn in `text-disabled` with the hint "(off)" or "(no input)" in `text-tertiary`, and cannot be chosen. Drag, wheel and arrow steps skip disabled options. Normalize and Center are always available.
+- **Inactive selection:** if the selected target becomes off or loses its input, the selection is kept (the slot plan) and the chip shows the set value in `state-warn` with the §18.1.5 underline. The applied offset eases to 0 dB (DSP), and the hover card marks it "inactive". Accessible value: "Match SC 1, inactive: SC 1 has no input."
+- **How the applied offset is shown:** the legend tag (§18.6) while the mode is not Off, and the Offset line of the hover card with the applied value. The grid and axis labels never move: only slot 1 is shifted.
+- Changing the mode is a host gesture on `offsetMode`; double-click resets to Off. No toast, no reset, no unfreeze (frozen data keeps its offset, the slot plan).
+
+### 18.8 The 96 kHz axis
+
+- `freqHigh` ranges up to 96 kHz (T-051). From M3c the **display axis runs to `freqHigh` even above the Nyquist frequency**: `fHiEff = freqHigh`, and the one-octave rule `fLoEff = min (freqLow, fHiEff / 2)` stays. This needs the `DisplayRange.h` change of T-047 (§15 question 18). The Nyquist warn state of §18.1.5 therefore ends in M3c.
+- **Grid labels:** the §5.3 decade sets continue above 10 kHz: 20k, 30k, 50k, 70k (set 1) or 20k, 50k (set 2). Resolved at 20 Hz to 96 kHz, 1200 × 700 (840 px, 228.2 px per decade): set 1 fails (5 to 7 is 33.3 px < 36), so set 2 is used: 20, 50, 100, 200, 500, 1k, 2k, 5k, 10k, 20k, 50k (11 labels, smallest gap 68.7 px). At 560 × 400 (376 px, 102.1 px per decade) set 2 also fails (1 to 2 is 30.7 px), so set 3 (decades) is used: 100, 1k, 10k. Linear labels in deep zoom use the §5.9.8 format ("91.0k").
+- **Above Nyquist:** the region from x (sampleRate / 2) to the data rect's right edge is filled with `plot-nyquist` (#0E1219, the `bg-app` value) in the cached grid image, over the grid lines, with a 1 px `grid-major` line at the Nyquist frequency. Frequency labels in the gutter continue. Live slots draw nothing there (the mapper stops at Nyquist). Reference curves are fixed data and are drawn over it where they have data, so a 192 kHz capture can be compared at 48 kHz.
+- **Hover** in that region: the card shows the frequency, the note line "Above Nyquist (24.0 kHz)" and only reference rows.
+- **Text:** the CSV message of §17.12.3 becomes "Ref 2 unchanged. mix.csv has no data between 1 Hz and 96 kHz." and the reference grid spans 1 Hz to 96 kHz (roadmap Decision of 2026-10-06).
+
+### 18.9 Canvas, breakpoints and the compact layout (#14, #16)
+
+#### 18.9.1 Canvas
+
+| Property | Value (replaces §2 where different) |
+|---|---|
+| Default | 1200 × 700 (unchanged) |
+| **Minimum** | **560 × 400** |
+| Maximum | 2560 × 1600 (unchanged) |
+| Width breakpoints (one set, `breakpoints` tokens) | **1060**: below it the header's Refs, Freeze and Reset curves become icon buttons. **900**: below it the header is compact (§18.9.2). **600**: below it the compact layout applies (§18.9.5). |
+| Height | No height breakpoint (#14). Lower heights shrink the plot and the meter bars; the meter content follows the fit ladder (§18.10.4). |
+
+Why 560 × 400: both are the plan's targets. At 560 × 400 the compact layout keeps every region usable: the compact header, a 376 × 264 data rect (3 dB lines at the default range, §18.1.6), six control-bar items, and a 120 px meter strip with bars and correlation. The T-045 compact-header breakpoint (1174) is replaced by 1060 and 900: the Channel and Underlay controls are gone, so the full header fits down to 1060.
+
+`ViewState.editorWidth` and `editorHeight` are clamped to the new limits on restore.
+
+#### 18.9.2 Header (replaces §17.2 and §17.17.1)
+
+All items y 8, height 28 unless stated. Right-anchored items use W.
+
+| Item | Full, W ≥ 1060 | Medium, 900 ≤ W < 1060 | Compact, W < 900 |
+|---|---|---|---|
+| Logo | Wordmark (16, 13, 81, 18) | same | `logo-mark.svg` (16, 10, 24, 24) in `accent` |
+| Spectra group | (116, 8, 164, 28), §18.3.1 | same | (52, 8, 104, 28) |
+| Offset chip | (288, 8, 140, 28), §18.7 | same | not in the header (Spectra panel) |
+| Presets | (440, 8, Pw, 28), Pw = clamp (W − 956, 96, 160) | (440, 8, Pw, 28), Pw = clamp (W − 768, 96, 160) | (164, 8, 36, 28): `icon-presets-16` at x + 10; a `body` 600 "*" in `accent` at x + 27 when modified |
+| A/B | (448 + Pw, 8, 60, 28) | same | (208, 8, 60, 28) |
+| Copy | (512 + Pw, 8, 48, 28): "A→B" | same | (272, 8, 28, 28): `icon-copy-ab-16` |
+| Refs | (W − 380, 8, 72, 28) | (W − 192, 8, 28, 28), icon | as medium |
+| Freeze | (W − 302, 8, 84, 28) | (W − 158, 8, 28, 28), icon | as medium |
+| Reset curves | (W − 212, 8, 116, 28) | (W − 124, 8, 28, 28), icon | as medium |
+| Divider | (W − 84, 14, 1, 16) | same | same |
+| Meters | (W − 72, 8, 28, 28) | same | same |
+| Settings | (W − 40, 8, 28, 28) | same | same |
+
+Resolved:
+
+| Item | 1200 × 700 (full) | 920 × 540 (medium) | 560 × 400 (compact) |
+|---|---|---|---|
+| Logo | 16 … 97 | 16 … 97 | 16 … 40 |
+| Spectra group | 116 … 280 (toggles 196, 224, 252) | same | 52 … 156 (toggles 82, 106, 130) |
+| Offset | 288 … 428 | 288 … 428 | — |
+| Presets | 440 … 600 | 440 … 592 | 164 … 200 |
+| A/B | 608 … 668 | 600 … 660 | 208 … 268 |
+| Copy | 672 … 720 | 664 … 712 | 272 … 300 |
+| Refs | 820 … 892 | 728 … 756 | 368 … 396 |
+| Freeze | 898 … 982 | 762 … 790 | 402 … 430 |
+| Reset curves | 988 … 1104 | 796 … 824 | 436 … 464 |
+| Divider | 1116 | 836 | 476 |
+| Meters | 1128 … 1156 | 848 … 876 | 488 … 516 |
+| Settings | 1160 … 1188 | 880 … 908 | 520 … 548 |
+
+Smallest gaps: 16 px at W = 1060 (Copy ends 664, Refs starts 680) and at W = 900 (Copy ends 692, Refs 708); 68 px at 560. Nothing overlaps at any width from 560 up. The header does not depend on the meters.
+
+- Icon-only buttons keep their states (§9) and 28 × 28 targets; their names are accessible names only (no tooltips, §18.1.1).
+- **Focus order:** Spectra list button, the three slot toggles, Offset (when in the header), Presets, A/B, Copy, Refs, Freeze, Reset curves, Meters, Settings; then the control bar; then the meter strip.
+
+#### 18.9.3 Control bar (replaces §4.3 from M3c)
+
+Chips as §4.3 (40 high at y = H − 48). Two groups:
+
+| Group | Items, in order, with widths | Group width |
+|---|---|---|
+| A, Spectrum 1 | **Slot-1 gear 28**, Block **56**, Overlap 68, Window 76, Avg time 72, Smooth 68, Slope 92 | 508 |
+| C, Range | **Max crest 76** (§18.11), Frequency 140, Level 120 | 352 |
+
+- **Removed:** the "2nd curve" chip (slot 2's Type is in the Spectra list and the slot window). Slope joins group A because it is a slot-1 setting. Block narrows to 56 ("65536" is 39 px wide plus 16 padding).
+- **Slot-1 gear:** a 28 × 40 button, `surface-2` fill, radius 6, `icon-settings-16` centred, and a 12 × 2 bar in slot 1's colour at (x + 8, y + 33) that ties the bar to slot 1. Hover `surface-3`; pressed `surface-3` with a 1 px `accent` border. It opens the slot window on slot 1. Accessible name "Main spectrum settings".
+- **Placement** with `avail = (W − MS) − 24`: group A starts at x = 12 with 8 px gaps; **an item is shown only if it and every item before it fit** (end ≤ 12 + avail). Group C is shown only if all of group A is shown and 508 + 20 + 352 ≤ avail (880). It is right-aligned to end at 12 + avail, with a 1 × 24 `border` divider centred in the gap. Hidden items move to Settings > Analysis (§18.12).
+
+| Size | Shown | x positions |
+|---|---|---|
+| 1200 × 700 (with 0, 1 or 2 sidechains) | A, C | gear 12, Block 48, Overlap 112, Window 188, Avg 272, Smooth 352, Slope 428 (ends 520); divider 530; Max crest 540, Frequency 624, Level 772 (ends 892) |
+| 1200 × 700, meters collapsed | A, C | A as above; Max crest 836, Frequency 920, Level 1068 (ends 1188) |
+| 920 × 540 | A | as above; C in Settings, Settings dot on |
+| 920 × 540, meters collapsed | A, C | Max crest 556, Frequency 640, Level 788 (ends 908) |
+| 600 × 400 (full layout, MS 296) | gear, Block, Overlap, Window | Avg time, Smooth, Slope and C in Settings |
+| 560 × 400 (compact, MS 120) | gear … Smooth (ends 420) | Slope and C in Settings |
+
+The meter strip stays 296 wide when sidechains connect (§18.10.2), so connecting a sidechain never hides a control-bar item.
+
+#### 18.9.4 Plot region
+
+Unchanged formulas (§4.1): plot (0, 44, W − MS, H − 100), data rect (48, 56, W − MS − 64, H − 136). Resolved: (48, 56, 840, 564) at 1200 × 700; (48, 56, 560, 404) at 920 × 540; (48, 56, 376, 264) at 560 × 400; (48, 56, 240, 264) at 600 × 400.
+- **Hint line:** when even the short form (§5.5) is wider than data.w − 16, the hint line is not shown (at data widths below about 330 px).
+- **Zoom panel:** unchanged (`Wz` ≥ 200). At data widths below 216 px the panel would not fit; this cannot happen at the minimum size (smallest data width 240 px).
+
+#### 18.9.5 Compact layout (W < 600)
+
+**Trigger:** editor width below 600 px (half the default). Height never triggers it. Above 600 the full layout applies at any height.
+
+**Hidden** (#14): the statistics table (Peak, Peak max, TP, TP max, Headroom, RMS, Crest, Clips, TP clips), the loudness block, the Max crest readout (group C cannot fit), and the sidechain statistics and loudness rows. **Kept:** the spectrum, the level bars (main and sidechain), the correlation (adapted), the clip lamps and Reset statistics.
+
+**Meter strip:** MS = **120**: (W − 120, 44, 120, H − 44), `surface`, 1 px `border` left line.
+- Header row (strip-relative): Metering chip (12, 12, 64, 28), value only (accessible name "Metering"); Reset statistics (80, 12, 28, 28). Style, Integration and the section toggles are in Settings > Meters while compact.
+- Content from y 52 to SH − 12. Correlation block (compact form, below) at the bottom, height Hc = 68 + 32 × nSC (revised 2026-10-07; was 18 × nSC); the bars column (12, 52, 96, SH − 76 − Hc) above it with a 12 px gap. Correlation hidden: the bars reach the bottom. Bars hidden: the correlation starts at y 52. Both hidden: the strip collapses (MS = 0, §17.10.6).
+- **Compact correlation** (96 wide): title row 16 ("CORR" in `caps` / `text-tertiary`, the value right-aligned in `readout`); bar (0, 20, 96, 12) as §8.5 with ticks at ±0.5; scale row (0, 34, 96, 12); balance row (0, 52, 96, 16): "BAL" (`caps`) and the value right-aligned ("L 1.2 dB" is 58 px). Then, per connected sidechain, the same two readouts as the main input (§18.10.3: the compact layout hides statistics and loudness for every input alike), two 16 px lines: "SC 1" (`caps`, `meter.sc-text-label`) with its correlation right-aligned ("+0.82", `readout`, `meter.sc-text-value`), then "BAL" (`caps`, `meter.sc-text-label`) with its balance right-aligned in the main format ("L 1.2 dB", 58 px). Mono sidechain: "—" on both lines.
+- Bars: §18.10.2 with a 96 px column.
+
+Resolved at 560 × 400 (strip x 440, SH 356; editor y): bars 96 … 308 and correlation 320 … 388 with no sidechain; bars 96 … 276 and correlation 288 … 388 (Hc 100) with one; bars 96 … 244 and correlation 256 … 388 (Hc 132) with two. The tracks are then 118 px tall (dBFS ticks every 12 dB).
+
+#### 18.9.6 Sizes below the minimum and host-imposed sizes (T-061 §3)
+
+- The constrainer limits are 560 × 400 … 2560 × 1600.
+- **Every region has a valid layout at every size from the minimum up:** the header tiers cover every W ≥ 560 (§18.9.2); the control bar always shows at least the gear and Block (avail ≥ 280 at 600 and 416 at 560); the data rect is at least 240 × 264; the meter strip is compact below 600 and its content follows the fit ladder (§18.10.4), which fits at the smallest content height (258 px at H = 400). Every popover fits inside 560 × 400 (§18.12).
+- **If a host imposes a smaller size anyway** (the T-061 mechanism: the host window shrinks without `checkSizeConstraint`): `resized()` lays out for `max (getWidth(), 560)` × `max (getHeight(), 400)`, so the editor keeps the minimum layout and the host window shows its top-left part. Every extent is computed with `std::max (0, …)`; no component ever gets negative bounds; `SpectrumView` paints nothing when its data rect is empty. Nothing is stored: `writeEditorSize` keeps clamping.
+- T-070 verifies this in FL Studio (both resize handles, at 100 % and a scaled display), as T-061 recommends.
+
+### 18.10 Sidechain meters (#12)
+
+#### 18.10.1 What appears
+
+- For each **connected** sidechain input (`isSidechainActive (i)`): one level bar next to the main bars (§18.10.2) and **every statistic the main input shows**, with the same rows and units, in the **sidechain table** below the main sections (§18.10.3; user decision of 2026-10-07, §15 question 23). A disconnected sidechain shows nothing, and the layout re-flows as if it did not exist. With no sidechain connected the strip is exactly §17.10.
+- The meters belong to the inputs, not to the slots (the slot plan). They are labelled "SC 1" and "SC 2" ("SIDECHAIN 1" in the one-sidechain table title).
+- **Sidechain colour:** the colour of the lowest-numbered slot whose source is that input; if no slot uses it, the default colour of slot 3 (SC 1) or slot 4 (SC 2).
+- Metering mode, style, integration, release, peak hold and the RMS window are shared (the slot plan). Reset statistics clears every bank. The stale rule (§8.7) applies per bank.
+
+#### 18.10.2 Bars
+
+The strip stays 296 wide. Each sidechain gets **one** bar showing its louder channel (the per-field maximum of L and R; its only channel when mono), so up to four bars fit in the column.
+- **Column width** `CWb`: 80 with no sidechain (§17.10.6, unchanged); **90** with one or two, the right column staying at x 108 (6 px gap); 272 when the right column is empty; 96 in the compact layout.
+- With nSC ≥ 1: scale labels right-aligned at x 24; bar area from x 28 to CWb; SC bar width `bs = 10` (CWb ≤ 120) or 24; main bar width `bm = floor ((CWb − 28 − 4 − nSC × (6 + bs)) / 2)`. Main L at 28, R at 28 + bm + 4; SC k at 28 + 2 bm + 4 + 6 + (k − 1)(bs + 6).
+
+| Column | 1 sidechain | 2 sidechains |
+|---|---|---|
+| 90 (default) | L 28 … 49, R 53 … 74 (21 px), SC 1 80 … 90 | L 28 … 41, R 45 … 58 (13 px), SC 1 64 … 74, SC 2 80 … 90 |
+| 272 (bars alone) | L 28 … 133, R 137 … 242 (105 px), SC 1 248 … 272 | L 28 … 118, R 122 … 212 (90 px), SC 1 218 … 242, SC 2 248 … 272 |
+| 96 (compact) | L 28 … 52, R 56 … 80 (24 px), SC 1 86 … 96 | L 28 … 44, R 48 … 64 (16 px), SC 1 70 … 80, SC 2 86 … 96 |
+
+Column-relative x; the column starts at strip x 12 (editor x 916 at 1200 × 700).
+
+- **Column height:** with a sidechain table (or its note) shown, the bars column spans the upper region only, from the content top to the bottom of the last main section (§18.10.4); the table sits below it at full width. Track geometry inside the column is unchanged (lamps at the top, letters at the bottom, tracks from y + 14 to bottom − 16).
+
+- **SC bar look:** level part solid in the sidechain colour; peak part in the sidechain colour pre-blended at 55 % over `bg-plot` (computed once per colour change, no alpha drawing); hold tick 2 px `meter.hold-tick`; a clip lamp bs × 10 above it; the digit "1" or "2" (`caps`) under it instead of L/R. No zones: the zones stay readable on the main bars and the scale. In the loudness modes the SC bar shows the sidechain's programme loudness. The Density style applies to the main bars only; SC bars stay Bars.
+- One `fillRectList` per colour, as the main bars.
+
+#### 18.10.3 Sidechain table (full statistics; revised 2026-10-07)
+
+**User decision (2026-10-07, §15 question 23):** each connected sidechain keeps one bar, but its rows show **every statistic the main input shows**, with the same rows and units, at `meter.sc-opacity`. The reduced block of the first T-065 delivery (Peak max, TP max, RMS, Crest max, S · I, Corr · balance; full 124, short 52) is withdrawn.
+
+**Statistics per sidechain** (the same `MeterSnapshot` fields as the main bank, §15 question 19):
+
+| Group (section toggle) | Rows, label and unit | Values |
+|---|---|---|
+| Statistics | Peak dBFS, Peak max dBFS, TP dBTP, TP max dBTP, Headroom dB, RMS {unit of the mode}, Crest dB, **Max crest dB**, Clips, TP clips | per channel, L and R |
+| Loudness | M, S, I, M max, S max (LUFS, or LU in the LU modes), LRA (LU) | per input |
+| Correlation | Correlation, Balance (dB) | per input |
+
+- **Max crest** is a table row for a sidechain because the main input's value lives in the control bar (§18.11), which shows the main input only. The main table keeps its nine rows.
+- **Formats** as §8.3 to §8.5 and §17.10.7, with the same rounding, "−inf" and "—" rules. Max crest as §18.11 (1 decimal, no sign, "—"). Balance drops the unit from the value because the unit is in the label: "L 1.2", "C 0.0", "R >60". In the LU modes M, S, I, M max and S max show LUFS + 23, signed. Mono sidechain: "MONO" over its right value column, values in that column, the left column blank; correlation and balance "—".
+- **Peak and TP rows** use per-channel display ballistics (§17.10.4), computed by the editor for each sidechain channel exactly as for the main channels, although the bar shows only the louder channel.
+- **Alarm cells keep full strength:** a Clips or TP clips cell with a count above 0 becomes the §8.3 lamp (`meter.clip` fill, `text-on-accent`), and a negative Headroom is drawn in `state-error`, not pre-blended, so a clip on a sidechain is as visible as on the main input.
+
+**Placement.** The sidechain table is **one item** below the last main section, at full content width: strip x 12, width **272** (editor x 916 … 1188 at 1200 wide, 636 … 908 at 920), whether the bars are shown or not. It is separated from the main sections like they are from each other (gap ≥ 12 with a centred 1 px `border` divider across the full width). The bars column ends above it (§18.10.2). Rows are `r` high, r = 18, or 16 from ladder step 1 (§18.10.4); the title row is 16. Grid: label column **84**, value columns **47**.
+
+**Form A, one sidechain, Statistics on (side form).** Height 16 + 10 × r.
+
+| Part | Table-relative x | Content |
+|---|---|---|
+| Title row | 0 … 272 | 10 × 10 swatch in the sidechain colour at (0, 3), "SIDECHAIN 1" (`caps`) at x 14; heads "L" and "R" (`caps`) right-aligned at x 131 and 178 (mono: "MONO" over R); "LUFS" (`caps`; "LU" in the LU modes) right-aligned at x 272 |
+| Statistics rows (10) | label 0 … 84, L 84 … 131, R 131 … 178 | Peak, Peak max, TP, TP max, Headroom, RMS, Crest, Max crest, Clips, TP clips; labels as §8.3 (`body-sm`) with the unit 4 px after (`unit`) |
+| Side rows (up to 8, rows 1 to 8 of the table) | 190 … 272 | One per row: label at x 190 (`caps`, unit after it in `unit`), value right-aligned at x 272 (`readout`): M, S, I, M MAX, S MAX, LRA (unit "LU"); CORR, BAL (unit "dB"). Loudness off removes the first six, Correlation off the last two; the rest move up. |
+
+Widest side row: "BAL dB" (≈ 37 px) and "L 12.3" (43 px) = 80 ≤ 82.
+
+**Form B, one sidechain, Statistics off (grid form).** Height 16 + r × (rows): three cells per row at x 0, 92 and 184, each 88 wide, label left (`caps`, unit after it) and value right-aligned (`readout`). Row 1 M, S, I and row 2 M MAX, S MAX, LRA (Loudness on); row 3 CORR, BAL (Correlation on). Title as form A without the L and R heads.
+
+**Form C, two sidechains (pair form).** Height 16 + r × (10 + 4 + 1) with every section on.
+
+| Part | Table-relative x | Content |
+|---|---|---|
+| Title row | label 0 … 84; SC 1 pair 84 … 178; SC 2 pair 178 … 272 | "SIDECHAINS" (`caps`) at x 0. In each pair: an 8 × 8 swatch in that sidechain's colour at (pair x + 4, 4) and its digit "1" or "2" (`caps`) at pair x + 16; heads "L" and "R" right-aligned at pair x + 47 and pair x + 94 (mono: "MONO" over R); a 2 px bar in the sidechain colour across the pair at y 14 … 16 |
+| Statistics rows (10) | label 0 … 84; values in the four columns | as form A, two values per sidechain |
+| Loudness rows (4) | as above | "M · max" LUFS: momentary in L, M max in R; "S · max" LUFS: short-term in L, S max in R; "I" LUFS and "LRA" LU: the value in the L column, R blank ("LU" replaces "LUFS" in the LU modes) |
+| Correlation row (1) | as above | "Corr · bal" dB: correlation in L ("+0.82"), balance in R ("L 1.2") |
+| Note row (ladder step 4 only) | 0 … 272 | "SC loudness and correlation need more height." (`body-sm`, `text-tertiary`, ≈ 245 px) |
+
+Widest labels at 84: "Peak max dBFS" and "M · max LUFS" (≈ 79 and 71 px). The pair form keeps the sidechains side by side, so the same statistic of SC 1 and SC 2 reads along one row.
+
+- **Lower opacity**, pre-blended (no alpha drawing): values `meter.sc-text-value` #ACB1B9 (= `text-primary` at **72 %** over `surface`, **8.2 : 1**), labels, heads and units `meter.sc-text-label` #7B8496 (= `text-secondary` at 72 %, **4.7 : 1**). The opacity token is `meter.sc-opacity` = 0.72. The main values (14.9 : 1) and labels (7.9 : 1) stay clearly brighter. The note uses `text-tertiary` (4.5 : 1).
+- **Section toggles** apply to main and sidechain parts together: Bars hides the main and SC bars; Statistics the main table and the ten SC statistics rows; Loudness the main block and the SC loudness rows; Correlation the main block and the SC correlation rows. A table whose rows are all hidden is not shown.
+- **Accessible names** per cell: "{Sidechain 1} {statistic} {left | right}", for example "Sidechain 1 peak max left", value "−6.2 dBFS"; per-input values without the channel ("Sidechain 2 integrated loudness", "−16.1 LUFS"). The table is one focus stop (a `juce::AccessibilityRole::table`), like the main table.
+- **Text refresh:** 10 Hz, only labels whose string changed (§8.1). That is at most 28 more value labels with one sidechain and 56 with two.
+
+#### 18.10.4 Fit ladder (replaces the rowH formula of §17.10.6; revised 2026-10-07)
+
+Items, top to bottom: main table T, main loudness L, main correlation C, the sidechain table S (§18.10.3), only the visible ones. Heights: T = 16 + 9 × rowH, short 16 + 4 × 20 = 96 (Peak max, TP max, RMS, Crest); L 98, short 56 (title and the M, S, I row); C 68, short 48 (no balance row); S by its form and `r`, or 16 when it has given way (the note). Content height HRC = SH − 98 (strip header of §17.10.1). The minimum main row height `rowMin` is 20.
+
+A configuration **fits** when the sum of its heights at rowH = `rowMin` plus 12 × (items − 1) ≤ HRC. Starting from everything full with r = 18, apply these steps in order, each keeping the previous ones, until it fits. Steps 1 to 5 exist only while a sidechain table is shown; with no sidechain the ladder is steps 6 to 8, as before.
+
+| Step | Change | Why this order |
+|---|---|---|
+| 1 | SC rows r = 16 | Rows shrink before anything is lost. |
+| 2 | `rowMin` = 18 | Main rows shrink next; still above the 16 px line height of `readout`. |
+| 3 | `rowMin` = 16 | The densest legible table: rows equal the `readout` line height. |
+| 4 | Form C only: the SC loudness and correlation rows give way to the note row of §18.10.3 (S = 16 + 10 r + 16). If Statistics is off, nothing would remain, so step 5 applies instead. Forms A and B: no change (form A's side rows cost no height). | The per-channel statistics are the larger part, and the pair form compares them row by row. |
+| 5 | The sidechain table gives way: S becomes one note item (16 high, full width) "Sidechain readouts need a taller window." (`body-sm`, `text-tertiary`) | Main metrics stay complete first. |
+| 6 | L short | As before (main data is lost only after every SC row). |
+| 7 | C short | As before. |
+| 8 | T short | Always fits from H = 400: 96 + 56 + 48 + 16 + 3 × 12 = 252 ≤ 258. |
+
+Then, for a full T: `rowH = clamp (floor ((HRC − others − 16 − 12 × (items − 1)) / 9), rowMin, 28)`, where `others` is the summed height of the other items; the remaining space is shared equally between the gaps, and the dividers are centred in them. The bars column runs from the content top to the bottom of the last main section (to the content bottom when there is no S).
+
+**Heights at which nothing gives way:** one sidechain from H = 698 (steps 1 and 2: 178 + 98 + 68 + 176 + 36 = 556 = HRC), and with r = 18 and rowH ≥ 20 from H = 736; two sidechains from H = 760 (steps 1 to 3: 160 + 98 + 68 + 256 + 36 = 618) and with r = 18 from H = 826.
+
+**Resolved** (editor y; all sections on; bars shown; strip x 904 at 1200, 624 at 920 and 304 at 600; width 1200 and 920 use the full layout, 600 × 400 too because W ≥ 600):
+
+| Size (content y) | No sidechain | One sidechain (form A) | Two sidechains (form C) |
+|---|---|---|---|
+| 1200 × 700 (130 … 688, HRC 558) | no step, rowH 28: T 130 … 398, L 460 … 558, C 620 … 688; bars 130 … 688 | steps 1, 2; rowH 18, r 16, gaps 12.7: T 130 … 308, L 321 … 419, C 431 … 499, **S 512 … 688** (title 512 … 528, statistics 528 … 688, side rows 528 … 656); bars 130 … 499 | steps 1 to 4; rowH 16, r 16, gaps 13.3: T 130 … 290, L 303 … 401, C 415 … 483, **S 496 … 688** (title 496 … 512, statistics 512 … 672, note row 672 … 688); bars 130 … 483 |
+| 920 × 540 (130 … 528, HRC 398) | no step, rowH 21: T 130 … 335, L 349 … 447, C 460 … 528 | steps 1 to 5; rowH 18, gaps 12.7: T 130 … 308, L 321 … 419, C 431 … 499, note 512 … 528; bars 130 … 499 | as one sidechain (step 4 does not fit either: 160 + 98 + 68 + 192 + 36 = 554 > 398) |
+| 600 × 400 (130 … 388, HRC 258) | steps 6 to 8: T 130 … 226, L 255 … 311, C 340 … 388 | steps 1 to 8: T 130 … 226, L 240 … 296, C 310 … 358, note 372 … 388 (gaps 14); bars 130 … 358 | as one sidechain |
+| 560 × 400 | compact layout (§18.9.5): bars 96 … 308, correlation 320 … 388 | compact: bars 96 … 276, correlation 288 … 388 | compact: bars 96 … 244, correlation 256 … 388 |
+
+- **Nothing overlaps:** every item and the note sit inside the content rect, the gaps are ≥ 12 px, the table and the note span x 916 … 1188 (636 … 908 at 920, 316 … 588 at 600) below the bars column, and the header rows end at y 118. The control bar does not depend on the strip content: the strip stays 296 wide (120 compact), so connecting one or two sidechains changes no control-bar item at any size (§18.9.3).
+- At 920 × 540 with no sidechain this gives rowH 21 instead of the 20 of §17.17.3, because the formula reserves the real 12 px gaps.
+- With other section combinations the same steps apply. Example: 1200 × 700, two sidechains, Loudness hidden: T, C and S (form C with 11 rows) fit with no step (196 + 68 + (16 + 11 × 18 = 214) + 24 = 502 ≤ 558), and rowH = floor ((558 − 68 − 214 − 16 − 24) / 9) = 26.
+
+### 18.11 Max crest factor readout (#13)
+
+- **Place:** the first item of control-bar group C, left of the Frequency chip: (540, H − 48, 76, 40) at 1200 × 700 (§18.9.3).
+- **Look:** a read-only readout, not a chip: no fill, no border, no hover state, no cursor change, not focusable. Label "MAX CREST" (`caps`, `text-secondary`) at (x + 4, y + 5); value at (x + 4, y + 21) in `value` (JetBrains Mono 13) / `text-primary` with the unit "dB" (`unit` style): "14.2 dB".
+- **Value:** the higher of the main input's per-channel maximum crest factors since the last statistics reset (`MeterBank`, T-049: 50 ms windows, sample peak minus RMS, SPAN's definition per the roadmap Decision of 2026-10-06). 1 decimal, no sign. "—" before the first complete window or when non-finite. Mono: its single channel. Text refresh 10 Hz (§8.1); stale snapshots hold it (§8.7); Reset statistics clears it.
+- **Per channel and sidechains:** the per-channel values of the sidechains are rows of the sidechain table ("Max crest", §18.10.3). The main input's per-channel values are not shown separately; the existing Crest row (editor-derived peak minus RMS) stays as it is.
+- **K-weighting (T-043 R4, handed over by T-045):** not adopted. The readout is unweighted, as SPAN's; a K-weighted crest factor would be a different quantity with no user request behind it.
+- **When group C is hidden** (§18.9.3) it moves to Settings > Analysis as a read-only row "Max crest" (value text in `readout` / `text-primary`, no field fill). In the compact layout it is hidden with the other statistics.
+- Accessible: a label named "Main input max crest factor", value "14.2 dB". Contrast `text-primary` on `bg-app` 15.7 : 1.
+
+### 18.12 Popovers and All Settings (M3c; replaces §17.16 and §17.17.5)
+
+**Popover family.** Every right-anchored popover becomes **520 wide**, at (W − 532, 48), so it fits at 560 wide:
+
+| Popover | Size | 1200 × 700 | 560 × 400 |
+|---|---|---|---|
+| Settings (tabs) | 520 × 340 | (668, 48) … (1188, 388) | (28, 48) … (548, 388) |
+| About | 520 × 340 (notices viewport (16, 140, 488, 184)) | same | same |
+| Curves panel | 520 × 320 | (668, 48) … (1188, 368) | (28, 48) … (548, 368) |
+| Slot window | 520 × 312 (§18.4) | (668, 48) … (1188, 360) | (28, 48) … (548, 360) |
+| Spectra panel | 480 × 208, or 256 with the Offset row (§18.3.2) | (116, 48) … (596, 256) | (52, 48) … (532, 304) |
+| Save as and confirmations | 280 × 112 / 96, below the Presets button: x = clamp (button x, 12, W − 292), y 40 | (440, 40) … | (164, 40) … (444, 152) |
+
+Settings, About, the curves panel, the Spectra panel and the slot window are mutually exclusive: opening one closes the others.
+
+**Settings tabs:** "Analysis" (16, 37, 80, 28), "Meters" (100, 37, 68, 28), "Display" (172, 37, 72, 28). The Inputs tab is removed (its contents are in the Spectra panel and the slot window). Columns at x 16 and 268, each 236 wide (label 100, field 128 at x + 108). Height fixed at 340 for every tab; a tab whose content were taller would scroll (6 px scroll bar of §6.2), which no tab needs.
+
+**Contents (#20: only what the main window does not show):**
+
+| Tab | Section | Rows | Shown when |
+|---|---|---|---|
+| Analysis | SPECTRUM 1 | Block size, Overlap, Window, Average time, Smoothing, Slope | each row while its control-bar chip is hidden (§18.9.3) |
+| Analysis | RANGE | Frequency low, Frequency high, Range low, Range high, Max crest (read-only) | while group C is hidden |
+| Analysis | LEVEL AND SOLO | Align 0 dB, Solo width; note "Align 0 dB: a steady 0 dBFS sine reads 0 dB. Solo width: the band you hear with Ctrl+click and hold." | always |
+| Meters | METERING | Metering, Style, Integration | while the strip does not show them (meters collapsed, all sections hidden, or compact: Style and Integration only) |
+| Meters | METERING | Release, Peak hold, RMS window; the §17.16 note | always |
+| Meters | SECTIONS | Level bars, Statistics, Loudness, Correlation | while the strip does not show its toggles (collapsed, all hidden, or compact) |
+| Display | ALL INSTANCES | Frame rate, Adaptive pacing, Anti-alias, Curve colours "Edit…"; the §17.15 note | always |
+
+Non-empty sections are placed in order: the first in column 1, the rest stacked in column 2 (8 px apart); in the Meters tab the two METERING parts form one section. **Settings dot:** shown while any conditional row of the table is present. Resolved: at 1200 × 700 the Analysis tab shows only LEVEL AND SOLO (dot off); at 920 × 540 it shows RANGE in column 1 and LEVEL AND SOLO in column 2 (dot on); at 560 × 400 SPECTRUM 1 (Slope) in column 1, RANGE and LEVEL AND SOLO in column 2 (ends at y 324 ≤ 340).
+
+**Curves panel at 520** (replaces the §17.11.1 rects):
+- Title bar: tabs "References" (12, 4, 96, 28) and "Colours" (112, 4, 72, 28); "Export curves…" (344, 4, 136, 28); Close (484, 4, 28, 28).
+- Column header: SHOW 12, NAME 66, OFFSET 202, CAPTURE 284, FILE 356.
+- Slot row: eye 12 (24), swatch 42 (16), name 66 (128), offset 202 (76), **Take ▾ 284 (64)**, Load 356 (44), Save 404 (44), Clear 452 (46); info line (66, y + 28, 442, 14).
+- **Take ▾** replaces Take and Take 2nd: a menu with one item per slot, "{slot name}", enabled while that slot is drawn, otherwise in `text-disabled` with "(not shown)". Choosing one stores that slot's current curve. The info line names the slot: "Taken 14:32 · SC 1 · 48 kHz · 4096 · Hann · 4× · 1/12 oct · Align off · Stereo".
+- **Export curves** writes one column per drawn slot, named after its legend entry (`main_mid_db`, `spectrum_2_rt_max_db`, `sc_1_db`).
+- **Colours tab:** role list (12, 44, 200, 224) with 8 rows: the four slot names, then Ref 1 to Ref 4; wheel (224, 44, 176, 176); right column x 412, 96 wide: preview (412, 44, 96, 32), hex (412, 84, 96, 24), contrast (412, 114, 96, 32), Reset role (412, 176, 96, 24); "COLOUR PRESET" label (12, 280, 104, 28), preset button (120, 280, 200, 28), Reset all (380, 280, 128, 28). The "Secondary tone" line is removed (§18.2).
+
+**Presets menu:** gains an inert last line "Presets store analysis and meter settings only." in `text-tertiary` (it replaces the information of the removed tooltip).
+
+### 18.13 A/B comparison (#22)
+
+- **Controls** (rects in §18.9.2): an **A/B segmented control** right of the Presets button (8 px gap) and a **Copy** button 4 px after it.
+- **A/B segmented:** track `surface-2`, radius 6, padding 2; segments "A" and "B" of 28 × 24 in `body` weight 600. The **active letter** is the selected segment: `accent` fill, `text-on-accent` (11.5 : 1). The other: transparent, `text-secondary`, hover `surface-3` with `text-primary`.
+- **Switching:** a click on the inactive letter stores the current parameters into the active state and applies the other one (one host gesture per changed parameter, ≤ 50 ms, the slot plan). A click on the active letter does nothing. No wheel action and no double-click reset, so a stray scroll never switches states. Keyboard: one Tab stop; Left/Right or A/B keys switch. Accessible radiogroup "A/B comparison" with radios "State A" and "State B".
+- **Copy:** text "A→B" while A is active and "B→A" while B is active (`body`, `text-secondary`, transparent; hover `surface-3`; pressed `surface-3` with a 1 px `accent` border). A click copies the active state onto the other at once and shows the toast "Copied A to B." (or "B to A") for 1200 ms at the reset-toast position (§5.9.7). Compact: a 28 × 28 icon button with `icon-copy-ab-16`. Accessible name "Copy A to B" or "Copy B to A".
+- **With presets:** loading a preset changes the active state only. The Presets button keeps the current preset name; its "*" is recomputed against the active state after a switch.
+- **Freeze:** a switch unfreezes only when slot 1's channel changes (§5.7 rule).
+- A/B is not a parameter, is not automatable and is not in presets (the slot plan); colours, layout and display preferences are not part of A or B.
+
+### 18.14 Superseded sections, M3c tooltip replacements, changes from the plan
+
+**Superseded sections** (each keeps its text for history):
+
+| Old section | Replaced by |
+|---|---|
+| §2 minimum size 920 × 540 | §18.9.1 (560 × 400) |
+| §4.2 header, §17.2, §17.17.1 | §18.9.2 (M3d: §18.1.2, §18.1.3) |
+| §4.3 control bar, §17.17.2 | §18.9.3 |
+| §5.1, §17.4 roles `primary`, `underlay`, `sc1`, `sc2` and their styles | §18.2 (slot colours), §18.5 (styles) |
+| §5.2, §17.5 (labels, legend rows), §17.17.4 | §18.6 |
+| §5.3 and §5.9.8 dB step rules | §18.1.6 |
+| §5.4 tooltip paragraph | §18.1.5 |
+| §6 tooltips, §5.9.6 tooltips, every §17 tooltip text | §18.1.1 and the table below |
+| §6.1 body (M3d), §17.16, §17.17.5 | §18.1.4 (M3d), §18.12 (M3c) |
+| §6.3 rows `channelMode` (header), `underlay`, `showSidechain`, `showSidechain2`, `inputLabel0` to `2`, role colours | §18.16 |
+| §8.8 sample-rate text | §18.1.2 |
+| §17.3 Channel and underlay | §18.4 (Channel per slot); the underlay is dropped |
+| §17.6 Sidechain pair | §18.3 (Spectra list), §18.2 (no-input state) |
+| §17.10.6 rowH formula, §17.17.3 right-column table | §18.10.4 (the column and bar rules stay, extended by §18.10.2) |
+| §17.11.1 Take and Take 2nd, panel rects | §18.12 (Take ▾, 520 wide) |
+| §17.12.3 "1 Hz and 48 kHz" | §18.8 |
+| §17.14.2 Colours tab rects and role list | §18.12 |
+
+**M3c tooltip replacements** (#18 applied to §17; every text becomes the accessible description):
+
+| §17 tooltip | Replacement |
+|---|---|
+| Compact header icon buttons (the label was in the tooltip) | Accessible names only; the icons are the established ones (snowflake, circular arrow, curves) |
+| Effective values: Integration and Release in the cal and loudness modes, frame rate above the display rate | §18.1.5 look: the effective value ("600 ms", "60 fps") in `state-warn`, underlined |
+| Style "Density" in a loudness mode | The set segment keeps the warn look of §17.10.5, plus the underline under its text |
+| Integration (the 50 ms hint), Release, Peak hold | The existing Settings > Meters note |
+| Section toggles | Accessible names ("Show the level bars", …) |
+| Presets ("a preset stores …") | The inert last line of the Presets menu (§18.12) |
+| Align 0 dB, Solo width | The LEVEL AND SOLO note (§18.12) |
+| Take 2nd disabled ("Turn on a secondary curve first") | Take ▾ items marked "(not shown)" (§18.12) |
+| Sidechain pair no-input texts | The no-input look of the slot toggles and the Source field (§18.3) |
+| Frame rate, Adaptive pacing, Anti-alias | The existing Display note |
+
+**Changes from the slot plan:**
+
+| # | Plan | This spec | Reason |
+|---|---|---|---|
+| 1 | Each sidechain's bars next to the main bars | One bar per sidechain (its louder channel), 10 px wide; the main bars narrow to 21 px (one sidechain) or 13 px (two) | The strip must stay 296 px wide: wider, it would hide control-bar group C at 1200 × 700 whenever a sidechain connects. §15 question 17. |
+| 2 | Sidechain statistics below the main rows | **Revised 2026-10-07 (user decision, §15 question 23):** every statistic of the main input for each sidechain (ten per-channel rows including Max crest, the six loudness values, correlation and balance), in one sidechain table at full strip width below the main sections, at `meter.sc-opacity`; one sidechain in the side form, two in the pair form (§18.10.3). An eight-step fit ladder (§18.10.4) shrinks rows first, then lets SC loudness and correlation, then the whole table, give way to a note. | The full sets do not fit beside the bars at the default size: everything shows from H = 698 with one sidechain and from H = 760 with two; at 1200 × 700 two sidechains show their statistics but not their loudness and correlation (§15 question 26); at 920 × 540 and below the sidechain table gives way to the note. The main metrics stay complete first. The first delivery's reduced row set is withdrawn. |
+| 3 | Visible per slot | Slots 2 to 4 only; slot 1 is always shown | The parameter table has no slot 1 Visible parameter, and slot 1 can never be off. §15 question 24. |
+| 4 | Offset options "Spectrum 2, 3, 4" | Shown as "Match {slot name}" | The user's own word was "Sidechain"; the slot name says which curve. The parameter's choice texts are unchanged. |
+| 5 | The 2nd curve chip (today) | Removed from the control bar; slot 2's Type is in the Spectra list and slot window | Room for the slot-1 gear and the Max crest readout at 1200 × 700. |
+| 6 | Take and Take 2nd (§17.11) | One "Take ▾" menu over the four slots | Any slot can now be captured; one button is narrower. |
+| 7 | Compact header below 1174 px (§17.2) | Breakpoints 1060, 900 and 600 | One set for the whole editor; the slot header is shorter than the Channel plus Underlay header. |
+| 8 | Popovers 560 wide | 520 wide | They must fit inside the 560 px minimum. |
+
+### 18.15 What the mockup shows (T-065)
+
+`mockup.html` shows the combined M3c design (T-045 plus T-065). Everything in this section can be clicked through:
+- **Default state:** four slots at their defaults, one sidechain connected: the curves look as today (aqua line and gradient, dark RT max line, lavender silhouette).
+- **M3d items:** no tooltips; no sample-rate text; the teal rule on the slot toggles; the dynamic Settings content and dot; the effective-value look (set Level bottom above top); the 3 dB grid; Smooth up to 3 oct; Level −72 … −18 dB.
+- **Slots:** the header group, the Spectra panel (names, source, type, gear), the slot window (tabs, Link with unlink-on-edit, locks on slot 1, Fill, Channel), per-type styles and Fill, slot colours in the Colours tab, the no-input and off states.
+- **Offset** with Normalize, Center and Match (300 ms easing), disabled and inactive states, the legend tag and the hover line.
+- **96 kHz:** set Frequency high above Nyquist to see the shaded region.
+- **Sidechain meters** for zero, one or two sidechains (dev-bar checkboxes), with the full-statistics sidechain table in its three forms and the eight-step fit ladder (§18.10.3, §18.10.4); the dev-bar size buttons include 1200 × 780, where two sidechains show every row.
+- **Max crest** readout.
+- **Compact layout** and the 560 × 400 minimum: a dev-bar width slider and size buttons.
+- **A/B** switching and Copy.
+- A dev-bar button "All four slots and both sidechains" sets slot 2 to Real-time Side, connects both sidechains and enables Fill on slot 3.
+
+Simplifications: as §17.20, plus:
+- the sidechain signals and meters are simulated;
+- an unlinked slot differs only in its averaging and slope, because the simulation analyses one spectrum per source with slot 1's block, window and smoothing;
+- the M3d SC toggle (§18.1.3) is not shown separately, because M3c replaces it; its teal rule is visible on the slot toggles;
+- the M3d Settings popover (§18.1.4) is shown in its M3c form (§18.12), which follows the same rule;
+- tooltip texts are kept as `aria-description` attributes only, so nothing appears on hover.
+
+### 18.16 Control inventory additions (M3c; stores as §6.3)
+
+| Item (store) | Control and location | Size | Label | Display format | Default | Drag | Wheel (Fine) | Text entry |
+|---|---|---|---|---|---|---|---|---|
+| `channelMode` (P), slot 1 Channel | Slot window, slot 1 | 128 × 24 | "Channel" | "Mid", "Side", "Left", "Right", "Stereo"; legacy L/R and M/S show "Left" and "Mid" | Mid | 1 step per 20 px | ±1 | (menu) |
+| `s2Channel` … `s4Channel` (P) | Slot window | 128 × 24 | "Channel" | as above; mono source: "Mono" in the effective look | Mid, Stereo, Stereo | as above | ±1 | (menu) |
+| `s2Source` … `s4Source` (P) | Spectra panel; slot window | 100 × 24; 128 × 24 | "Source" | "Main", "Sidechain 1", "Sidechain 2"; no input: warn look | Main, Sidechain 1, Sidechain 2 | 1 step per 20 px | ±1 | (menu) |
+| `secondary`, `s3Type`, `s4Type` (P) | Spectra panel; slot window | 112 × 24; 128 × 24 | "Type" | "Off", "RT max", "All-time max", "All-time avg", "Real-time" | RT max, Real-time, Real-time | as above | ±1 | (menu) |
+| `s2Link` … `s4Link` (P) | Slot window | 128 × 24 | "Linked to Main" | "On" / "Off" | On | none | up = On | (none) |
+| `sNFftSize` … `sNSlope` (P, N = 2 … 4) | Slot window | 128 × 24 | as the slot 1 chips | as slot 1 (§6, §18.1.7) | as slot 1 | as slot 1 | as slot 1 | as slot 1 |
+| `s1Fill` … `s4Fill` (P) | Slot window | 128 × 24 | "Fill" | "On" / "Off" | Off | none | up = On | (none) |
+| `s2Visible`, `showSidechain`, `showSidechain2` (P) | Header toggles; Spectra panel eye; slot window "Show" | 28 × 24 (24 × 24 compact); 28 × 24; 128 × 24 | number; eye; "Show" | teal rule | On | none | up = On | (none) |
+| `offsetMode` (P) | Header Offset chip; Spectra panel (W < 900) | 140 × 28; 112 × 24 | "OFFSET" | "Off", "Normalize", "Center", "Match {name}" | Off | 1 step per 20 px, skipping disabled options | ±1, skipping disabled | (menu) |
+| `freqHigh` (P, to 96 kHz) | Frequency chip high half | as §6 | | "96.0 kHz" | 20.0 kHz | 240 px over 1 kHz … 96 kHz (log, centre 9.80 kHz) | × 2^(±1/6) | "96k" |
+| `slotName1` … `4` (V) | Spectra panel | 136 × 24 | "Name" | text, ≤ 16 characters | "Main", "Spectrum 2", "SC 1", "SC 2" | none | none | any printable text |
+| Slot colours ×4 (G) | Colours tab (8 roles) | as §17.14 | slot names | "#62D6F0" | §18.2 | as §17.14 | as §17.14 | as §17.14 |
+| A/B (session state, not P) | Header segmented and Copy | 60 × 28; 48 × 28 (28 compact) | "A", "B"; "A→B" | selected letter | A | none | none | (none) |
+| Max crest (read-only) | Control bar group C | 76 × 40 | "MAX CREST" | "14.2 dB", "—" | — | none | none | none |
+| Slot-1 gear, Spectra list button, slot gears (actions) | Control bar; header; Spectra rows | 28 × 40; 76 × 24 (28 × 24); 28 × 24 | icon; "Spectra"; icon | — | — | — | — | — |
+
+### 18.17 Tokens and assets added (tokens 1.3.0)
+
+**Tokens** (`tokens.json` 1.3.0):
+- `color.toggle-teal` #34C6A8, `color.toggle-teal-tint` #142F30 (§18.1.3); `color.plot-nyquist` #0E1219 (§18.8).
+- `meter.sc-opacity` 0.72, `meter.sc-text-value` #ACB1B9, `meter.sc-text-label` #7B8496, `meter.sc-peak-alpha` 0.55 (§18.10).
+- `deepGrid.dbSteps` [0.1, 0.2, 0.5, 1, 3, 6, 12, 24], `deepGrid.dbMaxLines` 24, `deepGrid.dbLineMinPx` 12, `deepGrid.dbLabelMinPx` 20 (`dbStepMinPx` removed) (§18.1.6).
+- `motion.tooltipDelayMs` deprecated (§18.1.1).
+- `layout.editorMin` [560, 400]; new group `breakpoints` (1060, 900, 600).
+- New groups: `slot` (default colours, names, style values, draw order), `headerSlots` (tier rects), `controlBarM3c`, `spectraPanel`, `slotWindow`, `stripSidechain` (bar rules, the sidechain table forms and rows, the fit ladder and its notes, compact strip; revised on 2026-10-07 for the full statistics set, still version 1.3.0 because 1.3.0 is not yet approved), `offset`, `ab`, `popoverM3d` (§18.1.4) and `popoverM3c520`.
+- Marked superseded: `headerM3c`, `curveRole.defaults.underlay`, `curveRole.defaults.sc2`, `curveRole.secondaryDefaults`, `popoverM3c.settings.tabs.Inputs`, and the 560-wide popover rects.
+
+**Assets** (`assets/ui/`, clean SVG: `viewBox`, `<title>`, `currentColor`, no raster, scripts or external references; 16 grid, 1-unit strokes on half-integer coordinates):
+
+| File | Use | Drawing |
+|---|---|---|
+| `icon-spectra-16.svg` | Compact Spectra list button (§18.3.1) | Three list rows, each a small filled square and a line |
+| `icon-presets-16.svg` | Compact Presets button (§18.9.2) | Two stacked cards with a folded corner |
+| `icon-copy-ab-16.svg` | Compact A/B Copy button (§18.13) | Two squares with an arrow from the left one to the right one |
+| `icon-lock-16.svg` | Locked slot 1 fields and the slot 1 visibility cell (§18.3.2, §18.4) | A padlock |
+| `icon-link-16.svg` | Linked analysis fields (§18.4) | Two interlocked links |
+
+Existing assets reused: `icon-eye-16` and `icon-eye-off-16` (slot visibility in the Spectra panel), `icon-settings-16` (slot gears), `icon-chevron-down-16` (Spectra list button), `logo-mark.svg` (compact header). `icon-sidechain-16` is used by the M3d SC toggle only.
+
+### 18.18 Accessibility and performance (M3c additions)
+
+- **Text contrast:** `meter.sc-text-value` on `surface` 8.2 : 1, `meter.sc-text-label` 4.7 : 1; `toggle-teal` on `toggle-teal-tint` 6.6 : 1; `text-primary` on `bg-app` 15.7 : 1 (Max crest); `state-warn` underlined values 9.8 : 1 on `surface-2`; the note line `text-tertiary` on `surface` 4.5 : 1.
+- **Non-colour cues:** slot toggles (teal fill and border vs. none, the ring for no input, no colour bar when off); effective values (underline); Offset inactive (underline, "· inactive" in the hover card); A/B (the selected segment's fill and weight); slot styles (§18.5); sidechain bars (the digit under each bar).
+- **Hit targets:** slot toggles 28 × 24 (24 × 24 compact); A/B segments 28 × 24; Copy 48 × 28 (28 × 28); slot-1 gear 28 × 40; Spectra panel controls ≥ 24 × 24; slot tabs 116 × 28.
+- **Accessible names:** listed with each control in §18.3, §18.4, §18.7, §18.11 and §18.13.
+- **Performance:** curve layers ≤ 12 (§18.5); sidechain bars add one `fillRectList` per colour; sidechain text follows the 10 Hz rule (at most 56 more value labels with two sidechains, each repainted only when its string changes; the table's static labels are drawn once into the strip's cached background); the Nyquist shade is part of the cached grid image; Offset changes the slot 1 curve only (no grid rebuild); legend placement runs only when its inputs change (entries, badge, panel, size).
 

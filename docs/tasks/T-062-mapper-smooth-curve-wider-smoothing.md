@@ -1,8 +1,8 @@
 # T-062: Spectrum mapper: smooth low-frequency curve and wider smoothing
-- Owner: dsp-engineer (the architect re-routes to gui-engineer if T-061 places the cause of #2 in the editor's drawing path)
+- Owner: dsp-engineer (confirmed by T-061 on 2026-10-06: the cause is in the mapper)
 - Milestone: M3d
 - Status: TODO
-- Depends on: T-061; T-037 (build order: one C++ task at a time)
+- Depends on: T-061; T-071 (build order: one C++ task at a time; T-071 follows T-037 and T-072)
 
 ## Goal
 Make the spectrum curve smooth at every frequency and at every Smooth setting, including Off (review finding #2, high priority). Add the smoothing widths 1/2, 1, 2 and 3 octaves (review finding #6) to the DSP.
@@ -41,3 +41,9 @@ Make the spectrum curve smooth at every frequency and at every Smooth setting, i
 
 ## Log
 - 2026-10-06 vst-architect: Created from the M3 review triage. This is the highest-priority fix in M3d. The user rejects "raise Smooth" as a workaround. The `smoothing` parameter choices are appended in T-064; until then, test the new modes through `SpectrumSettings` directly.
+- 2026-10-06 vst-architect: T-061 is DONE (`docs/research/T-061-review-bug-diagnosis.md`, section #2). The owner stays dsp-engineer. What this task takes from it:
+  - **Cause.** `SpectrumMapper::mapOnGrid` (`SpectrumMapper.cpp`, about lines 291 to 304) interpolates linearly in the power domain between bins wherever the points are denser than the bins. On the dB axis this draws a polyline with a corner at every bin centre. The 1/12-octave boxcar (about lines 81 to 93 and 331 to 379) is narrower than the bin spacing below about 197 Hz at block 4096 and 48 kHz, and with Smooth Off nothing hides the corners. The editor path (`reduceToColumns`, `tracePolyline`, 0.04 px tolerance) is faithful and does not change in this task.
+  - **Method.** Use monotone cubic Hermite interpolation (Fritsch and Carlson 1980, known as PCHIP) of the bin levels **in dB**, over the log-frequency axis where the report says so. Convert back to power before the existing boxcar smoothing. It reproduces the bin centres exactly, and it is monotone inside each bin interval, so it never overshoots the neighbouring bins and the peak-accuracy criterion holds. Cite Fritsch and Carlson 1980 in the comments. SciPy's `PchipInterpolator` (BSD-3) may be used as a reference. Copy no non-permissive code.
+  - **Smoothness metric.** The report's synthetic figures show a maximum second difference of 0.41 dB with the current method and 0.09 dB with PCHIP, at 2048 points between 50 and 300 Hz. The acceptance criteria above stay as written; if you use a different metric, record why in the log.
+  - **Cost.** The report estimates about 0.1 ms per curve at 2048 points, which is not measured. Measure it in the `[.perf]` budget case and record the number.
+  - At 65536 points the interpolation region ends near 217 Hz, so the defect is mostly visible at block 4096 and smaller. Test both sizes, as the criteria require.

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <title>Copy the active A/B state to the other</title>
+  <rect x="1.5" y="4.5" width="5" height="6" rx="1" fill="currentColor" fill-opacity="0.35" stroke="currentColor" stroke-width="1"/>
+  <rect x="9.5" y="4.5" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 1"/>
+  <path d="M5.5 7.5H10.5M8.5 5.5L10.5 7.5L8.5 9.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

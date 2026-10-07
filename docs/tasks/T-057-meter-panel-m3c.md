@@ -70,3 +70,4 @@ Bring the meter strip to the M3c design:
     - connecting and disconnecting a sidechain at runtime shows and hides its meters within one editor update, with no layout overlap at 1200×700 or at the new minimum size;
     - the sidechain rows render at the specified opacity (pixel check);
     - the whole-editor budget criterion includes both sidechain meter sets.
+- 2026-10-07 vst-architect: **User decision at the mockup review** (roadmap Decisions of 2026-10-07). Each sidechain has **one bar**, but its rows show **every statistic the main input shows**, not a reduced set. Follow the fit ladder in T-065 §18 for short windows. In the "identical signals" criterion, compare every row, not a subset.

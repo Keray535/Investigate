@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <title>Spectra list</title>
+  <rect x="1.5" y="2.5" width="2" height="2" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+  <rect x="1.5" y="7.5" width="2" height="2" fill="currentColor" fill-opacity="0.35" stroke="currentColor" stroke-width="1"/>
+  <rect x="1.5" y="12.5" width="2" height="2" fill="none" stroke="currentColor" stroke-width="1"/>
+  <path d="M6.5 3.5H14.5M6.5 8.5H14.5M6.5 13.5H14.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+</svg>

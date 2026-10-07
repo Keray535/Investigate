@@ -1,7 +1,7 @@
 # T-061: Diagnosis: low-frequency curve, block-size stutter, small-window glitch
 - Owner: researcher
 - Milestone: M3d
-- Status: TODO
+- Status: DONE
 - Depends on: none
 
 ## Goal
@@ -49,3 +49,4 @@ This is a read-only investigation of the code plus outside references. It change
 
 ## Log
 - 2026-10-06 vst-architect: Created from the M3 review triage (`docs/plans/m3-review-spectrum-slots.md`). The user requires #2 to be solved **at every Smooth setting, including Off**: raising Smooth is not an acceptable workaround. The architect routes T-062 to dsp-engineer or gui-engineer according to this report's verdict on #2.
+- 2026-10-06 researcher: Report `docs/research/T-061-review-bug-diagnosis.md`. #2: cause is the mapper (`SpectrumMapper::mapOnGrid`, linear power interpolation between bins, kinks at every bin; smoothing narrower than a bin below ~200 Hz); editor path is faithful. T-062 goes to dsp-engineer; recommended PCHIP (Fritsch-Carlson) in dB. #15: last frame is already kept; the stutter is analysis latency (1.37 s to first frame at 65536/48k, then 341 ms hop); fix = maxFftSize history ring + hop cap (dsp-engineer; Overlap semantics need an architect decision). #16: reproduction not attempted (Standalone enforces the constrainer, no FL available); likely host window below min while JUCE clamps the editor; fix = lower min and robust layout, verify in FL. No product code changed.

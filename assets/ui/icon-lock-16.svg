@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <title>Locked</title>
+  <path d="M5.5 7.5V5.5A2 2 0 0 1 9.5 5.5V7.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+  <rect x="3.5" y="7.5" width="8" height="6" rx="1" fill="currentColor" fill-opacity="0.35" stroke="currentColor" stroke-width="1"/>
+  <path d="M7.5 9.5V11.5" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+</svg>
